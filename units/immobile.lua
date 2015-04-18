@@ -1,7 +1,7 @@
 local Barrel = BaseImmobile:New {
     name                = "Barrel",
     customParams = {
-        player = true,
+        barrel = true,
     },
     maxDamage           = 100,
 }
