@@ -1,0 +1,4 @@
+Wiki: http://springrts.com/wiki/Chili
+
+
+This file must exist so that Spring will load the widget handler from the game rather than from the Spring root directory.
