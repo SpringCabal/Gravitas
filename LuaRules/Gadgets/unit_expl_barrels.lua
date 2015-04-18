@@ -13,27 +13,60 @@ end
 local LOG_SECTION = "barrel"
 local LOG_LEVEL = LOG.NOTICE
 
-local explosionRange = 200
-local explosionDamage = 500
-
 if (gadgetHandler:IsSyncedCode()) then
 
+function rand()
+    return math.random()
+end
+
 function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerDefID, attackerTeam)
-    -- boom
     if UnitDefs[unitDefID].customParams.barrel then
         Spring.Log(LOG_SECTION, LOG_LEVEL, "Destroyed explosive barrel: " .. tostring(unitID))
         local x, y, z = Spring.GetUnitPosition(unitID)
-        Spring.SpawnCEG("explosion", x, y, z, explosionRange, 1)
-
-        -- TODO: maybe y should matter if we'll have units in the air?
-        local nearbyUnits = Spring.GetUnitsInCylinder(x, z, explosionRange)
-        -- do massive damage to all nearby units
-        -- TODO: maybe make this a function of distance?
+        local r = 150 -- explosion radius
+        
+        --draw  
+        Spring.SpawnCEG("flashnuke", x,y,z, 0,0,0, 0, 0) --spawn CEG, cause no damage
+        Script.LuaRules.FlameRaw(x+5*rand(),y,z+5*rand(), 0,0.1,0, 0,0,0, 500)
+        Script.LuaRules.FlameRaw(x+5*rand(),y+5,z+5*rand(), 0,0.2,0, 0,0,0, 500)
+        Script.LuaRules.FlameRaw(x+2*rand(),y+10,z+2*rand(), 0,0.5,0, 0,0,0, 500)
+        --SendToUnsynced("DeadBarrel", x,y,z, r) 
+        
+        local nearbyUnits = Spring.GetUnitsInCylinder(x, z, r)
+        -- do damage to all nearby units
+        -- TODO: make some sensible game mechanic
         for _, nearbyUnitID in pairs(nearbyUnits) do
             if not UnitDefs[Spring.GetUnitDefID(nearbyUnitID)].customParams.effect then
-                Spring.AddUnitDamage(nearbyUnitID, explosionDamage)
+                Spring.AddUnitDamage(nearbyUnitID, 500)
             end
         end
+    end
+end
+
+
+-- UNSYNCED
+else
+--
+
+local particleList = {}
+
+function gadget:Initialize()
+    gadgetHandler:AddSyncAction("DeadBarrel", DeadBarrel)
+end
+
+function gadget:Shutdown()
+    gadgetHandler:RemoveSyncAction("DeadBarrel")
+end
+
+function DeadBarrel(_,x,y,z, r)
+    local partpos = "x*delay,y*delay,z*delay|x=0,y=0,z=0"
+    -- might add stuff here
+end
+
+function gadget:GameFrame(n)
+    if (#particleList>0) then
+        GG.Lups.AddParticlesArray(particleList)
+        particleList = {}
     end
 end
 
