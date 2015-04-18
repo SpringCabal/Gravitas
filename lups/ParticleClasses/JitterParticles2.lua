@@ -53,6 +53,8 @@ JitterParticles2.Default = {
 
   force          = {0,0,0}, --// global effect force
   forceExp       = 1,
+  
+  maxSpawnRadius = 0,
 
   speed          = 0,
   speedSpread    = 0,
