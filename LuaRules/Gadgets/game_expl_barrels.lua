@@ -23,7 +23,7 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
     if UnitDefs[unitDefID].customParams.barrel then
         Spring.Log(LOG_SECTION, LOG_LEVEL, "Destroyed explosive barrel: " .. tostring(unitID))
         local x, y, z = Spring.GetUnitPosition(unitID)
-        Spring.SpawnCEG("explosion", x, y, z, explosionRange, 100)
+        Spring.SpawnCEG("explosion", x, y, z, explosionRange, 1)
 
         -- TODO: maybe y should matter if we'll have units in the air?
         local nearbyUnits = Spring.GetUnitsInCylinder(x, z, explosionRange)
