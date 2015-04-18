@@ -10,15 +10,13 @@ function gadget:GetInfo()
   }
 end
 
-local mapX = Game.mapSizeX
-local mapZ = Game.mapSizeZ
-
-local config = {} -- table of {x=,y=,z=,r=}
 
 -- FlameRaw format: posx,posy,posz, dirx,diry,dirz, speedx,speedy,speedz, range
 
 -- SYNCED
 if gadgetHandler:IsSyncedCode() then
+
+local config = {} -- config[unitID] = radius
 
 local fireRadius = 375
 local fireSpeed = 0.5
@@ -26,14 +24,7 @@ local fireSpeed = 0.5
 local fireID = UnitDefNames["fire"].id
 
 function gadget:Initialize()
-    --[[
-    -- testing
-    local x = mapX/2
-    local z = mapZ/2
-    local y = Spring.GetGroundHeight(x,z)
-    config[1] = {x=x,y=y,z=z}   
-    ]]
-    
+    -- handle luarules reload
 	for _, unitID in pairs(Spring.GetAllUnits()) do
 		gadget:UnitCreated(unitID, Spring.GetUnitDefID(unitID), Spring.GetUnitTeam(unitID))
 	end    
@@ -46,8 +37,6 @@ end
 
 function gadget:UnitCreated(unitID, unitDefID)
     if unitDefID == fireID then
-        local x,y,z = Spring.GetUnitPosition(unitID)
-        local y = Spring.GetGroundHeight(x,z)
         config[unitID] = true
         Spring.SetUnitNoDraw(unitID, true)
         -- Spring.SetUnitNoSelect(unitID, true) --I'm guessing this isn't wanted while we are working
@@ -97,10 +86,12 @@ function ProximityInsideFire(unitID, fx,fy,fz)
 end
 
 function UpdateFire(n,x,y,z)
+    -- draw
     if n%15==0 then
         SpawnFire(x,y,z)
     end
 
+    -- kill stuff
     local units = Spring.GetUnitsInCylinder(x,z,fireRadius * fireSpeed * 1.1)
     for _,unitID in pairs(units) do
         if fireID ~= Spring.GetUnitDefID(unitID) then
@@ -122,6 +113,10 @@ function gadget:GameFrame(n)
     end
 end
 
+function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponDefID, projectileID, attackerID, attackerDefID, attackerTeam)
+    if unitDefID==fireID then return 0,0 end
+    return damage,1.0
+end
 
 
 
