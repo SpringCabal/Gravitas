@@ -4,6 +4,7 @@ local CannonBase = Weapon:New {
     --noSelfDamage            = true,
     impulseFactor           = 1,
     turret                  = true,
+    badTargetCategory       = "EFFECT",
     
 --     avoidFriendly           = false,
 --     collideFriendly         = false,
@@ -52,6 +53,7 @@ local GravityBase = Weapon:New {
       weaponTimer             = 0.1,
       weaponType              = [[LaserCannon]],
       weaponVelocity          = 2200,
+      badTargetCategory       = "EFFECT",
 }
 
 return {
