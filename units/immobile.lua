@@ -16,7 +16,18 @@ local Fire = BaseImmobile:New {
     maxDamage           = 100,
 }
 
+local Electrafi = BaseImmobile:New {
+    name                = "Electrafi",
+    blocking            = false,
+    canMove             = false, --fire cannot be moved (even by gravity)
+    customParams = {
+        fire = true,
+    },
+    maxDamage           = 100,
+}
+
 return lowerkeys({
     Barrel = Barrel,
     Fire   = Fire,
+    Electrafi   = Electrafi,
 })
