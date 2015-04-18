@@ -399,9 +399,7 @@ local function loadPanels()
 end
 
 function widget:Initialize()
-	spSendCommands({'tooltip 0'})
-    
-    if Spring.GetGameFrame()>0 then gameStarted = true end
+	if Spring.GetGameFrame()>0 then gameStarted = true end
 
 	if (not WG.Chili) then
 		widgetHandler:RemoveWidget()
@@ -430,10 +428,16 @@ function widget:Initialize()
         orientation = 'vertical',
 		padding = {0,0,0,0},
 	}
+    local stateMenuInfo = Chili.Label:New{
+        parent = screen0,
+        caption = "State menu: only visible in dev mode",
+    }
+    
     -- hide states in play mode
     local devMode = (tonumber(Spring.GetModOptions().play_mode) or 0) == 0
     if not devMode then
         stateMenu:Hide()
+        stateMenuInfo:Hide()
     end
 
     local vsx,vsy = Spring.GetViewGeometry()
@@ -464,10 +468,6 @@ end
 function widget:GameStart()
 	gameStarted = true
 	updateRequired = true
-end
-
-function widget:Shutdown()
-	spSendCommands({'tooltip 1'})
 end
 
 function widget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
