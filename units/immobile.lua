@@ -6,6 +6,11 @@ local Barrel = BaseImmobile:New {
     maxDamage           = 100,
 }
 
+local Canister = BaseImmobile:New {
+    name                = "Canister",
+    maxDamage           = 150,
+}
+
 local Fire = BaseImmobile:New {
     name                = "Fire",
     blocking            = false,
@@ -30,6 +35,7 @@ local Electrafi = BaseImmobile:New {
 
 return lowerkeys({
     Barrel = Barrel,
+    Canister = Canister,
     Fire   = Fire,
     Electrafi   = Electrafi,
 })

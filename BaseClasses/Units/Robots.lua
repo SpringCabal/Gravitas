@@ -20,7 +20,7 @@ local BaseRobot = Unit:New {
 	maxVelocity			= 1.5,
 	movementClass		= "KBOT_Infantry", -- TODO: --KBOT
 	repairable			= false,
-	sightDistance		= 250,
+	sightDistance		= 100,
 
 
 	stealth				= true,

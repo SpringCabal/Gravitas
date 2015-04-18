@@ -30,7 +30,9 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
         -- do massive damage to all nearby units
         -- TODO: maybe make this a function of distance?
         for _, nearbyUnitID in pairs(nearbyUnits) do
-            Spring.AddUnitDamage(nearbyUnitID, explosionDamage)
+            if not UnitDefs[Spring.GetUnitDefID(nearbyUnitID)].customParams.effect then
+                Spring.AddUnitDamage(nearbyUnitID, explosionDamage)
+            end
         end
     end
 end
