@@ -1,10 +1,10 @@
 local modinfo = {
-	name = "ABC - C(hili UI Framework)",
-	shortname = "C",
-	game = "SpringABC",
-	shortgame = "ABC",
-	description = "Game with directory structure + major files + Chili UI Framework",
-	url = "http://www.springrts.com/wiki/SpringABC",
+	name = "Gravitas",
+	shortname = "GRR",
+	game = "Gravitas",
+	shortgame = "GRR",
+	description = "Spring Cabals Ludum Dare entry: Gravitas",
+	url = "https://github.com/SpringCabal/Gravitas",
 	
 	modtype = "1",
 
