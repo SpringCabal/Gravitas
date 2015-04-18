@@ -29,8 +29,8 @@ function gadget:Initialize()
 end
 
 function gadget:GameStart()
-    Spring.SendCommands("cheat")
-    Spring.SendCommands("globallos") 
+    --Spring.SendCommands("cheat")
+    --Spring.SendCommands("globallos") 
 end
 
 function gadget:UnitCreated(unitID, unitDefID)
