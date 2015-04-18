@@ -5,6 +5,7 @@ local Barrel = BaseImmobile:New {
     },
     maxDamage           = 150,
     mass                = 80,
+    script             = "barrel.lua",
 }
 
 -- sci fi barrel
@@ -15,6 +16,7 @@ local Canister = BaseImmobile:New {
     },
     maxDamage               = 150,
     mass                    = 80,
+    script                  = "canister.lua",
 }
 
 local Crate = BaseImmobile:New {
@@ -27,6 +29,7 @@ local Crate = BaseImmobile:New {
     collisionVolumeType     = 'box',
     footprintX			= 5,
 	footprintZ			= 5,
+    script              = "crate.lua",
 }
 
 local Wall1 = BaseImmobile:New {
@@ -34,7 +37,10 @@ local Wall1 = BaseImmobile:New {
     maxDamage           = 1500,
     customParams = {
         wall = true,
-    }
+    },
+    script              = "wall1.lua",
+    footprintX			= 30,
+	footprintZ			= 5,
 }
 
 local Fire = BaseEffect:New {
@@ -42,6 +48,7 @@ local Fire = BaseEffect:New {
     customParams = {
         effect = true,
     },
+    script              = "fire.lua",
 }
 
 local Electrafi = BaseEffect:New {
@@ -49,6 +56,7 @@ local Electrafi = BaseEffect:New {
     customParams = {
         electric_field = true,
     },
+    script              = "electrafi.lua",
 }
 
 return lowerkeys({

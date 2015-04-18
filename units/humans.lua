@@ -12,6 +12,7 @@ local Gravit = BaseHuman:New {
     maxVelocity         = 5,
     onoffable           = true,
     fireState           = 0,
+    script              = "gravit.lua",
 }
 
 

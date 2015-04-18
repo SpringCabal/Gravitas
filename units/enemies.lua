@@ -7,8 +7,9 @@ local Projector = BaseRobot:New {
         { name = "Kannon"},
     },
     maxDamage           = 300,
-    maxVelocity        = 1.5,
+    maxVelocity         = 1.5,
     strafeToAttack      = true,
+    script              = "projector.lua",
 }
 
 
