@@ -1,16 +1,16 @@
 local CannonBase = Weapon:New {
-    weaponType              = "Cannon",
+    weaponType              = "LaserCannon",
     --impactOnly              = true,
     --noSelfDamage            = true,
-    range                   = 20,
-    impulseFactor           = 0,
---     turret                  = true,
-
-    -- beam specific
---     minIntensity            = 1,
---     beamTime                = 0,
---     rgbColor                = {0,0,0},
---     turret                  = true,
+    impulseFactor           = 1,
+    turret                  = true,
+    
+--     avoidFriendly           = false,
+--     collideFriendly         = false,
+--     avoidFeature            = false,
+--     avoidGround             = false,
+--     collideGround           = false,
+--     collideNeutral          = false,
 }
 
 
