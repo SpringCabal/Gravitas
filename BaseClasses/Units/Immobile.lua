@@ -34,6 +34,10 @@ local BaseEffect = BaseImmobile:New {
     maxDamage    = 10000,
     blocking     = false,
     canMove      = false, --effects cannot be moved (even by gravity)
+    canCloak            = true,
+    initCloaked         = true,
+    decloakOnFire       = false,
+    minCloakDistance    = -1,
 }
 
 return {
