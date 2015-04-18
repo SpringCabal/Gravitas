@@ -16,6 +16,6 @@ end
 --------------------------------------------------------------------------------
 function addon:Initialize()
 	local name = Game.modName
-	Spring.SetWMIcon("bitmaps/balogo.bmp")
+	--Spring.SetWMIcon("bitmaps/logo.bmp")
 	Spring.SetWMCaption(name .. " (Spring " .. Game.version .. ")", name)
 end
