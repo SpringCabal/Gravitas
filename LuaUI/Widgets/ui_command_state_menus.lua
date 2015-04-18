@@ -2,7 +2,7 @@ function widget:GetInfo()
 	return {
 		name      = 'State & Command Menus',
 		desc      = 'Interface for issuing (non-build) commands',
-		author    = 'Bluestone, Funkencool',
+		author    = 'Bluestone, Funkencool, gajop',
 		date      = 'April 2015',
 		license   = 'GNU GPL v2',
 		layer     = 0,
@@ -22,6 +22,15 @@ local ignoreCMDs = {
 	deathwait    = '',
 	squadwait	   = '',
 	gatherwait	 = '',
+    
+    --attack = "",
+    move = "",
+    fight = "",
+    patrol = "",
+    stop = "",
+    repair = "",
+    guard = "",
+    wait = "",
 }
 
 local orderColors = {
@@ -47,14 +56,16 @@ local orderColors = {
 }
 
 local topOrders = {
-    [1] = "move",
-    [2] = "fight",
-    [3] = "attack",
-    [4] = "patrol",
-    [5] = "stop",
-    [6] = "repair",
-    [7] = "guard",
-    [8] = "wait",
+    [1] = "attack",
+
+--     [1] = "move",
+--     [2] = "fight",
+--     [3] = "attack",
+--     [4] = "patrol",
+--     [5] = "stop",
+--     [6] = "repair",
+--     [7] = "guard",
+--     [8] = "wait",
 }
 
 local topStates = {
@@ -419,6 +430,11 @@ function widget:Initialize()
         orientation = 'vertical',
 		padding = {0,0,0,0},
 	}
+    -- hide states in play mode
+    local devMode = (tonumber(Spring.GetModOptions().play_mode) or 0) == 0
+    if not devMode then
+        stateMenu:Hide()
+    end
 
     local vsx,vsy = Spring.GetViewGeometry()
 	resizeUI(vsx,vsy)
