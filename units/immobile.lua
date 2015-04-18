@@ -8,6 +8,11 @@ local Barrel = BaseImmobile:New {
 
 local Fire = BaseImmobile:New {
     name                = "Fire",
+    canCloak            = true,
+    initCloaked         = true,
+    decloakOnFire       = false,
+    minCloakDistance    = -1,
+    blocking            = false,
     canMove             = false, --fire cannot be moved (even by gravity)
     customParams = {
         fire = true,
