@@ -30,6 +30,9 @@ local Crate = BaseImmobile:New {
     footprintX			= 5,
 	footprintZ			= 5,
     script              = "crate.lua",
+    customparams = {
+        radius = 30,
+    }
 }
 
 local Wall1 = BaseImmobile:New {

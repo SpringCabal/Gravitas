@@ -20,6 +20,7 @@ local BaseRobot = Unit:New {
     maxVelocity         = 1.5,
     minCollisionSpeed   = 1,
     movementClass       = "KBOT_Infantry", -- TODO: --KBOT
+    radius              = 9,
     repairable          = false,
     sightDistance       = 300,
 
@@ -27,6 +28,10 @@ local BaseRobot = Unit:New {
     stealth             = true,
     turnRate            = 3000,
     upright             = true,
+    
+    customparams = {
+        radius = 18,
+    }
 }
 
 return {

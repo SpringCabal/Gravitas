@@ -27,6 +27,9 @@ local BaseHuman = Unit:New {
     stealth             = true,
     turnRate            = 3000,
     upright             = true,
+    customparams = {
+        radius = 18,
+    }
 }
 
 return {
