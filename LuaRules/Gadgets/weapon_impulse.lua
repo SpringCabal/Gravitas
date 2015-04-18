@@ -74,8 +74,8 @@ local impulseMult = {
 	[2] = 0.0032, -- other
 }
 local impulseWeaponID = {}
-for i = 1, #WeaponDefs do
-	local wd = WeaponDefs[i]
+for i, wd in pairs(WeaponDefs) do
+	--local wd = WeaponDefs[i]
 	local impulse
 	for k, v in pairs(wd.customParams) do
 		if k == "impulse" then
@@ -83,7 +83,7 @@ for i = 1, #WeaponDefs do
 			break
 		end
 	end
-	
+	Spring.Echo(wd.name, wd.id)
 	if impulse then
 		Spring.Echo(wd.name, wd.id)
 		impulseWeaponID[wd.id] = {
@@ -180,7 +180,7 @@ local function AddGadgetImpulseRaw(unitID, x, y, z, pushOffGround, useDummy, uni
 end
 
 
-local function AddGadgetImpulse(unitID, x, y, z, magnitude, affectTransporter, pushOffGround, useDummy, myImpulseMult, unitDefID, moveType) 
+local function AddGadgetImpulse(unitID, x, y, z, magnitude, affectTransporter, pushOffGround, useDummy, myImpulseMult, unitDefID, moveType)
 	if inTransport[unitID] then
 		if not affectTransporter then
 			return

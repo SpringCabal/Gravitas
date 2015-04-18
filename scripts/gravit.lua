@@ -24,10 +24,30 @@ end
 
 function script.AimWeapon1(Heading, pitch)
     --aiming animation: instantly turn the gun towards the enemy
-    return true
+    Spring.Echo(Spring.GetUnitStates(unitID).active)
+    return Spring.GetUnitStates(unitID).active
 end
 
 function script.FireWeapon1()
+    Spring.Echo(1)
+    return true
+end
+
+function script.AimFromWeapon2() 
+    return empty 
+end
+
+function script.QueryWeapon2() 
+    return empty
+end
+
+function script.AimWeapon2(Heading, pitch)
+    --aiming animation: instantly turn the gun towards the enemy
+    return not Spring.GetUnitStates(unitID).active
+end
+
+function script.FireWeapon2()
+    Spring.Echo(2)
     return true
 end
 

@@ -23,10 +23,6 @@ local GravityBase = Weapon:New {
       craterBoost             = 0,
       craterMult              = 0,
 
-	  customParams            = {
-	    impulse = [[-125]],
-	  },
-	  
       damage                  = {
         default = 0.001,
         planes  = 0.001,
@@ -61,5 +57,5 @@ local GravityBase = Weapon:New {
 
 return {
     CannonBase = CannonBase,
-	GravityBase = GravityBase,
+    GravityBase = GravityBase,
 }
