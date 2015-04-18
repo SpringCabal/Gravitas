@@ -8,16 +8,21 @@ local Barrel = BaseImmobile:New {
 
 -- sci fi barrel
 local Canister = BaseImmobile:New {
-    name                = "Canister",
+    name                    = "Canister",
     customParams = {
         barrel = true,
     },
-    maxDamage           = 150,
+    maxDamage               = 150,
 }
 
 local Crate = BaseImmobile:New {
     name                = "Crate",
     maxDamage           = 150,
+    mass                = 100,
+    collisionVolumeScales   = '50 50 50',
+    collisionVolumeOffsets  = '0 0 0',
+    collisionVolumeTest     = 1,
+    collisionVolumeType     = 'box',
 }
 
 local Wall1 = BaseImmobile:New {

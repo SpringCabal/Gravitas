@@ -11,6 +11,7 @@ local Gravit = BaseHuman:New {
     maxDamage           = 800,
     maxVelocity         = 5,
     onoffable           = true,
+    fireState           = 0,
 }
 
 

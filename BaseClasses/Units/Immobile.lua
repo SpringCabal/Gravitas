@@ -18,7 +18,7 @@ local BaseImmobile = Unit:New {
 	mass				= 50,
 	maxDamage			= 300, -- default only
 	repairable			= false,
-	sightDistance		= 250,
+	sightDistance		= 0,
 
 
 	stealth				= true,
@@ -46,6 +46,7 @@ local BaseEffect = Unit:New {
     stealth				= true,
 	turnRate			= 0,
 	upright				= true,
+    sightDistance		= 0,
 --     canCloak            = true,
 --     initCloaked         = true,
 --     decloakOnFire       = false,

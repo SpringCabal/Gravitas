@@ -468,7 +468,7 @@ function widget:GameStart()
 end
 
 function widget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
-    local HOLD_FIRE = 2
+    local HOLD_FIRE = 0
     if UnitDefs[unitDefID].customParams.player and unitTeam == Spring.GetMyTeamID() then
         Spring.GiveOrderToUnit(unitID, CMD.INSERT, 
             { 0, CMD.FIRE_STATE, 0, HOLD_FIRE},{"alt"})
