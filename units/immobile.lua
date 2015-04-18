@@ -11,6 +11,7 @@ local Fire = BaseImmobile:New {
     blocking            = false,
     canMove             = false, --fire cannot be moved (even by gravity)
     customParams = {
+        effect = true,
         fire = true,
     },
     maxDamage           = 100,
@@ -21,7 +22,8 @@ local Electrafi = BaseImmobile:New {
     blocking            = false,
     canMove             = false, --fire cannot be moved (even by gravity)
     customParams = {
-        fire = true,
+        effect = true,
+        electric_field = true,
     },
     maxDamage           = 100,
 }
