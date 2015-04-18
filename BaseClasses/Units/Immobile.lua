@@ -1,9 +1,11 @@
 local BaseImmobile = Unit:New {
-	--buildCostMetal		= 65, -- used only for power XP calcs
-	canMove				= false,
---     canGuard            = false,
---     canPatrol           = false,
---     canRepeat           = false,
+    -- movement needs to be enabled so it can be pushed by gravity
+	canMove				= true,
+    maxVelocity         = 0.00001,
+    movementClass		= "KBOT_Infantry", 
+    canGuard            = false,
+    canPatrol           = false,
+    canRepeat           = false,
     category            = "INFANTRY",
 
     pushResistant       = true,
