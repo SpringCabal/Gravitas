@@ -12,8 +12,20 @@ end
 
 if gadgetHandler:IsSyncedCode() then
 
+function SetupUnitEffectProperties(unitID)
+    Spring.SetUnitNoDraw(unitID, true)
+    Spring.SetUnitNeutral(unitID, true)
+--     Spring.MoveCtrl.Enable(unitID)
+--     Spring.MoveCtrl.SetGravity(unitID, 0)
+end
+
 function gadget:Initialize()
-  
+    for _, unitID in pairs(Spring.GetAllUnits()) do
+        local unitDefID = Spring.GetUnitDefID(unitID)
+        if UnitDefs[unitDefID].customParams.effect then
+            SetupUnitEffectProperties(unitID)
+        end
+    end
 end
 
 function gadget:GameStart()
@@ -21,8 +33,8 @@ function gadget:GameStart()
 end
 
 function gadget:UnitCreated(unitID, unitDefID)
-    if UnitDefs[unitDefID].effect then
-        Spring.SetUnitNoDraw(unitID, true)
+    if UnitDefs[unitDefID].customParams.effect then
+        SetupUnitEffectProperties(unitID)
         -- Spring.SetUnitNoSelect(unitID, true) --I'm guessing this isn't wanted while we are working
     end
 end

@@ -26,15 +26,30 @@ local BaseImmobile = Unit:New {
 	upright				= true,
 }
 
-local BaseEffect = BaseImmobile:New {
-    customParams = {
+local BaseEffect = Unit:New {
+    customParams        = {
         effect = true,
     },
-    category     = "EFFECT",
-    maxDamage    = 10000,
-    blocking     = false,
-    canMove      = false, --effects cannot be moved (even by gravity)
-    turnRate     = 0,
+    category            = "EFFECT",
+    footprintX			= 1,
+	footprintZ			= 1,
+	mass				= 50,
+    maxDamage           = 10000,
+    collisionVolumeScales   = '0 0 0',
+    collisionVolumeType     = 'CylY',
+    pushResistant       = true,
+    blocking            = false,
+    canMove             = false, --effects cannot be moved (even by gravity)
+    canGuard            = false,
+    canPatrol           = false,
+    canRepeat           = false,
+    stealth				= true,
+	turnRate			= 0,
+	upright				= true,
+--     canCloak            = true,
+--     initCloaked         = true,
+--     decloakOnFire       = false,
+--     minCloakDistance    = 0,
 }
 
 return {
