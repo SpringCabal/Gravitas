@@ -43,6 +43,39 @@ local Wall1 = BaseImmobile:New {
 	footprintZ			= 5,
 }
 
+local Wall2 = BaseImmobile:New {
+    name                = "Wall2",
+    maxDamage           = 1500,
+    customParams = {
+        wall = true,
+    },
+    script              = "wall2.lua",
+    footprintX			= 15,
+	footprintZ			= 5,
+}
+
+local Wall3 = BaseImmobile:New {
+    name                = "Wall3",
+    maxDamage           = 1500,
+    customParams = {
+        wall = true,
+    },
+    script              = "wall3.lua",
+    footprintX			= 7,
+	footprintZ			= 5,
+}
+
+local Wall4 = BaseImmobile:New {
+    name                = "Wall4",
+    maxDamage           = 1500,
+    customParams = {
+        wall = true,
+    },
+    script              = "wall4.lua",
+    footprintX			= 3,
+	footprintZ			= 5,
+}
+
 local Fire = BaseEffect:New {
     name                = "Fire",
     customParams = {
@@ -65,5 +98,8 @@ return lowerkeys({
     Crate       = Crate,
     Fire        = Fire,
     Electrafi   = Electrafi,
-    Wall1       = Wall1
+    Wall1       = Wall1,
+    Wall2       = Wall2,
+    Wall3       = Wall3,
+    Wall4       = Wall4,
 })
