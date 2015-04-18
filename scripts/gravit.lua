@@ -44,12 +44,16 @@ local scriptEnv = {
 }
 
 local SIG_WALK = "walk";
+local SIG_AIM = "aim";
+local SIG_STOP = "stop";
 
 local Animations = {};
 
 Animations['stop'] = VFS.Include("scripts/animations/gravit_stop.lua", scriptEnv);
 Animations['idle'] = VFS.Include("scripts/animations/gravit_idle.lua", scriptEnv);
 Animations['walk'] = VFS.Include("scripts/animations/gravit_walk.lua", scriptEnv);
+
+-- brutal infrastructure of brutality 
 
 function constructSkeleton(unit, piece, offset)
     if (offset == nil) then
@@ -124,45 +128,18 @@ function script.Killed(recentDamage, _)
     return 1
 end
 
+--- thread functions
 
-----aiming & fire weapon
-function script.AimFromWeapon1() 
-    return head 
-end
-
-function script.QueryWeapon1() 
-    return muzzleleft
-end
-
-function script.AimWeapon1(Heading, pitch)
-    --aiming animation: instantly turn the gun towards the enemy
-    return Spring.GetUnitStates(unitID).active
-end
-
-function script.FireWeapon1()
-    return true
-end
-
-function script.AimFromWeapon2() 
-    return head 
-end
-
-function script.QueryWeapon2() 
-    return muzzleright
-end
-
-function script.AimWeapon2(Heading, pitch)
-    --aiming animation: instantly turn the gun towards the enemy
-    return not Spring.GetUnitStates(unitID).active
-end
-
-function script.FireWeapon2()
-    return true
+local function Stop()
+	Signal(SIG_STOP);
+	SetSignalMask(SIG_STOP);
+	Sleep(2000);
+	PlayAnimation('stop');
 end
 
 local function Idle()
-	Signal(SIG_WALK);
-	SetSignalMask(SIG_WALK);
+	Signal(SIG_IDLE);
+	SetSignalMask(SIG_IDLE);
 	PlayAnimation('stop',true);
 	while true do
 		PlayAnimation("idle", false);
@@ -171,11 +148,81 @@ end
 
 local function Walk()
 	Signal(SIG_WALK)
+	Signal(SIG_IDLE)
 	SetSignalMask(SIG_WALK)
 	PlayAnimation("walk", true);
 	while true do
 		PlayAnimation("walk", false);
 	end
+end
+
+
+----aiming & fire weapon
+
+function script.AimWeapon1(heading, pitch)
+    --aiming animation: instantly turn the gun towards the enemy
+    if(Spring.GetUnitStates(unitID).active) then
+		Signal( SIG_AIM )
+		Signal( SIG_IDLE)
+		SetSignalMask( SIG_AIM )
+		
+		Turn(torso, z_axis, heading, 5) 
+		
+		Turn(forearmright, y_axis, 0, 5);
+		Turn(forearmright, z_axis, 0, 5);
+		Turn(forearmright, x_axis, 0, 5);
+		
+		Turn(armright, y_axis, 0,0);
+		Turn(armright, z_axis, math.pi/2,0);
+		Turn(armright, x_axis, -pitch, 5);
+		
+		return true
+    end
+    
+    return false;
+end
+
+function script.AimWeapon2(heading, pitch)
+    --aiming animation: instantly turn the gun towards the enemy
+    if( not Spring.GetUnitStates(unitID).active) then
+		Signal( SIG_AIM )
+		Signal( SIG_IDLE)
+		SetSignalMask( SIG_AIM )
+		
+		Turn(torso, z_axis, heading, 5) 
+		
+		Turn(forearmleft, y_axis, 0, 5);
+		Turn(forearmleft, z_axis, 0, 5);
+		Turn(forearmleft, x_axis, 0, 5);
+		
+		Turn(armleft, y_axis, 0,0);
+		Turn(armleft, z_axis, -math.pi/2,0);
+		Turn(armleft, x_axis, -pitch, 5);
+		
+		return true
+    end
+    
+    return false;
+end
+function script.FireWeapon(n)
+    return true
+end
+
+function script.AimFromWeapon(n) 
+	if n == 1 then
+		return armright
+	elseif n == 1 then
+		return armleft
+	else
+		return head 
+	end
+end
+
+function script.QueryWeapon(n) 
+    if Spring.GetUnitStates(unitID).active then 
+		return muzzleright 
+	end
+    return muzzleleft;
 end
 
 function script.StartMoving()
