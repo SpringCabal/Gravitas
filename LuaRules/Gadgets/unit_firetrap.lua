@@ -35,7 +35,7 @@ end
 
 function gadget:UnitCreated(unitID, unitDefID)
     if unitDefID == fireID then
-        config[unitID] = 500
+        config[unitID] = Spring.GetUnitRulesParam(unitID,"fireSize") or 500
         Spring.SetUnitNoDraw(unitID, true)
         -- Spring.SetUnitNoSelect(unitID, true) --I'm guessing this isn't wanted while we are working
     end
@@ -84,14 +84,15 @@ function ProximityInsideFire(unitID, fx,fy,fz)
 end
 
 function UpdateFire(n, x,y,z, uID)
-    local fireRadius = config[uID]
 
     -- draw
     if n%15==0 then
-        SpawnFire(x,y,z, fireRadius)
+        config[uID] = Spring.GetUnitRulesParam(uID,"fireSize") or 500
+        SpawnFire(x,y,z, config[uID])
     end
 
     -- kill 
+    local fireRadius = config[uID]
     local units = Spring.GetUnitsInCylinder(x,z,fireRadius * fireSpeed * 1.1)
     for _,unitID in pairs(units) do
         if fireID ~= Spring.GetUnitDefID(unitID) then
