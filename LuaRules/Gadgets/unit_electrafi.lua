@@ -36,14 +36,12 @@ function gadget:UnitCreated(unitID, unitDefID)
         config[unitID] = Spring.GetUnitRulesParam(unitID,"elecSize") or 300
         Spring.SetUnitNoDraw(unitID, true)
         -- Spring.SetUnitNoSelect(unitID, true) --I'm guessing this isn't wanted while we are working
-        SendToUnsynced("AddShield", unitID, config[unitID])
     end
 end
 
 function gadget:UnitDestroyed(unitID)
     if config[unitID] then
         config[unitID] = nil
-        SendToUnsynced("RemoveShield", unitID)
     end
 end
 
