@@ -19,6 +19,9 @@ function widget:Initialize()
     local devMode = (tonumber(Spring.GetModOptions().play_mode) or 0) == 0
     if not devMode then
         Spring.SendCommands("Console 0")
+        -- disable wait and patrol in play mode
+        -- FIXME: this still doesn't disable shift+w and shift+p
+        Spring.SendCommands("unbindkeyset w", "unbindkeyset p")
     end
     gl.SlaveMiniMap(true)
     gl.ConfigMiniMap(-1,-1,-1,-1)
