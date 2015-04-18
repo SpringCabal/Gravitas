@@ -20,6 +20,14 @@ local Crate = BaseImmobile:New {
     maxDamage           = 150,
 }
 
+local Wall1 = BaseImmobile:New {
+    name                = "Wall1",
+    maxDamage           = 1500,
+    customParams = {
+        wall = true,
+    }
+}
+
 local Fire = BaseEffect:New {
     name                = "Fire",
     customParams = {
@@ -35,9 +43,10 @@ local Electrafi = BaseEffect:New {
 }
 
 return lowerkeys({
-    Barrel = Barrel,
-    Canister = Canister,
-    Crate = Crate,
-    Fire   = Fire,
+    Barrel      = Barrel,
+    Canister    = Canister,
+    Crate       = Crate,
+    Fire        = Fire,
     Electrafi   = Electrafi,
+    Wall1       = Wall1
 })
