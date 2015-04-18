@@ -1,6 +1,9 @@
 --Wiki: http://springrts.com/wiki/Modrules.lua
 
 local modRules = {
+  movement = {
+    allowUnitCollisionDamage = true; -- defaults to false
+  },
 	--[[ Example:
 	flankingBonus = {
 		defaultMode					=	0,
