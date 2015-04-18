@@ -45,10 +45,6 @@ local scriptEnv = {
 
 local SIG_WALK = "walk";
 
-for k,v in pairs(scriptEnv) do
-	Spring.Echo(k..' = '..tostring(v));
-end
-
 local Animations = {};
 
 Animations['stop'] = VFS.Include("scripts/animations/gravit_stop.lua", scriptEnv);
