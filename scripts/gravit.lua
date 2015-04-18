@@ -3,7 +3,9 @@ function script.HitByWeapon(x, z, weaponDefID, damage)
 end
 
 --center=piece"center"
-empty=piece"Empty"
+head=piece"head"
+muzzleleft = piece "muzzleleft"
+muzzleright = piece "muzzleright"
 
 function script.Create()
 end
@@ -15,11 +17,11 @@ end
 
 ----aiming & fire weapon
 function script.AimFromWeapon1() 
-    return empty 
+    return head 
 end
 
 function script.QueryWeapon1() 
-    return empty
+    return muzzleleft
 end
 
 function script.AimWeapon1(Heading, pitch)
@@ -32,11 +34,11 @@ function script.FireWeapon1()
 end
 
 function script.AimFromWeapon2() 
-    return empty 
+    return head 
 end
 
 function script.QueryWeapon2() 
-    return empty
+    return muzzleright
 end
 
 function script.AimWeapon2(Heading, pitch)
@@ -65,9 +67,9 @@ function script.Deactivate()
 end
 
 function script.QueryBuildInfo()
-    return empty 
+    return head 
 end
 
 function script.QueryNanoPiece()
-    return empty
+    return head
 end
