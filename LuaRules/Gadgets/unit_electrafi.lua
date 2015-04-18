@@ -33,7 +33,10 @@ end
 
 function gadget:UnitCreated(unitID, unitDefID)
     if unitDefID == elecID then
-        config[unitID] = Spring.GetUnitRulesParam(unitID,"elecSize") or 200
+        if Spring.GetUnitRulesParam(unitID, "elecSize") == nil then
+           Spring.SetUnitRulesParam(unitID, "elecSize", 200)
+        end
+        config[unitID] = Spring.GetUnitRulesParam(unitID,"elecSize")
         Spring.SetUnitNoDraw(unitID, true)
         -- Spring.SetUnitNoSelect(unitID, true) --I'm guessing this isn't wanted while we are working
     end
