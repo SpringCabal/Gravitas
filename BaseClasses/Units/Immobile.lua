@@ -26,6 +26,16 @@ local BaseImmobile = Unit:New {
 	upright				= true,
 }
 
+local BaseEffect = BaseImmobile:New {
+    customParams = {
+        effect = true,
+    },
+    category     = "EFFECT",
+    maxDamage    = 10000,
+    blocking     = false,
+    canMove      = false, --effects cannot be moved (even by gravity)
+}
+
 return {
     BaseImmobile = BaseImmobile,
 }

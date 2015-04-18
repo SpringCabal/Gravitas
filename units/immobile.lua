@@ -15,31 +15,29 @@ local Canister = BaseImmobile:New {
     maxDamage           = 150,
 }
 
-local Fire = BaseImmobile:New {
-    name                = "Fire",
-    blocking            = false,
-    canMove             = false, --fire cannot be moved (even by gravity)
-    customParams = {
-        effect = true,
-        fire = true,
-    },
-    maxDamage           = 100,
+local Crate = BaseImmobile:New {
+    name                = "Crate",
+    maxDamage           = 150,
 }
 
-local Electrafi = BaseImmobile:New {
-    name                = "Electrafi",
-    blocking            = false,
-    canMove             = false, --fire cannot be moved (even by gravity)
+local Fire = BaseEffect:New {
+    name                = "Fire",
     customParams = {
         effect = true,
+    },
+}
+
+local Electrafi = BaseEffect:New {
+    name                = "Electrafi",
+    customParams = {
         electric_field = true,
     },
-    maxDamage           = 100,
 }
 
 return lowerkeys({
     Barrel = Barrel,
     Canister = Canister,
+    Crate = Crate,
     Fire   = Fire,
     Electrafi   = Electrafi,
 })
