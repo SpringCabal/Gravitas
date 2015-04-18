@@ -44,9 +44,14 @@ function gadget:UnitCreated(unitID, unitDefID)
     if unitDefID == fireID then
         local x,y,z = Spring.GetUnitPosition(unitID)
         local y = Spring.GetGroundHeight(x,z)
-        config[#config+1] = {x=x,y=y,z=z}
-        Spring.DestroyUnit(unitID,false,true)        
+        config[unitID] = true
+        Spring.SetUnitNoDraw(unitID, true)
+        -- Spring.SetUnitNoSelect(unitID, true) --I'm guessing this isn't wanted while we are working
     end
+end
+
+function gadget:UnitDestroyed(unitID)
+    config[unitID] = nil
 end
 
 function RandomUnif(a)
@@ -59,7 +64,7 @@ function SpawnFire(x,y,z)
     Script.LuaRules.FlameRaw(x,y,z, 0,s,0, 0,0,0, r)
 end
 
-function ProximityInsideFire(unitID, t)
+function ProximityInsideFire(unitID, fx,fy,fz)
     -- return the distance inside fire cone, and 0 otherwise
     -- since we have no planes, assume that the fire extends as an infinite cone towards the sky
     if not Spring.ValidUnitID(unitID) then
@@ -69,16 +74,16 @@ function ProximityInsideFire(unitID, t)
     local x,y,z,mx,my,mz = Spring.GetUnitPosition(unitID) --should use midpos, but it seems to be broken for our units
     local r = mx and Spring.GetUnitRadius(unitID) or 0
     
-    if (y<t.y) then return 0 end
+    if (y<fy) then return 0 end
     
-    local nx = x - t.x
-    local ny = y - t.y
-    local nz = z - t.z
+    local nx = x - fx
+    local ny = y - fy
+    local nz = z - fz
     local emitRotSpread = (8 / 360) * (2*math.pi)--from lups_fmale_jitter
     local baseAngle = math.tan(math.atan(emitRotSpread)/fireSpeed) -- angle between the surface of cone and the upwards normal vector
     
     local pDist = math.sqrt(nx*nx+nz*nz) -- perpendicular distance from n to central axis of cone
-    local p2Dist = t.y * math.tan(baseAngle)
+    local p2Dist = fy * math.tan(baseAngle)
     local p3Dist = p2Dist - pDist -- horizontal distance from (x,y,z) to the surface of the cone
     
     if p3Dist < 0 then return 0 end
@@ -87,25 +92,30 @@ function ProximityInsideFire(unitID, t)
     return p4Dist    
 end
 
-function gadget:GameFrame(n)
+function UpdateFire(n,x,y,z)
     if n%15==0 then
-        for _,t in pairs(config) do
-            SpawnFire(t.x,t.y,t.z, t.r)
-        end
+        SpawnFire(x,y,z)
     end
 
-    -- kill anything too close
-    for _,t in pairs(config) do
-        local units = Spring.GetUnitsInCylinder(t.x,t.z,fireRadius * fireSpeed * 1.1)
-        for _,unitID in pairs(units) do
-            local p = ProximityInsideFire(unitID, t)
+    local units = Spring.GetUnitsInCylinder(x,z,fireRadius * fireSpeed * 1.1)
+    for _,unitID in pairs(units) do
+        if fireID ~= Spring.GetUnitDefID(unitID) then
+            local p = ProximityInsideFire(unitID, x,y,z)
             if p > 0 then
                 -- TODO: attenuation
                 Spring.DestroyUnit(unitID, true, false)
             end
-        end    
+        end
     end
+end
 
+function gadget:GameFrame(n)
+    for uID,_ in pairs(config) do
+        local x,y,z = Spring.GetUnitPosition(uID)
+        if x then
+            UpdateFire(n,x,y,z)
+        end
+    end
 end
 
 
