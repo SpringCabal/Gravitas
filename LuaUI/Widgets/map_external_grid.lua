@@ -33,7 +33,8 @@ local spTraceScreenRay = Spring.TraceScreenRay
 local heights = {}
 local island = false
 local vsx, vsy
-
+local delayFrame
+local initialized = false
 
 --[[
 local maxHillSize = 800/res
@@ -251,21 +252,31 @@ local function CheckVRGridVisible() --pointless?
 end
 
 function widget:DrawWorld()
+    if not initialized then return end
         if ((not island) or options.drawForIslands.value )and CheckVRGridVisible() then
                 gl.CallList(DspLst)-- Or maybe you want to keep it cached but not draw it everytime.
                 -- Maybe you want Spring.SetDrawGround(false) somewhere
         end     
 end
 
+function widget:GameFrame()
+    if delayFrame ~= nil and delayFrame == Spring.GetGameFrame() then
+        vsx, vsy = gl.GetViewSizes()
+        island = IsIsland()
+        InitGroundHeights()
+        DspLst = glCreateList(DrawTiles)
+        Spring.SendCommands('mapborder 0')
+        initialized = true
+    end
+end
+
 function widget:Initialize()
-	vsx, vsy = gl.GetViewSizes()
-	island = IsIsland()
-	InitGroundHeights()
-	DspLst = glCreateList(DrawTiles)
-    Spring.SendCommands('mapborder 0')
+    -- delay
+    delayFrame = Spring.GetGameFrame() + 20
 end
 
 function widget:Shutdown()
+    if not initialized then return end
     gl.DeleteList(DspList)
     Spring.SendCommands('mapborder 1')
 end
