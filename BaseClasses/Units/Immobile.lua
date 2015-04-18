@@ -42,4 +42,5 @@ local BaseEffect = BaseImmobile:New {
 
 return {
     BaseImmobile = BaseImmobile,
+    BaseEffect = BaseEffect,
 }
