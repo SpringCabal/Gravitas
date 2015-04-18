@@ -33,6 +33,10 @@ function gadget:Initialize()
     local y = Spring.GetGroundHeight(x,z)
     config[1] = {x=x,y=y,z=z}   
     ]]
+    
+	for _, unitID in pairs(Spring.GetAllUnits()) do
+		gadget:UnitCreated(unitID, Spring.GetUnitDefID(unitID), Spring.GetUnitTeam(unitID))
+	end    
 end
 
 function gadget:GameStart()
