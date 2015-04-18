@@ -1,5 +1,4 @@
-
-Animations['myAnimation'] = {
+return {
 	{
 		['time'] = 1,
 		['commands'] = {

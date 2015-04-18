@@ -1,23 +1,4 @@
-local armleft = piece('armleft');
-local armright = piece('armright');
-local footleft = piece('footleft');
-local footright = piece('footright');
-local forearmleft = piece('forearmleft');
-local forearmright = piece('forearmright');
-local handleft = piece('handleft');
-local handright = piece('handright');
-local head = piece('head');
-local kneeleft = piece('kneeleft');
-local kneeright = piece('kneeright');
-local muzzleleft = piece('muzzleleft');
-local muzzleright = piece('muzzleright');
-local pelvis = piece('pelvis');
-local thighleft = piece('thighleft');
-local thighright = piece('thighright');
-local torso = piece('torso');
-local Animations = {};
-
-Animations['myAnimation'] = {
+return {
 	{
 		['time'] = 0,
 		['commands'] = {
