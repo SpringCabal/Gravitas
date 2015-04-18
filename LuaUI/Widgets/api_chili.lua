@@ -31,14 +31,7 @@ local tf
 --------------------------------------------------------------------------------
 -- Chili's location
 
-local function GetDirectory(filepath)
-	return filepath and filepath:gsub("(.*/)(.*)", "%1")
-end
-
-assert(debug)
-local source = debug and debug.getinfo(1).source
-local DIR = GetDirectory(source) or ((LUA_DIRNAME or LUAUI_DIRNAME) .."Widgets/")
-CHILI_DIRNAME = DIR .. "chili/"
+CHILI_DIRNAME = "libs/chiliui/luaui/chili/chili/"
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
