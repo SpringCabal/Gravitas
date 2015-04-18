@@ -16,7 +16,25 @@
 -- 	},
 -- }
 
+GRAVITY_NEG = GravityBase:New{
+      name                    = [[Attractive Gravity]],
+	  customParams            = {
+	    impulse = [[-125]],
+	  },
+
+}
+
+GRAVITY_POS = GravityBase:New{
+      name                    = [[Repulsive Gravity]],
+	  customParams            = {
+	    impulse = [[125]],
+	  },
+
+}
+
+
+
 return lowerkeys({
--- 	Claw = Claw,
---     Staff = Staff,
+	GRAVITY_NEG = GRAVITY_NEG,
+	GRAVITY_POS = GRAVITY_POS,
 })

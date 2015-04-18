@@ -3,9 +3,10 @@ local Gravit = BaseHuman:New {
     customParams = {
         player = true,
     },
---     weapons = {
---         { name = "Staff"},
---     },
+    weapons = {
+        { name = "GRAVITY_POS"},
+		--{ name = "GRAVITY_NEG"},
+    },
     maxDamage           = 800,
     maxVelocity        = 2,
 }
