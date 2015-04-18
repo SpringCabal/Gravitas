@@ -1,8 +1,6 @@
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-if not gadgetHandler:IsSyncedCode() then
-	return
-end
+
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
@@ -17,6 +15,8 @@ function gadget:GetInfo()
     enabled   = true  --  loaded by default?
   }
 end
+
+if gadgetHandler:IsSyncedCode() then
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
@@ -341,4 +341,24 @@ function gadget:GameFrame(frame)
 		unitCollide = {}
 		clearTable = false
 	end
+end
+
+
+else
+
+------------------------------
+--UNSYNCED
+------------------------------
+
+function gadget:UnitDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponDefID, projectileID, attackerID, attackerDefID, attackerTeam)
+    if weaponDefID == -2 and damage > 10 then
+        local ux, uy, uz = Spring.GetUnitPosition(unitID)
+        local health = Spring.GetUnitHealth(unitID)
+        Spring.Echo(health)
+        if health > 0 then
+            Spring.PlaySoundFile("sounds/bounce.ogg", 20, ux, uy, uz)
+        end
+    end
+end
+
 end
