@@ -3,6 +3,7 @@ function script.HitByWeapon(x, z, weaponDefID, damage)
 end
 
 local armright = piece('armright');
+local armleft = piece('armleft');
 local footleft = piece('footleft');
 local footright = piece('footright');
 local forearmleft = piece('forearmleft');
@@ -41,6 +42,8 @@ local scriptEnv = {
  y_axis = y_axis,
  z_axis = z_axis,
 }
+
+local SIG_WALK = "walk";
 
 for k,v in pairs(scriptEnv) do
 	Spring.Echo(k..' = '..tostring(v));
@@ -81,18 +84,17 @@ function constructSkeleton(unit, piece, offset)
 end
 
 local animCmd = {['turn']=Turn,['move']=Move};
-function PlayAnimation(animname)
+function PlayAnimation(animname, snap)
     local anim = Animations[animname];
     for i = 1, #anim do
         local commands = anim[i].commands;
         for j = 1,#commands do
+			-- hack to make first keyframe snap 
             local cmd = commands[j];
+            local speed = cmd.s;
+            if i == 1 and snap then speed = 0; end
             
-            if(cmd.p == nil) then
-				Spring.Echo('nil piece in command '..j..'('..cmd.c..') of animation '..animname..' keyframe '..i);
-            else
-				animCmd[cmd.c](cmd.p,cmd.a,cmd.t,cmd.s);
-            end
+            animCmd[cmd.c](cmd.p,cmd.a,cmd.t,speed);
         end
         if(i < #anim) then
             local t = anim[i+1]['time'] - anim[i]['time'];
@@ -162,14 +164,32 @@ function script.FireWeapon2()
     return true
 end
 
+local function Idle()
+	Signal(SIG_WALK);
+	SetSignalMask(SIG_WALK);
+	PlayAnimation('stop',true);
+	while true do
+		PlayAnimation("idle", false);
+	end
+end
+
+local function Walk()
+	Signal(SIG_WALK)
+	SetSignalMask(SIG_WALK)
+	PlayAnimation("walk", true);
+	while true do
+		PlayAnimation("walk", false);
+	end
+end
+
 function script.StartMoving()
-	Signal("moving")
-	StartThread('walk');
-	SetSignalMask("moving");
+	Signal(SIG_WALK);
+	StartThread(Walk);
 end
 
 function script.StopMoving()
-
+	Signal(SIG_WALK);
+	StartThread(Idle);
 end
 
 function script.Activate()
