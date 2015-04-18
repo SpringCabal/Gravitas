@@ -23,7 +23,7 @@ local ignoreCMDs = {
 	squadwait	   = '',
 	gatherwait	 = '',
     
-    --attack = "",
+    attack = "",
     move = "",
     fight = "",
     patrol = "",
@@ -56,8 +56,6 @@ local orderColors = {
 }
 
 local topOrders = {
-    [1] = "attack",
-
 --     [1] = "move",
 --     [2] = "fight",
 --     [3] = "attack",
@@ -157,7 +155,6 @@ local oldTimer = spGetTimer()
 local r,g,b = Spring.GetTeamColor(Spring.GetMyTeamID())
 local teamColor = {r,g,b,0.8}
 local gameStarted = (Spring.GetGameFrame()>0)
-
 ----------------
 
 local function getInline(r,g,b)
@@ -365,7 +362,7 @@ local function parseCmds()
     if #cmdList>0 then
         AddInSequence(orders, topOrders, addOrder, addDummyOrder)
         AddInSequence(states, topStates, addState, addDummyState)
-    end    
+    end
 end
 
 --------------------------------------------------------------
@@ -439,7 +436,7 @@ function widget:Initialize()
         stateMenu:Hide()
         stateMenuInfo:Hide()
     end
-
+    
     local vsx,vsy = Spring.GetViewGeometry()
 	resizeUI(vsx,vsy)
 end
