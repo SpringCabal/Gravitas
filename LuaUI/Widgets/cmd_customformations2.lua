@@ -3,15 +3,29 @@ function widget:GetInfo()
 	return {
 		name      = "CustomFormations2",
 		desc      = "Allows you to draw your own formation line.",
-		author    = "Niobium", -- Based on 'Custom Formations' by jK and gunblob
-		version   = "v3.3",
-		date      = "Mar, 2010",
+		author    = "Niobium", -- based on 'Custom Formations' by jK and gunblob
+		version   = "v4.3",
+		date      = "April, 2013",
 		license   = "GNU GPL, v2 or later",
 		layer     = 10000,
 		enabled   = true,
 		handler   = true,
 	}
 end
+
+-- 06/04/13 -- Cleaned up commands in Custom Formations:
+			-- To give a line command: select command, then right click & drag
+			-- To give a command within an area: select command, then left click and drag
+			-- To give a command at a point: select command, left click and don't drag
+			-- To area attack (bombers etc only): select command, hold alt, left click and drag
+			-- To deselect non-default command and return to default command: right click and don't drag
+			-- To deselect default command: left click 
+
+-- 29/05/13 -- Dots are of consistent size depending on zoom and terrain height
+-- 25/05/13 -- Fixed crash bug that was triggered by pressing the left mouse button during line drawing with right mouse button. Also improved visuals.
+-- 13/04/13 -- Visuals remade by PixelOfDeath 
+-- 23/03/13 -- Attack order y-coord placement remade by Bluestone for spring 94+ 
+
 
 --------------------------------------------------------------------------------
 -- User Configurable Constants
@@ -33,41 +47,53 @@ local unitIncreaseThresh	= 0.85 -- We only increase maxUnits if the units are gr
 -- Alpha loss per second after releasing mouse
 local lineFadeRate = 2.0
 
-local GetGameRulesParam	= Spring.GetGameRulesParam
-
-local CMD_UNIT_SET_TARGET = GetGameRulesParam("CMD_UNIT_SET_TARGET") 
-local CMD_TURN = GetGameRulesParam("CMD_TURN") 
-local CMD_MORPH = GetGameRulesParam("CMD_MORPH")
-local CMD_CLEAR_PATH = GetGameRulesParam("CMD_CLEARPATH")
-
 -- What commands are eligible for custom formations
+local CMD_SETTARGET = 34923
+
 local formationCmds = {
 	[CMD.MOVE] = true,
 	[CMD.FIGHT] = true,
 	[CMD.ATTACK] = true,
 	[CMD.PATROL] = true,
 	[CMD.UNLOAD_UNIT] = true,
+	[CMD_SETTARGET] = true -- set target
 }
 
--- What commands require alt to be held (Must also appear in formationCmds)
+-- What commands require alt to be held 
 local requiresAlt = {
-	[CMD.ATTACK] = true,
-	[CMD.UNLOAD_UNIT] = true,
+	--nothing!
 }
 
--- Context-based default commands that can be overridden (i.e. guard when mouseover unit)
+-- Context-based default commands that can be overridden (meaning that cf2 doesn't touch the command i.e. guard/attack when mouseover unit)
 -- If the mouse remains on the same target for both Press/Release then the formation is ignored and original command is issued.
 -- Normal logic will follow after override, i.e. must be a formationCmd to get formation, alt must be held if requiresAlt, etc.
 local overrideCmds = {
 	[CMD.GUARD] = CMD.MOVE,
+	[CMD.ATTACK] = CMD.MOVE, 
+	[CMD_SETTARGET] = CMD.MOVE
 }
 
--- What commands are issued at a position or unit/feature ID (Only used by GetUnitPosition)
+-- What commands can be issued at a position or unit/feature ID (Only used by GetUnitPosition)
 local positionCmds = {
 	[CMD.MOVE]=true,		[CMD.ATTACK]=true,		[CMD.RECLAIM]=true,		[CMD.RESTORE]=true,		[CMD.RESURRECT]=true,
-	[CMD.PATROL]=true,		[CMD.CAPTURE]=true,		[CMD.FIGHT]=true, 		[CMD.DGUN]=true,
+	[CMD.PATROL]=true,		[CMD.CAPTURE]=true,		[CMD.FIGHT]=true, 		[CMD.MANUALFIRE]=true,	
 	[CMD.UNLOAD_UNIT]=true,	[CMD.UNLOAD_UNITS]=true,[CMD.LOAD_UNITS]=true,	[CMD.GUARD]=true,		[CMD.AREA_ATTACK] = true,
+	[CMD_SETTARGET] = true -- set target
 }
+
+
+function widget:Initialize()
+	if not requiresAlt[CMD.ATTACK] then
+		Spring.SendCommands('bind Alt+a areaattack')
+	end
+end
+
+function widget:ShutDown()
+	if not requiresAlt[CMD.ATTACK] then
+		Spring.SendCommands('unbind Alt+a areaattack')
+	end
+end
+
 --------------------------------------------------------------------------------
 -- Globals
 --------------------------------------------------------------------------------
@@ -89,7 +115,7 @@ local overriddenCmd = nil -- The command we ignored in favor of move
 local overriddenTarget = nil -- The target (for params) we ignored
 
 local usingCmd = nil -- The command to execute across the line
-local usingRMB = false -- If the command is the default it uses right click, otherwise it is active and uses left click
+local usingRMB = false -- All commands use right mouse + drag to do a formation command
 local inMinimap = false -- Is the line being drawn in the minimap
 local endShift = false -- True to reset command when shift is released
 
@@ -117,7 +143,7 @@ local spFindUnitCmdDesc = Spring.FindUnitCmdDesc
 local spGetModKeyState = Spring.GetModKeyState
 local spGetInvertQueueKey = Spring.GetInvertQueueKey
 local spIsAboveMiniMap = Spring.IsAboveMiniMap
-local spGetSelectedUnitCount = Spring.GetSelectedUnitsCount
+local spGetSelectedUnitsCount = Spring.GetSelectedUnitsCount
 local spGetSelectedUnits = Spring.GetSelectedUnits
 local spGetUnitDefID = Spring.GetUnitDefID
 local spGiveOrder = Spring.GiveOrder
@@ -128,6 +154,11 @@ local spTraceScreenRay = Spring.TraceScreenRay
 local spGetGroundHeight = Spring.GetGroundHeight
 local spGetFeaturePosition = Spring.GetFeaturePosition
 local spGiveOrderToUnit = Spring.GiveOrderToUnit
+local spGetUnitHeight = Spring.GetUnitHeight
+local spGetCameraPosition = Spring.GetCameraPosition
+local spGetViewGeometry = Spring.GetViewGeometry
+local spTraceScreenRay = Spring.TraceScreenRay
+
 
 local mapSizeX, mapSizeZ = Game.mapSizeX, Game.mapSizeZ
 local maxUnits = Game.maxUnits
@@ -137,7 +168,11 @@ local tsort = table.sort
 local floor = math.floor
 local ceil = math.ceil
 local sqrt = math.sqrt
+local sin = math.sin
+local cos = math.cos
+local max = math.max
 local huge = math.huge
+local pi2 = 2*math.pi
 
 local CMD_INSERT = CMD.INSERT
 local CMD_MOVE = CMD.MOVE
@@ -170,7 +205,7 @@ local function GetUnitFinalPosition(uID)
 	
 	local ux, uy, uz = spGetUnitPosition(uID)
 	
-	local cmds = spGetCommandQueue(uID, -1)
+	local cmds = spGetCommandQueue(uID,5000)
 	for i = #cmds, 1, -1 do
 		
 		local cmd = cmds[i]
@@ -205,6 +240,7 @@ local function SetColor(cmdID, alpha)
 	if     cmdID == CMD_MOVE       then glColor(0.5, 1.0, 0.5, alpha) -- Green
 	elseif cmdID == CMD_ATTACK     then glColor(1.0, 0.2, 0.2, alpha) -- Red
 	elseif cmdID == CMD_UNLOADUNIT then glColor(1.0, 1.0, 0.0, alpha) -- Yellow
+	elseif cmdID == CMD_SETTARGET  then glColor(1.0, 0.7, 0.0, alpha) -- Orange
 	else                                glColor(0.5, 0.5, 1.0, alpha) -- Blue
 	end
 end
@@ -228,6 +264,9 @@ local function GetExecutingUnits(cmdID)
 	end
 	return units
 end
+
+local lineLength = 0
+
 local function AddFNode(pos)
 	
 	local px, pz = pos[1], pos[3]
@@ -249,20 +288,25 @@ local function AddFNode(pos)
 		
 		fNodes[n + 1] = pos
 		fDists[n + 1] = fDists[n] + sqrt(distSq)
+		lineLength = lineLength+distSq^0.5
 	end
 	
 	totaldxy = 0
 	return true
 end
-local function GetInterpNodes(number)
-	
-	local spacing = fDists[#fNodes] / (number - 1)
-	
+
+
+local function GetInterpNodes(mUnits)
+		
+	local number = #mUnits
+	local spacing = fDists[#fNodes] / (#mUnits - 1)
+
 	local interpNodes = {}
 	
 	local sPos = fNodes[1]
 	local sX = sPos[1]
 	local sZ = sPos[3]
+	local sY=spGetGroundHeight(sX, sZ)
 	local sDist = 0
 	
 	local eIdx = 2
@@ -270,8 +314,8 @@ local function GetInterpNodes(number)
 	local eX = ePos[1]
 	local eZ = ePos[3]
 	local eDist = fDists[2]
-	
-	interpNodes[1] = {sX, spGetGroundHeight(sX, sZ), sZ}
+
+	interpNodes[1] = {sX, sY, sZ}	
 	
 	for n = 1, number - 2 do
 		
@@ -292,13 +336,17 @@ local function GetInterpNodes(number)
 		local nFrac = (reqDist - sDist) / (eDist - sDist)
 		local nX = sX * (1 - nFrac) + eX * nFrac
 		local nZ = sZ * (1 - nFrac) + eZ * nFrac
-		interpNodes[n + 1] = {nX, spGetGroundHeight(nX, nZ), nZ}
+		local nY = spGetGroundHeight(nX, nZ) 
+		interpNodes[n + 1] = {nX, nY, nZ}
 	end
 	
 	ePos = fNodes[#fNodes]
 	eX = ePos[1]
 	eZ = ePos[3]
-	interpNodes[number] = {eX, spGetGroundHeight(eX, eZ), eZ}
+	eY=spGetGroundHeight(eX, eZ) 
+	interpNodes[number] = {eX, eY, eZ}
+	
+	--DEBUG for i=1,number do Spring.Echo(interpNodes[i]) end
 	
 	return interpNodes
 end
@@ -324,37 +372,44 @@ local function GiveNotifyingOrder(cmdID, cmdParams, cmdOpts)
 	
 	spGiveOrder(cmdID, cmdParams, cmdOpts.coded)
 end
-local function GiveNotifyingOrderToUnit(uID, cmdID, cmdParams, cmdOpts)
+local function GiveNotifyingOrderToUnit(uArr, oArr, uID, cmdID, cmdParams, cmdOpts)
 	
 	for _, w in ipairs(widgetHandler.widgets) do
 		if w.UnitCommandNotify and w:UnitCommandNotify(uID, cmdID, cmdParams, cmdOpts) then
 			return
 		end
 	end
-	
-	spGiveOrderToUnit(uID, cmdID, cmdParams, cmdOpts.coded)
+
+	uArr[#uArr + 1] = uID
+	oArr[#oArr + 1] = {cmdID, cmdParams, cmdOpts.coded}
+	return
 end
 
 --------------------------------------------------------------------------------
 -- Mouse/keyboard Callins
 --------------------------------------------------------------------------------
 function widget:MousePress(mx, my, mButton)
-	
+	lineLength=0 --for linestipple
 	-- Where did we click
 	inMinimap = spIsAboveMiniMap(mx, my)
 	if inMinimap and not MiniMapFullProxy then return false end
+
+	if mButton ~= 3 and usingRMB then
+		fNodes = {}
+		fDists = {}
+		usingRMB = false
+	end
+	
+	--Spring.Echo("mouse:", mButton)
+	if mButton ~= 3 then return false end --all formation commands are done using right click & drag
 	
 	-- Get command that would've been issued
 	local _, activeCmdID = spGetActiveCommand()
 	if activeCmdID then
-		if mButton ~= 1 then return false end
-		
 		usingCmd = activeCmdID
-		usingRMB = false
-	else
-		if mButton ~= 3 then return false end
-		
-		local _, defaultCmdID = spGetDefaultCommand()
+		usingRMB = true
+	else 
+		local _, defaultCmdID = spGetDefaultCommand() --spGetActiveCommand() returns nil if the default command (typically move) is in use
 		if not defaultCmdID then return false end
 		
 		local overrideCmdID = overrideCmds[defaultCmdID]
@@ -402,13 +457,12 @@ function widget:MousePress(mx, my, mButton)
 	if not AddFNode(pos) then return false end
 	
 	-- Is this line a path candidate (We don't do a path off an overriden command)
-	pathCandidate = (not overriddenCmd) and (spGetSelectedUnitCount()==1 or (alt and not requiresAlt[usingCmd]))
+	pathCandidate = (not overriddenCmd) and (spGetSelectedUnitsCount()==1 or (alt and not requiresAlt[usingCmd]))
 	
 	-- We handled the mouse press
 	return true
 end
 function widget:MouseMove(mx, my, dx, dy, mButton)
-	
 	-- It is possible for MouseMove to fire after MouseRelease
 	if #fNodes == 0 then
 		return false
@@ -476,7 +530,7 @@ function widget:MouseRelease(mx, my, mButton)
 		if shift then
 			endShift = true -- Reset on release of shift
 		else
-			spSetActiveCommand(0) -- Reset immediately
+			spSetActiveCommand(0) -- Deselect command
 		end
 	end
 	
@@ -485,7 +539,7 @@ function widget:MouseRelease(mx, my, mButton)
 	
 	-- Override checking
 	if overriddenCmd then
-		
+	
 		local targetID
 		local targType, targID = spTraceScreenRay(mx, my, false, inMinimap)
 		if targType == 'unit' then
@@ -529,14 +583,36 @@ function widget:MouseRelease(mx, my, mButton)
 		if fDists[#fNodes] < minFormationLength then
 			-- We should check if any units are able to execute it,
 			-- but the order is small enough network-wise that the tiny bug potential isn't worth it.
-			GiveNotifyingOrder(usingCmd, fNodes[1], cmdOpts)
+			
+			-- Check if this order was meant to target a unit
+			local targetID
+			if overrideCmds[usingCmd] then
+				local targType, targID = spTraceScreenRay(mx, my, false, inMinimap)
+				if targType == 'unit' then
+					targetID = targID
+				elseif targType == 'feature' then
+					targetID = targID + maxUnits
+				end
+			end
+			
+			if targetID then
+				-- Give order (i.e. pass the command to the engine to use as normal)
+				GiveNotifyingOrder(usingCmd, {targetID}, cmdOpts)			
+			elseif usingCmd == CMD_MOVE then 
+				GiveNotifyingOrder(usingCmd, fNodes[1], cmdOpts)			
+			else
+				-- Deselect command, select default command instead
+				spSetActiveCommand(0)
+			end
+			
 		else
-			-- Order is a formation
+			-- Order is a formation; line was drawn
 			-- Are any units able to execute it?
 			local mUnits = GetExecutingUnits(usingCmd)
+			
 			if #mUnits > 0 then
-				
-				local interpNodes = GetInterpNodes(#mUnits)
+		
+				local interpNodes = GetInterpNodes(mUnits)
 				
 				local orders
 				if (#mUnits <= maxHungarianUnits) then
@@ -545,19 +621,33 @@ function widget:MouseRelease(mx, my, mButton)
 					orders = GetOrdersNoX(interpNodes, mUnits, #mUnits, shift and not meta)
 				end
 				
+				local unitArr = {}
+				local orderArr = {}
 				if meta then
 					local altOpts = GetCmdOpts(true, false, false, false, false)
 					for i = 1, #orders do
 						local orderPair = orders[i]
 						local orderPos = orderPair[2]
-						GiveNotifyingOrderToUnit(orderPair[1], CMD_INSERT, {0, usingCmd, cmdOpts.coded, orderPos[1], orderPos[2], orderPos[3]}, altOpts)
+						GiveNotifyingOrderToUnit(unitArr, orderArr, orderPair[1], CMD_INSERT, {0, usingCmd, cmdOpts.coded, orderPos[1], orderPos[2], orderPos[3]}, altOpts)
+						if (i == #orders and #unitArr > 0) or #unitArr >= 100 then
+							Spring.GiveOrderArrayToUnitArray(unitArr, orderArr, true)
+							unitArr = {}
+							orderArr = {}
+						end
 					end
 				else
 					for i = 1, #orders do
 						local orderPair = orders[i]
-						GiveNotifyingOrderToUnit(orderPair[1], usingCmd, orderPair[2], cmdOpts)
+						GiveNotifyingOrderToUnit(unitArr, orderArr, orderPair[1], usingCmd, orderPair[2], cmdOpts)
+						if (i == #orders and #unitArr > 0) or #unitArr >= 100 then
+							Spring.GiveOrderArrayToUnitArray(unitArr, orderArr, true)
+							unitArr = {}
+							orderArr = {}
+						end
 					end
 				end
+
+			spSetActiveCommand(0) -- Deselect command
 			end
 		end
 		
@@ -576,8 +666,10 @@ function widget:MouseRelease(mx, my, mButton)
 		
 		-- Directly giving speed order appears to work perfectly, including with shifted orders ...
 		-- ... But other widgets CMD.INSERT the speed order into the front (Posn 1) of the queue instead (which doesn't work with shifted orders)
-		local speedOpts = GetCmdOpts(alt, ctrl, meta, shift, true)
-		GiveNotifyingOrder(CMD_SET_WANTED_MAX_SPEED, {wantedSpeed / 30}, speedOpts)
+		if usingCmd ~= CMD.ATTACK and usingCmd ~= CMD.UNLOAD then --hack to fix bomber line attack etc.
+		  local speedOpts = GetCmdOpts(alt, ctrl, meta, shift, true)
+		  GiveNotifyingOrder(CMD_SET_WANTED_MAX_SPEED, {wantedSpeed / 30}, speedOpts)
+		end
 	end
 	
 	if #fNodes > 1 then
@@ -614,48 +706,123 @@ local function tVertsMinimap(verts)
 		glVertex(v[1], v[3], 1)
 	end
 end
+
+local function DrawFilledCircle(pos, size, cornerCount)
+	glPushMatrix()
+	glTranslate(pos[1], pos[2], pos[3])
+	glBeginEnd(GL.TRIANGLE_FAN, function()
+		glVertex(0,0,0)
+		for t = 0, pi2, pi2 / cornerCount do
+			glVertex(sin(t) * size, 0, cos(t) * size)
+		end
+	end)
+	glPopMatrix()
+end
+
+local function DrawFilledCircleOutFading(pos, size, cornerCount)
+	glPushMatrix()
+	glTranslate(pos[1], pos[2], pos[3])
+	glBeginEnd(GL.TRIANGLE_FAN, function()
+		SetColor(usingCmd, 1)
+		glVertex(0,0,0)
+		SetColor(usingCmd, 0)
+		for t = 0, pi2, pi2 / cornerCount do
+			glVertex(sin(t) * size, 0, cos(t) * size)
+		end
+	end)
+	glPopMatrix()
+end
+
+local function DrawFormationDots(vertFunction, zoomY, unitCount)
+	local currentLength = 0
+	local lengthPerUnit = lineLength / (unitCount-1)
+	local lengthUnitNext = lengthPerUnit
+	local dotSize = sqrt(zoomY*0.1)
+	if (#fNodes > 1) and (unitCount > 1) then
+		SetColor(usingCmd, 0.6)
+		DrawFilledCircleOutFading(fNodes[1], dotSize, 8)
+		if (#fNodes > 2) then
+			for i=1, #fNodes-1 do
+				local x = fNodes[i][1]
+				local y = fNodes[i][3]
+				local x2 = fNodes[i+1][1]
+				local y2 = fNodes[i+1][3]
+				local dx = x - x2
+				local dy = y - y2
+				local length = sqrt((dx*dx)+(dy*dy))
+				while (currentLength + length >= lengthUnitNext) do
+					local factor = (lengthUnitNext - currentLength) / length
+					local factorPos =
+						{fNodes[i][1] + ((fNodes[i+1][1] - fNodes[i][1]) * factor),
+						fNodes[i][2] + ((fNodes[i+1][2] - fNodes[i][2]) * factor),
+						fNodes[i][3] + ((fNodes[i+1][3] - fNodes[i][3]) * factor)}
+					DrawFilledCircleOutFading(factorPos, dotSize, 8)
+					lengthUnitNext = lengthUnitNext + lengthPerUnit
+				end
+				currentLength = currentLength + length
+			end
+		end
+		DrawFilledCircleOutFading(fNodes[#fNodes], dotSize, 8)
+	end
+end
+
 local function DrawFormationLines(vertFunction, lineStipple)
-	
-	glLineStipple(lineStipple, 4095)
+	glLineStipple(lineStipple, 4369)
 	glLineWidth(2.0)
-	
 	if #fNodes > 1 then
 		SetColor(usingCmd, 1.0)
 		glBeginEnd(GL_LINE_STRIP, vertFunction, fNodes)
 	end
-	
 	if #dimmNodes > 1 then
 		SetColor(dimmCmd, dimmAlpha)
 		glBeginEnd(GL_LINE_STRIP, vertFunction, dimmNodes)
 	end
-	
 	glLineWidth(1.0)
 	glLineStipple(false)
 end
 
-function widget:DrawWorld()
-	
-	DrawFormationLines(tVerts, 2)
+local Xs, Ys = spGetViewGeometry()
+Xs, Ys = Xs*0.5, Ys*0.5
+function widget:ViewResize(viewSizeX, viewSizeY)
+	Xs, Ys = spGetViewGeometry()
+	Xs, Ys = Xs*0.5, Ys*0.5
 end
+
+function widget:DrawWorld()
+  if #fNodes > 1 or #dimmNodes > 1 then
+	local camX, camY, camZ = spGetCameraPosition()
+	local at, p = spTraceScreenRay(Xs,Ys,true,false,false)
+	if at == "ground" then 
+		local dx, dy, dz = camX-p[1], camY-p[2], camZ-p[3]
+		--zoomY = ((dx*dx + dy*dy + dz*dz)*0.01)^0.25	--tests show that sqrt(sqrt(x)) is faster than x^0.25
+		zoomY = sqrt(dx*dx + dy*dy + dz*dz)
+	else
+		--zoomY = sqrt((camY - max(spGetGroundHeight(camX, camZ), 0))*0.1)
+		zoomY = camY - max(spGetGroundHeight(camX, camZ), 0)
+	end
+	if zoomY < 6 then zoomY = 6 end
+	if lineLength > 0 then  --don't try and draw if the command was cancelled by having two mouse buttons pressed at once
+		local unitCount = spGetSelectedUnitsCount()
+		DrawFormationDots(tVerts, zoomY, unitCount)
+	end
+  end
+end
+
+--TODO maybe include minimap drawing again
 function widget:DrawInMiniMap()
-	
 	glPushMatrix()
 		glLoadIdentity()
 		glTranslate(0, 1, 0)
 		glScale(1 / mapSizeX, -1 / mapSizeZ, 1)
-		
 		DrawFormationLines(tVertsMinimap, 1)
 	glPopMatrix()
 end
+
 function widget:Update(deltaTime)
-	
 	dimmAlpha = dimmAlpha - lineFadeRate * deltaTime
-	
 	if dimmAlpha <= 0 then
-		
 		dimmNodes = {}
 		widgetHandler:RemoveWidgetCallIn("Update", self)
-		
 		if #fNodes == 0 then
 			widgetHandler:RemoveWidgetCallIn("DrawWorld", self)
 			widgetHandler:RemoveWidgetCallIn("DrawInMiniMap", self)
