@@ -272,7 +272,7 @@ end
 
 function widget:Initialize()
     -- delay
-    delayFrame = Spring.GetGameFrame() + 20
+    delayFrame = Spring.GetGameFrame() + 50
 end
 
 function widget:Shutdown()
