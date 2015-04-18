@@ -33,7 +33,7 @@ end
 
 function gadget:UnitCreated(unitID, unitDefID)
     if unitDefID == elecID then
-        config[unitID] = Spring.GetUnitRulesParam(unitID,"elecSize") or 300
+        config[unitID] = Spring.GetUnitRulesParam(unitID,"elecSize") or 200
         Spring.SetUnitNoDraw(unitID, true)
         -- Spring.SetUnitNoSelect(unitID, true) --I'm guessing this isn't wanted while we are working
     end
@@ -81,7 +81,7 @@ function gadget:GameFrame(n)
     -- draw
     if n%15==0 then
         for uID,r in pairs(config) do
-            config[uID] = Spring.GetUnitRulesParam(uID,"elecSize") or 300
+            config[uID] = Spring.GetUnitRulesParam(uID,"elecSize") or 200
             SendToUnsynced("SpawnElec", uID, config[uID])
         end
     end
