@@ -53,7 +53,16 @@ local BaseEffect = Unit:New {
 --     minCloakDistance    = 0,
 }
 
+local BaseWall = BaseImmobile:New {
+    customParams = {
+        wall = true,
+    },
+    mass                = math.huge,
+    maxDamage           = 1500,
+}
+
 return {
     BaseImmobile = BaseImmobile,
-    BaseEffect = BaseEffect,
+    BaseEffect   = BaseEffect,
+    BaseWall     = BaseWall,
 }

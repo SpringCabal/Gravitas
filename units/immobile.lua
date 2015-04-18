@@ -35,45 +35,29 @@ local Crate = BaseImmobile:New {
     }
 }
 
-local Wall1 = BaseImmobile:New {
+local Wall1 = BaseWall:New {
     name                = "Wall1",
-    maxDamage           = 1500,
-    customParams = {
-        wall = true,
-    },
     script              = "wall1.lua",
     footprintX			= 30,
 	footprintZ			= 5,
 }
 
-local Wall2 = BaseImmobile:New {
+local Wall2 = BaseWall:New {
     name                = "Wall2",
-    maxDamage           = 1500,
-    customParams = {
-        wall = true,
-    },
     script              = "wall2.lua",
     footprintX			= 15,
 	footprintZ			= 5,
 }
 
-local Wall3 = BaseImmobile:New {
+local Wall3 = BaseWall:New {
     name                = "Wall3",
-    maxDamage           = 1500,
-    customParams = {
-        wall = true,
-    },
     script              = "wall3.lua",
     footprintX			= 7,
 	footprintZ			= 5,
 }
 
-local Wall4 = BaseImmobile:New {
+local Wall4 = BaseWall:New {
     name                = "Wall4",
-    maxDamage           = 1500,
-    customParams = {
-        wall = true,
-    },
     script              = "wall4.lua",
     footprintX			= 3,
 	footprintZ			= 5,
