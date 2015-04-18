@@ -25,6 +25,8 @@ local Crate = BaseImmobile:New {
     collisionVolumeOffsets  = '0 0 0',
     collisionVolumeTest     = 1,
     collisionVolumeType     = 'box',
+    footprintX			= 5,
+	footprintZ			= 5,
 }
 
 local Wall1 = BaseImmobile:New {
