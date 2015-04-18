@@ -3,11 +3,15 @@ local Barrel = BaseImmobile:New {
     customParams = {
         barrel = true,
     },
-    maxDamage           = 100,
+    maxDamage           = 150,
 }
 
+-- sci fi barrel
 local Canister = BaseImmobile:New {
     name                = "Canister",
+    customParams = {
+        barrel = true,
+    },
     maxDamage           = 150,
 }
 
