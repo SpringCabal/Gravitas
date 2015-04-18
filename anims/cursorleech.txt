@@ -1,0 +1,20 @@
+hotspot center
+frame  anims/cursorleech_0.png  0.4
+frame  anims/cursorleech_1.png  0.05
+frame  anims/cursorleech_2.png  0.05
+frame  anims/cursorleech_3.png  0.05
+frame  anims/cursorleech_4.png  0.05
+frame  anims/cursorleech_5.png  0.05
+frame  anims/cursorleech_6.png  0.05
+frame  anims/cursorleech_7.png  0.05
+frame  anims/cursorleech_8.png  0.05
+frame  anims/cursorleech_9.png  0.05
+frame  anims/cursorleech_10.png  0.05
+frame  anims/cursorleech_11.png  0.05
+frame  anims/cursorleech_12.png  0.05
+frame  anims/cursorleech_13.png  0.05
+frame  anims/cursorleech_14.png  0.05
+frame  anims/cursorleech_15.png  0.05
+frame  anims/cursorleech_16.png  0.05
+frame  anims/cursorleech_17.png  0.05
+frame  anims/cursorleech_18.png  0.05
