@@ -4,6 +4,7 @@ local Barrel = BaseImmobile:New {
         barrel = true,
     },
     maxDamage           = 150,
+    mass                = 80,
 }
 
 -- sci fi barrel
@@ -13,6 +14,7 @@ local Canister = BaseImmobile:New {
         barrel = true,
     },
     maxDamage               = 150,
+    mass                    = 80,
 }
 
 local Crate = BaseImmobile:New {

@@ -13,7 +13,7 @@ end
 local LOG_SECTION = "barrel"
 local LOG_LEVEL = LOG.NOTICE
 
-local explosionRange = 500
+local explosionRange = 300
 local explosionDamage = 500
 
 if (gadgetHandler:IsSyncedCode()) then

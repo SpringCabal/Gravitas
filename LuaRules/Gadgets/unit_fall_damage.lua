@@ -238,9 +238,10 @@ function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, w
 		return LocalSpeedToDamage(unitID, unitDefID, damgeSpeed) + outsideMapDamage(unitID, unitDefID)
 	end
 	
-	if weaponDefID == -1 then
-		return 20
-	end
+    -- FIXME: not sure what this was, but it was interfering with the canister explosions
+-- 	if weaponDefID == -1 then
+-- 		return 20
+-- 	end
 	
 	return damage
 end
