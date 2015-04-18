@@ -44,7 +44,6 @@ local GravityBase = Weapon:New {
       rgbColor                = [[0 0 1]],
       rgbColor2               = [[1 0.5 1]],
       size                    = 2,
-      soundStart              = [[gravityweapon.ogg]],
       soundTrigger            = true,
       startsmoke              = [[0]],
       thickness               = 4,
