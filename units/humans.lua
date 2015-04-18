@@ -9,7 +9,7 @@ local Gravit = BaseHuman:New {
         { name = "GRAVITY_NEG"},
     },
     maxDamage           = 800,
-    maxVelocity        = 5,
+    maxVelocity         = 5,
     onoffable           = true,
 }
 
