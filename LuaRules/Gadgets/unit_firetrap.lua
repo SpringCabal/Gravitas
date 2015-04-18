@@ -66,8 +66,8 @@ function ProximityInsideFire(unitID, t)
         return 0
     end
     
-    local x,y,z,_,_,_ = Spring.GetUnitPosition(unitID)
-    local r = Spring.GetUnitRadius(unitID)
+    local x,y,z,mx,my,mz = Spring.GetUnitPosition(unitID) --should use midpos, but it seems to be broken for our units
+    local r = mx and Spring.GetUnitRadius(unitID) or 0
     
     if (y<t.y) then return 0 end
     
