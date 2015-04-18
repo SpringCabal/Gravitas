@@ -27,8 +27,8 @@ function gadget:Initialize()
 end
 
 function gadget:GameStart()
-    Spring.SendCommands("cheat")
-    Spring.SendCommands("globallos") 
+    --Spring.SendCommands("cheat")
+    --Spring.SendCommands("globallos") 
 end
 
 function gadget:UnitCreated(unitID, unitDefID)
@@ -80,13 +80,20 @@ function UpdateElec(n, x,y,z, uID)
 end
 
 function gadget:GameFrame(n)
+    -- draw
+    if n%15==0 then
+        for uID,r in pairs(config) do
+            SendToUnsynced("SpawnElec", uID, r)
+        end
+    end
+    
+    -- kill
     for uID,_ in pairs(config) do
         local x,y,z = Spring.GetUnitPosition(uID)
         if x then
             UpdateElec(n,x,y,z,uID)
         end
     end
-    
 end
 
 function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponDefID, projectileID, attackerID, attackerDefID, attackerTeam)
@@ -101,52 +108,17 @@ end
 else
 --
 
-local shieldBase = {
-  -- config for a LUPS ShieldSphere
-  life  = 150,
-  size  = 20,
-  repeatEffect = true,
-}
 local particleList = {}
 
-local config = {}
-
 function gadget:Initialize()
-    gadgetHandler:AddSyncAction("AddShield", AddShield)
-    gadgetHandler:AddSyncAction("RemoveShield", RemoveShield)
+    gadgetHandler:AddSyncAction("SpawnElec", SpawnElec)
 end
 function gadget:Shutdown()
-    gadgetHandler:RemoveSyncAction("AddShield")
-    gadgetHandler:RemoveSyncAction("RemoveShield")
+    gadgetHandler:RemoveSyncAction("SpawnElec")
 end
 
-function AddShield(_,unitID, radius)
-    config[unitID] = radius
-    MakeShield(unitID)
-end
-function RemoveShield(_,unitID)
-    -- TODO: how to tell LUPS....
-    config[unitID] = nil
-end
-
-function gadget:GameFrame(n)
-    -- make the shields
-    if n%15==0 then
-        for unitID,r in pairs(config) do
-            MakeShield(unitID)
-        end
-    end
-    
-    -- tell LUPS 
-    if (#particleList>0) then
-        GG.Lups.AddParticlesArray(particleList)
-        particleList = {}
-    end
-end
-
-function MakeShield(unitID)
+function SpawnElec(_,unitID, r)
     local x,y,z = Spring.GetUnitPosition(unitID)
-    local r = config[unitID]
     local partpos = "x*delay,y*delay,z*delay|x=0,y=0,z=0"
     
     particleList[#particleList+1] = {
@@ -208,9 +180,17 @@ function MakeShield(unitID)
       sizeGrowth   = 4.0,
       sizeExp      = 0.7,
 
-      texture     = "bitmaps/PD/electricity.png",
-    }
-    
+      texture     = "bitmaps/GPL/electricity.png",
+    }    
 end
+
+function gadget:GameFrame(n)
+    if (#particleList>0) then
+        GG.Lups.AddParticlesArray(particleList)
+        particleList = {}
+    end
+end
+
+
 
 end

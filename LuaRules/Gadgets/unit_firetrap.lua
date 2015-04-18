@@ -18,9 +18,7 @@ if gadgetHandler:IsSyncedCode() then
 
 local config = {} -- config[unitID] = radius
 
-local fireRadius = 375
-local fireSpeed = 0.5
-
+local fireSpeed = 0.5 -- IF YOU CHANGE THIS THE SKY WILL FALL ON YOUR HEAD
 local fireID = UnitDefNames["fire"].id
 
 function gadget:Initialize()
@@ -31,13 +29,13 @@ function gadget:Initialize()
 end
 
 function gadget:GameStart()
-    --Spring.SendCommands("cheat")
-    --Spring.SendCommands("globallos") 
+    Spring.SendCommands("cheat")
+    Spring.SendCommands("globallos") 
 end
 
 function gadget:UnitCreated(unitID, unitDefID)
     if unitDefID == fireID then
-        config[unitID] = true
+        config[unitID] = 500
         Spring.SetUnitNoDraw(unitID, true)
         -- Spring.SetUnitNoSelect(unitID, true) --I'm guessing this isn't wanted while we are working
     end
@@ -51,7 +49,7 @@ function RandomUnif(a)
     return a*(2*math.random()-1)
 end
 
-function SpawnFire(x,y,z)
+function SpawnFire(x,y,z, fireRadius)
     local s = fireSpeed + RandomUnif(0.1)
     local r = fireRadius + RandomUnif(fireRadius/10)
     Script.LuaRules.FlameRaw(x,y,z, 0,s,0, 0,0,0, r)
@@ -72,7 +70,7 @@ function ProximityInsideFire(unitID, fx,fy,fz)
     local nx = x - fx
     local ny = y - fy
     local nz = z - fz
-    local emitRotSpread = (8 / 360) * (2*math.pi)--from lups_fmale_jitter
+    local emitRotSpread = (8 / 360) * (2*math.pi) --from lups_fmale_jitter
     local baseAngle = math.tan(math.atan(emitRotSpread)/fireSpeed) -- angle between the surface of cone and the upwards normal vector
     
     local pDist = math.sqrt(nx*nx+nz*nz) -- perpendicular distance from n to central axis of cone
@@ -85,13 +83,15 @@ function ProximityInsideFire(unitID, fx,fy,fz)
     return p4Dist    
 end
 
-function UpdateFire(n,x,y,z)
+function UpdateFire(n, x,y,z, uID)
+    local fireRadius = config[uID]
+
     -- draw
     if n%15==0 then
-        SpawnFire(x,y,z)
+        SpawnFire(x,y,z, fireRadius)
     end
 
-    -- kill stuff
+    -- kill 
     local units = Spring.GetUnitsInCylinder(x,z,fireRadius * fireSpeed * 1.1)
     for _,unitID in pairs(units) do
         if fireID ~= Spring.GetUnitDefID(unitID) then
@@ -108,7 +108,7 @@ function gadget:GameFrame(n)
     for uID,_ in pairs(config) do
         local x,y,z = Spring.GetUnitPosition(uID)
         if x then
-            UpdateFire(n,x,y,z)
+            UpdateFire(n, x,y,z, uID)
         end
     end
 end
