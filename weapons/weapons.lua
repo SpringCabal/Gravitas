@@ -30,13 +30,16 @@ local BobGun = CannonBase:New {
     },
 }
 
+local WallesRevenge = MissileBase:New {
+    name                    = "WallesRevenge",
+}
+
 GRAVITY_NEG = GravityBase:New{
       name                    = [[Attractive Gravity]],
       soundStart              = [[weaponpull.ogg]],
       customParams            = {
         impulse = [[-125]],
       },
-      range = GravityBase.range + 100,
 }
 
 GRAVITY_POS = GravityBase:New{
@@ -55,4 +58,5 @@ return lowerkeys({
     GRAVITY_POS = GRAVITY_POS,
     Kannon = Kannon,
     BobGun = BobGun,
+    WallesRevenge = WallesRevenge,
 })
