@@ -19,8 +19,8 @@ if gadgetHandler:IsSyncedCode() then
 local config = {} -- config[unitID] = radius
 local currentFrame 
 
-local elecUnits = {} -- elecUnits[unitID]={elecFrame=, proximity=}
-local elecRobots = {}
+local watchedUnits = {} -- elecUnits[unitID]={elecFrame=, proximity=}
+local watchedRobots = {}
 local burnTime = 60
 
 local elecID = UnitDefNames["electrafi"].id
@@ -77,17 +77,18 @@ function UpdateElec(n, x,y,z, uID)
     local units = Spring.GetUnitsInSphere(x,y,z,r+250) -- +250 because its probably bigger than all unit radii
     for _,unitID in pairs(units) do
         local unitDef = UnitDefs[Spring.GetUnitDefID(unitID)]
-        local p = ProximityInsideElec(unitID, x,y,z, r)
-        if p>0 then
-            if unitDef.customParams.player then 
-                elecUnits[unitID] = {elecFrame = currentFrame, proximity = p}
-            elseif unitDef.customParams.robot then
-                elecRobots[unitID] = {elecFrame = currentFrame, proximity = p}                
-            end
-        elseif elecUnits[unitID] then
-            elecUnits[unitID].proximity = p
-        elseif elecRobots[unitID] then
-            elecRobots[unitID].proximity = p
+        if unitDef.customParams.player then 
+            watchedUnits[unitID] = watchedUnits[unitID] or {} 
+            local p = ProximityInsideElec(unitID, x,y,z, r)
+            local prev_p = watchedUnits[unitID] and watchedUnits[unitID].proximity or 0
+            watchedUnits[unitID].proximity = math.max(prev_p,p)
+            if (p>0) then watchedUnits[unitID].elecFrame = currentFrame end
+        elseif unitDef.customParams.robot then
+            watchedRobots[unitID] = watchedRobots[unitID] or {} 
+            local p = ProximityInsideElec(unitID, x,y,z, r)
+            local prev_p = watchedRobots[unitID] and watchedRobots[unitID].proximity or 0
+            watchedRobots[unitID].proximity = math.max(prev_p,p)
+            if (p>0) then watchedRobots[unitID].elecFrame = currentFrame end
         end
     end
 end
@@ -112,33 +113,35 @@ function gadget:GameFrame(n)
     end
     
     --kill
-    for unitID,t in pairs(elecUnits) do
+    for unitID,t in pairs(watchedUnits) do
         if t.proximity > 0 then
             local numSparks = 1
             local intensity = 1.0
             SendToUnsynced("SpawnSpark", unitID, intensity)
             Spring.AddUnitDamage(unitID, 2+0.1*t.proximity)                
-        elseif (t.elecFrame+burnTime>currentFrame) then
+        elseif t.caughtFire and (t.elecFrame+burnTime>currentFrame) then
             local intensity = (t.elecFrame+burnTime - currentFrame) / burnTime
             SendToUnsynced("SpawnSpark", unitID, intensity)
             Spring.AddUnitDamage(unitID, 2)        
         else
-            elecUnits[unitID] = nil
-        end
+            watchedUnits[unitID] = nil
+        end        
+        if watchedUnits[unitID] then watchedUnits[unitID].proximity = 0 end -- set proximity to nil, so as we can recheck as a max over all sources each frame
     end
     
     -- paralyse
-    for unitID,t in pairs(elecRobots) do
+    for unitID,t in pairs(watchedRobots) do
         if t.proximity > 0 then
             local intensity = 1.0
             SendToUnsynced("SpawnSpark", unitID, intensity)
             Spring.AddUnitDamage(unitID, 2+0.1*t.proximity, 1)
-        elseif (t.elecFrame+burnTime>currentFrame) then
+        elseif t.caughtFire and (t.elecFrame+burnTime>currentFrame) then
             local intensity = (t.elecFrame+burnTime - currentFrame) / burnTime
             SendToUnsynced("SpawnSpark", unitID, intensity)
         else
-            elecUnits[unitID] = nil
+            watchedRobots[unitID] = nil
         end
+        if watchedRobots[unitID] then watchedRobots[unitID].proximity = 0 end
     end
 end
 
