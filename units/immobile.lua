@@ -35,33 +35,13 @@ local Crate = BaseImmobile:New {
 local Gate = BaseWall:New {
     name                    = "Gate",
     script                  = "gate.lua",
-    footprintX              = 17,
-    footprintZ              = 17,
-    yardmap                 = [[
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        
-        ooooooooooooooooo
-        ooooooooooooooooo
-        ooooooooooooooooo
-        ooooooooooooooooo
-        ooooooooooooooooo
-        
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-    ]],
-    collisionVolumeScales   = '260 160 50',
+    footprintX              = 20,
+    footprintZ              = 4,
+    collisionVolumeScales   = '400 160 50',
     collisionVolumeOffsets  = '0 56 0',
     collisionVolumeTest     = 1,
     collisionVolumeType     = 'box',
+    movementClass		    = "Wall5x17", 
     customParams = {
         radius = 260,
     },
@@ -96,45 +76,8 @@ local Wall1 = BaseWall:New {
     name                    = "Wall1",
     script                  = "wall1.lua",
     footprintX              = 32,
-    footprintZ              = 32,
-    yardmap                 = [[
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    
-    oooooooooooooooooooooooooooooooo
-    oooooooooooooooooooooooooooooooo
-    oooooooooooooooooooooooooooooooo
-    oooooooooooooooooooooooooooooooo
-    oooooooooooooooooooooooooooooooo
-    oooooooooooooooooooooooooooooooo
-    
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-    yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
-        ]],
-    collisionVolumeScales   = '490 160 50',
+    footprintZ              = 4,
+    collisionVolumeScales   = '520 160 50',
     collisionVolumeOffsets  = '0 56 0',
     collisionVolumeTest     = 1,
     collisionVolumeType     = 'box',
@@ -147,28 +90,7 @@ local Wall2 = BaseWall:New {
     name                    = "Wall2",
     script                  = "wall2.lua",
     footprintX              = 17,
-    footprintZ              = 17,
-    yardmap                 = [[
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        
-        ooooooooooooooooo
-        ooooooooooooooooo
-        ooooooooooooooooo
-        ooooooooooooooooo
-        ooooooooooooooooo
-        
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        yyyyyyyyyyyyyyyyy
-        ]],
+    footprintZ              = 4,
     collisionVolumeScales   = '260 160 50',
     collisionVolumeOffsets  = '0 56 0',
     collisionVolumeTest     = 1,
@@ -182,11 +104,7 @@ local Wall3 = BaseWall:New {
     name                    = "Wall3",
     script                  = "wall3.lua",
     footprintX              = 8,
-    footprintZ              = 8,
-    yardmap                 = [[
-    yyyyyyyyy yyyyyyyyy 
-    oooooooo oooooooo oooooooo oooooooo 
-    yyyyyyyyy yyyyyyyyy]],
+    footprintZ              = 4,
     collisionVolumeScales   = '140 160 50',
     collisionVolumeOffsets  = '0 56 0',
     collisionVolumeTest     = 1,
@@ -200,8 +118,7 @@ local Wall4 = BaseWall:New {
     name                    = "Wall4",
     script                  = "wall4.lua",
     footprintX              = 5,
-    footprintZ              = 5,
-    yardmap                 = [[ooooo ooooo ooooo ooooo ooooo]],
+    footprintZ              = 4,
     collisionVolumeScales   = '70 160 50',
     collisionVolumeOffsets  = '0 56 0',
     collisionVolumeTest     = 1,

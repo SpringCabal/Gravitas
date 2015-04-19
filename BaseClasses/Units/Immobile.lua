@@ -58,16 +58,15 @@ local BaseEffect = Unit:New {
 --     minCloakDistance    = 0,
 }
 
-local BaseWall = Unit:New {
+local BaseWall = BaseImmobile:New {
     customParams = {
         wall = true,
         invulnerable = true,
     },
-    maxVelocity         = 0,
-    canMove				= false,
     mass                = 10e20,
     maxDamage           = 1500,
-    turnRate			= 0,
+    turnRate            = 0,
+    movementClass		= "Wall5x17",
 }
 
 return {
