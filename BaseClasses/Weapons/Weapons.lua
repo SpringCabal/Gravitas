@@ -46,6 +46,7 @@ local GravityBase = Weapon:New {
       },
       onlyTargetCategory      = "INFANTRY",
 
+      beamTime                = 0.1,
       coreThickness           = 0.5,
       intensity               = 0.7,
       renderType              = 4,
