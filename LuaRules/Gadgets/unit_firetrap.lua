@@ -27,6 +27,7 @@ local burnTime = 60 -- frames a unit burns for after walking out of a fire trap
 
 function gadget:Initialize()
     -- handle luarules reload
+    local currentFrame = Spring.GetGameFrame()
 	for _, unitID in pairs(Spring.GetAllUnits()) do
 		gadget:UnitCreated(unitID, Spring.GetUnitDefID(unitID), Spring.GetUnitTeam(unitID))
 	end    
