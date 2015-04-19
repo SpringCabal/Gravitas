@@ -30,6 +30,9 @@ local Crate = BaseImmobile:New {
     footprintX              = 5,
     footprintZ              = 5,
     script                  = "crate.lua",
+    customParams = {
+        plate_toggler = true,
+    }
 }
 
 local Gate = BaseWall:New {
@@ -44,6 +47,7 @@ local Gate = BaseWall:New {
     movementClass		    = "Wall5x17", 
     customParams = {
         radius = 260,
+        gate   = true,
     },
     onoffable               = true,
 }
