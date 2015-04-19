@@ -1,0 +1,33 @@
+return { 
+ ["smoke_puff"] = {
+    smoke = {
+      air                = true,
+      class              = [[CSimpleParticleSystem]],
+      count              = 1, 
+      ground             = true,
+      underwater         = 0,
+      water              = true,
+      properties = {
+        airdrag            = 1.0,
+        colormap           = [[0.5 0.3 0.1 0.3		0.3 0.2 0.1 0.4		0.1 0.1 0.1 0.3		0.1 0.1 0.1 0.3	 0 0 0 0.00]],
+        directional        = false,
+        emitrot            = 0,
+        emitrotspread      = 360,
+        emitvector         = [[0,1,0]],
+        gravity            = [[0 , 0.0012, 0]],
+        numparticles       = 15,
+        particlelife       = 10,
+        particlelifespread = 70,
+        particlesize       = 10,
+        particlesizespread = 15,
+        particlespeed      = [[5 i-0.75]],
+        particlespeedspread = 5,
+        pos                = [[-13 r13,-13 r13,-13 r13]],
+        sizegrowth         = 1,
+        sizemod            = 1.0,
+        texture            = [[smoke]],
+        useairlos          = true,
+      },
+    },
+  },
+}
