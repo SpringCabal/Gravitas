@@ -28,12 +28,22 @@ local BaseRobot = Unit:New {
     stealth             = true,
     turnRate            = 3000,
     upright             = true,
-    
+
     customparams = {
         radius = 18,
+        robot  = true,
     }
 }
 
+local CassosRobot = BaseRobot:New {
+    mass                = 70,
+    maxDamage           = 300,
+    maxVelocity         = 1.5,
+    strafeToAttack      = true,
+    script              = "projector.lua",
+}
+
 return {
-    BaseRobot = BaseRobot,
+    BaseRobot   = BaseRobot,
+    CassosRobot = CassosRobot,
 }

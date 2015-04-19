@@ -229,17 +229,17 @@
 	function typeDef()
 	defID=Spring.GetUnitDefID(unitID)
 
-		if defID == UnitDefNames["projector_longrange"].id then
+		if defID == UnitDefNames["wallier"].id then
 		boolRocketType=true
 		Show(rocket01)
 		Show(rocket02)
-		elseif  defID == UnitDefNames["projector_shortrange"].id then
+		elseif  defID == UnitDefNames["bob"].id then
 		Show(MG01)
 		Show(MG02)
 		Show(MG_B01)
 		Show(MG_B02)
 		boolMGType=true
-		elseif  defID == UnitDefNames["projector_medrange"].id then
+		elseif  defID == UnitDefNames["projector"].id then
 		boolRay1Type=true
 		Show(turret)
 		Show(gun01)
@@ -329,11 +329,11 @@
 
 
 	----Weapon1
-	function script.AimFromWeapon1() return rocket01 end
+	function AimFromWeapon1() return rocket01 end
 
-	function script.QueryWeapon1() 	return rocket01 end
+	function QueryWeapon1() 	return rocket01 end
 
-	function script.AimWeapon1( Heading ,pitch)	
+	function AimWeapon1( Heading ,pitch)	
 		if boolRocketType==false then return false end
 		Signal(SIG_RESET)
 		boolAiming=true
@@ -344,15 +344,15 @@
 		return boolRocketType
 	end
 	 
-	 function script.FireWeapon1()	boolAiming=false; Signal(SIG_RESET); StartThread(resetTurret);return true; end
+	 function FireWeapon1()	boolAiming=false; Signal(SIG_RESET); StartThread(resetTurret);return true; end
 
 
 	----Weapon2
-	function script.AimFromWeapon2() return gun01 end
+	function AimFromWeapon2() return gun01 end
 
-	function script.QueryWeapon2() 	return gun01 end
+	function QueryWeapon2() 	return gun01 end
 
-	function script.AimWeapon2( Heading ,pitch)	
+	function AimWeapon2( Heading ,pitch)	
 		if boolRay1Type==false then return false end
 		Signal(SIG_RESET)
 		boolAiming=true
@@ -363,13 +363,13 @@
 		return boolRay1Type
 	end
 	 
-	 function script.FireWeapon2()	boolAiming=false; Signal(SIG_RESET); StartThread(resetTurret);return true; end
+	 function FireWeapon2()	boolAiming=false; Signal(SIG_RESET); StartThread(resetTurret);return true; end
 
 
 	----Weapon1
-	function script.AimFromWeapon3() return MG01 end
+	function AimFromWeapon3() return MG01 end
 
-	function script.QueryWeapon3() 	return MG01 end
+	function QueryWeapon3() 	return MG01 end
 	
 	function ReloadMG()
 	Sleep(5000)
@@ -379,7 +379,7 @@
 	end
 	quartPI_Innt= 8192
 	boolMGLoaded=true
-	function script.AimWeapon3( Heading ,pitch)	
+	function AimWeapon3( Heading ,pitch)	
 		if boolRay2Type==false then return false end
 		Signal(SIG_RESET)
 		Spin(MG_B01,z_axis,5,5)
@@ -392,7 +392,7 @@
 		return boolMGType and boolMGLoaded
 	end
 	 
-	 function script.FireWeapon3()	
+	 function FireWeapon3()	
 	boolMGLoaded=false
 	 boolAiming=false
 	 Signal(SIG_RESET); StartThread(resetTurret); 
@@ -401,4 +401,42 @@
 	 return true; 
 	 
 	 end
+     
+     function script.AimWeapon1()
+        if boolRocketType then
+            return AimWeapon1()
+        elseif boolRay1Type then
+            return AimWeapon2()
+        elseif boolMGType then
+            return AimWeapon3()
+        end
+     end
+	function script.QueryWeapon1()
+        if boolRocketType then
+            return QueryWeapon1()
+        elseif boolRay1Type then
+            return QueryWeapon2()
+        elseif boolMGType then
+            return QueryWeapon3()
+        end
+     end
 
+	function script.AimWeapon1(Heading, pitch)
+		if boolRocketType then
+            return AimWeapon1(Heading, pitch)
+        elseif boolRay1Type then
+            return AimWeapon2(Heading, pitch)
+        elseif boolMGType then
+            return AimWeapon3(Heading, pitch)
+        end
+     end
+	 
+	 function script.FireWeapon1()
+        if boolRocketType then
+            return FireWeapon1()
+        elseif boolRay1Type then
+            return FireWeapon2()
+        elseif boolMGType then
+            return FireWeapon3()
+        end
+     end
