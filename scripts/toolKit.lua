@@ -396,9 +396,9 @@ Move(piecename,x_axis,0,speed)
 Move(piecename,y_axis,0,speed)
 Move(piecename,z_axis,0,speed,true)
 if boolWaitForIT then 
-WaitForTurn(piecename,x_axis)
-WaitForTurn(piecename,y_axis)
-WaitForTurn(piecename,z_axis)
+WaitForTurn(piecename,1)
+WaitForTurn(piecename,2)
+WaitForTurn(piecename,3)
 end
 
 
@@ -411,6 +411,7 @@ Turn(p2,axis,math.rad(-1*deg),speed)
 end
 
 function tP(piecename,x_val,y_val,z_val,speed,boolWaitForIT)
+
 Turn(piecename,x_axis,math.rad(x_val),speed)
 Turn(piecename,y_axis,math.rad(y_val),speed)
 Turn(piecename,z_axis,math.rad(z_val),speed)
@@ -484,8 +485,10 @@ end
 
 -->Reset a Table of Pieces at speed
 function reseT(tableName,speed)
+lspeed=speed or 0
+
 	for i=1,#tableName do
-	resetPiece(tableName[i],speed)
+	resetPiece(tableName[i],lspeed)
 	end
 end
 

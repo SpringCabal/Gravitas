@@ -1,3 +1,16 @@
+local Rocket = MissileBase:New {
+    name                    = "Rocket",
+    reloadtime              = 2.0,
+    range                   = 400,
+    soundHit                = [[explosion.ogg]],
+    soundStart              = [[laser.ogg]],
+    weaponVelocity          = 130,
+    damage                  = {
+        default = 200.1,
+    },
+}
+
+
 local Kannon = CannonBase:New {
     name                    = "Kannon",
     reloadtime              = 2.0,

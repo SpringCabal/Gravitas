@@ -1,18 +1,59 @@
-local Projector = BaseRobot:New {
-    name                = "Projector",
+local Projector_ShortRange = BaseRobot:New {
+    name                = "MG Projector",
     customParams = {
         robot = true,
     },
     weapons = {
+		{ name = "WallesRevenge"},
         { name = "Kannon"},
+        { name = "BobGun"}       
     },
     mass                = 70,
     maxDamage           = 300,
     maxVelocity         = 1.5,
     strafeToAttack      = true,
     script              = "projector.lua",
-	objectName = "evilrobot.s3o",
+	objectName = "big_robot.s3o",
 }
+
+local Projector_MedRange = BaseRobot:New {
+    name                = "Kannon Projector",
+    customParams = {
+        robot = true,
+    },
+    weapons = {
+		{ name = "WallesRevenge"},
+        { name = "Kannon"},
+        { name = "BobGun"}       
+    },
+    mass                = 70,
+    maxDamage           = 300,
+    maxVelocity         = 1.5,
+    strafeToAttack      = true,
+    script              = "projector.lua",
+	objectName = "med_robot.s3o",
+}
+
+
+local Projector_LongRange = BaseRobot:New {
+    name                = "Ray Projector",
+    customParams = {
+        robot = true,
+    },
+    weapons = {
+		{ name = "WallesRevenge"},
+        { name = "Kannon"},
+        { name = "BobGun"}       
+    },
+    mass                = 70,
+    maxDamage           = 300,
+    maxVelocity         = 1.5,
+    strafeToAttack      = true,
+    script              = "projector.lua",
+	objectName = "small_robot.s3o",
+}
+
+
 
 -- Could probably use the same chassis as Projector, but needs different weapons/size
 local Bob = BaseRobot:New {
@@ -34,6 +75,10 @@ local Bob = BaseRobot:New {
 
 
 return lowerkeys({
-    Projector = Projector,
+Projector_ShortRange    =Projector_ShortRange,
+Projector_LongRange     =Projector_LongRange,
+Projector_MedRange		=Projector_MedRange	,
+
+ 
     Bob       = Bob,
 })

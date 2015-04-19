@@ -14,6 +14,15 @@ local CannonBase = Weapon:New {
 --     collideNeutral          = false,
 }
 
+local MissileBase = Weapon:New {
+    weaponType              = "MissileLauncher",
+    startVelocity           = 10,
+    acceleration            = 2,
+    tracks                  = true,
+    turnRate                = 10,
+    flightTime              = 15,
+}
+
 
 local GravityBase = Weapon:New {
       areaOfEffect            = 8,
@@ -59,4 +68,5 @@ local GravityBase = Weapon:New {
 return {
     CannonBase = CannonBase,
     GravityBase = GravityBase,
+    MissileBase = MissileBase,
 }
