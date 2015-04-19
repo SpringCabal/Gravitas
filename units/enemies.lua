@@ -4,17 +4,26 @@ local Bob = CassosRobot:New {
     customParams = {
         invulnerable = true,
     },
+    weapons = {
+        { name = "BobGun"}
+    },
 }
 
 local Wallier = CassosRobot:New {
     name                = "Wallier",
     objectName          = "med_robot.s3o",
+    weapons = {
+        { name = "WallesRevenge"},
+    },
 }
 
 
 local Projector = CassosRobot:New {
     name                = "Projector",
     objectName          = "small_robot.s3o",
+    weapons = {
+        { name = "Kannon"},
+    },
 }
 
 return lowerkeys({

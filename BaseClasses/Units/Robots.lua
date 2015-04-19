@@ -36,11 +36,6 @@ local BaseRobot = Unit:New {
 }
 
 local CassosRobot = BaseRobot:New {
-    weapons = {
-        { name = "WallesRevenge"},
-        { name = "Kannon"},
-        { name = "BobGun"}
-    },
     mass                = 70,
     maxDamage           = 300,
     maxVelocity         = 1.5,
