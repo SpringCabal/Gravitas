@@ -10,6 +10,26 @@ local Kannon = CannonBase:New {
     },
 }
 
+local BobGun = CannonBase:New {
+    name                    = "BobGun",
+    reloadtime              = 5.0,
+    range                   = 110,
+--     soundHit                = [[explosion.ogg]],
+--     soundStart              = [[laser.ogg]],
+    impulseFactor           = 0.2,
+    rgbColor                = {150, 0, 190},
+    rgbColor                = {200, 0, 140},
+    weaponVelocity          = 1030,
+    duration                = 0.15,
+    thickness               = 6,
+    coreThickNess           = 6,
+    impactOnly              = true,
+    maxDamage               = 15000,
+    damage                  = {
+        default = 700.1,
+    },
+}
+
 GRAVITY_NEG = GravityBase:New{
       name                    = [[Attractive Gravity]],
       soundStart              = [[weaponpull.ogg]],
@@ -34,4 +54,5 @@ return lowerkeys({
     GRAVITY_NEG = GRAVITY_NEG,
     GRAVITY_POS = GRAVITY_POS,
     Kannon = Kannon,
+    BobGun = BobGun,
 })

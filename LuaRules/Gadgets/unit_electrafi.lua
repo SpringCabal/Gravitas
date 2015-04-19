@@ -34,7 +34,7 @@ end
 function gadget:UnitCreated(unitID, unitDefID)
     if unitDefID == elecID then
         if Spring.GetUnitRulesParam(unitID, "elecSize") == nil then
-           Spring.SetUnitRulesParam(unitID, "elecSize", 200)
+           Spring.SetUnitRulesParam(unitID, "elecSize", 100)
         end
         config[unitID] = Spring.GetUnitRulesParam(unitID,"elecSize")
         Spring.SetUnitNoDraw(unitID, true)
@@ -71,16 +71,14 @@ function UpdateElec(n, x,y,z, uID)
     local units = Spring.GetUnitsInSphere(x,y,z,r+250) -- +205 because its probably bigger than all unit radii
     for _,unitID in pairs(units) do
         local unitDef = UnitDefs[Spring.GetUnitDefID(unitID)]
-        if not unitDef.customParams.invulnerable then
-            local p = ProximityInsideElec(unitID, x,y,z, r)
-            if p > 0 then
-                -- TODO: attenuation
-                if unitDef.customParams.player then
-                    Spring.DestroyUnit(unitID, true, false)
-                elseif unitDef.customParams.robot then
-                    local _, maxHealth = Spring.GetUnitHealth(unitID)
-                    Spring.SetUnitHealth(unitID, {paralyze = maxHealth * 1.5})
-                end
+        local p = ProximityInsideElec(unitID, x,y,z, r)
+        if p > 0 then
+            -- TODO: attenuation
+            if unitDef.customParams.player then
+                Spring.DestroyUnit(unitID, true, false)
+            elseif unitDef.customParams.robot then
+                local _, maxHealth = Spring.GetUnitHealth(unitID)
+                Spring.SetUnitHealth(unitID, {paralyze = maxHealth * 1.5})
             end
         end
     end
