@@ -52,6 +52,7 @@ local Animations = {};
 Animations['stop'] = VFS.Include("scripts/animations/gravit_stop.lua", scriptEnv);
 Animations['idle'] = VFS.Include("scripts/animations/gravit_idle.lua", scriptEnv);
 Animations['walk'] = VFS.Include("scripts/animations/gravit_walk.lua", scriptEnv);
+Animations['die']  = VFS.Include("scripts/animations/gravit_die.lua",  scriptEnv);
 
 -- brutal infrastructure of brutality 
 
@@ -125,6 +126,17 @@ function script.Create()
 end
               
 function script.Killed(recentDamage, _)
+	Signal(SIG_AIM);
+	Signal(SIG_WALK);
+	Signal(SIG_IDLE);
+	PlayAnimation('die');
+	Sleep(2000);
+	Explode(thighleft, SFX.EXPLODE);
+	Explode(thighright, SFX.EXPLODE);
+	Explode(head, SFX.EXPLODE);
+	Explode(pelvis, SFX.EXPLODE);
+	Explode(armleft, SFX.EXPLODE);
+	Explode(armright, SFX.EXPLODE);
     return 1
 end
 
