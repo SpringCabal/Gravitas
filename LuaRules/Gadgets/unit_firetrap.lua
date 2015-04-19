@@ -17,9 +17,13 @@ end
 if gadgetHandler:IsSyncedCode() then
 
 local config = {} -- config[unitID] = radius
+local onFireUnits = {} -- onFireUnits[unitID] = {caughtFire=, proximity=}
 
 local fireSpeed = 0.5 -- IF YOU CHANGE THIS THE SKY WILL FALL ON YOUR HEAD
 local fireID = UnitDefNames["fire"].id
+
+local currentFrame
+local burnTime = 60 -- frames a unit burns for after walking out of a fire trap
 
 function gadget:Initialize()
     -- handle luarules reload
@@ -87,7 +91,6 @@ function ProximityInsideFire(unitID, fx,fy,fz)
 end
 
 function UpdateFire(n, x,y,z, uID)
-
     -- draw
     if n%15==0 then
         config[uID] = Spring.GetUnitRulesParam(uID,"fireSize") or 500
@@ -100,21 +103,39 @@ function UpdateFire(n, x,y,z, uID)
     for _,unitID in pairs(units) do
         if not UnitDefs[Spring.GetUnitDefID(unitID)].customParams.invulnerable then
             local p = ProximityInsideFire(unitID, x,y,z)
-            if p > 0 then
-                -- TODO: attenuation
-                Spring.DestroyUnit(unitID, true, false)
+            if p>0 then
+                onFireUnits[unitID] = {caughtFire=currentFrame, proximity=p}
+            elseif onFireUnits[unitID] then
+                onFireUnits[unitID].proximity = p            
             end
         end
     end
 end
 
 function gadget:GameFrame(n)
+    currentFrame = n
     for uID,_ in pairs(config) do
         local x,y,z = Spring.GetUnitPosition(uID)
         if x then
             UpdateFire(n, x,y,z, uID)
         end
     end
+    
+    for unitID,t in pairs(onFireUnits) do
+        Spring.Echo(t.caughtFire, t.proximity)
+        if t.proximity > 0 then
+            local fireSizeMult = 1
+            SendToUnsynced("BurnUnitID", unitID, fireSizeMult) 
+            Spring.AddUnitDamage(unitID, 2+0.1*t.proximity)                
+        elseif (t.caughtFire+burnTime>currentFrame) then
+            local fireSizeMult = (t.caughtFire+burnTime - currentFrame) / burnTime
+            SendToUnsynced("BurnUnitID", unitID, fireSizeMult) 
+            Spring.AddUnitDamage(unitID, 2)        
+        else
+            onFireUnits[unitID] = nil
+        end
+    end
+    
 end
 
 function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponDefID, projectileID, attackerID, attackerDefID, attackerTeam)
@@ -127,6 +148,16 @@ end
 -- UNSYNCED
 else
 
+function gadget:Initialize()
+    gadgetHandler:AddSyncAction("BurnUnitID", BurnUnitID)
+end
 
+function gadget:Shutdown()
+    gadgetHandler:RemoveSyncAction("BurnUnitID")
+end
+                
+function BurnUnitID(_,unitID,fireSizeMult)
+    Script.LuaUI.onFireUnit(unitID, fireSizeMult)
+end
 
 end

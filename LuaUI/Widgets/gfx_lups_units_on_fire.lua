@@ -87,10 +87,12 @@ local spGetUnitRadius   = Spring.GetUnitRadius
 
 function widget:Initialize()
   widgetHandler:RegisterGlobal('onFire', onFire)
+  widgetHandler:RegisterGlobal('onFireUnit', onFireUnit)
 end
 
 function widget:Shutdown()
   widgetHandler:DeregisterGlobal('onFire', onFire)
+  widgetHandler:DeregisterGlobal('onFireUnit', onFireUnit)
   if (initialized) then
     Lups  = WG['Lups']
     for _,particleID in pairs(particleIDs) do
@@ -145,3 +147,31 @@ function onFire(burningUnits)
 
   end
 end
+
+function onFireUnit(unitID, fireSizeMult)
+  if (Lups==nil)or(totalFxCount>175) then return end
+
+  --// get wind and random values
+  local alpha = 2*pi*random()
+  local r = 20*random()
+  local sx,sy,sz = Spring.GetUnitVelocity(unitID)
+
+  --// send particles to LUPS
+  local x, y, z = spGetUnitPosition(unitID)
+  local r = spGetUnitRadius(unitID)
+  if (r and x and sx) then
+    flameFX.pos     = {x,y,z}
+    flameFX.partpos = "r*sin(alpha),0,r*cos(alpha) | alpha=rand()*2*pi, r=rand()*0.6*" .. r
+    flameFX.size    = r * 0.1 * fireSizeMult
+    flameFX.life    = 30 * fireSizeMult
+    flameFX.force   = {sx*0.5,0.4+0.2*random(),sz*0.5}
+    particleIDs[#particleIDs+1] = AddParticles('SimpleParticles2',flameFX)
+
+    smokeFX.pos     = flameFX.pos 
+    smokeFX.partpos = flameFX.partpos
+    smokeFX.size    = flameFX.size * fireSizeMult
+    smokeFX.life    = 50 * fireSizeMult
+    particleIDs[#particleIDs+1] = AddParticles('SimpleParticles2',smokeFX)
+  end
+end
+
