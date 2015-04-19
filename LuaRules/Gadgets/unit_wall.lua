@@ -17,6 +17,7 @@ if (gadgetHandler:IsSyncedCode()) then
 
 function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
     -- boom
+    Spring.Log("Cabal", "error", "Is Wall Building?: ", UnitDefNames["wall1"].IsBuildingUnit() )
     if UnitDefs[unitDefID].customParams.wall then
         Spring.Log(LOG_SECTION, LOG_LEVEL, "Setting wall stuff: " .. tostring(unitID))
         
