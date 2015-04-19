@@ -88,11 +88,13 @@ local spGetUnitRadius   = Spring.GetUnitRadius
 function widget:Initialize()
   widgetHandler:RegisterGlobal('onFire', onFire)
   widgetHandler:RegisterGlobal('onFireUnit', onFireUnit)
+  widgetHandler:RegisterGlobal('smokePuffUnit', smokePuffUnit)
 end
 
 function widget:Shutdown()
   widgetHandler:DeregisterGlobal('onFire', onFire)
   widgetHandler:DeregisterGlobal('onFireUnit', onFireUnit)
+  widgetHandler:DeregisterGlobal('smokePuffUnit', smokePuffUnit)
   if (initialized) then
     Lups  = WG['Lups']
     for _,particleID in pairs(particleIDs) do
@@ -173,5 +175,12 @@ function onFireUnit(unitID, fireSizeMult)
     smokeFX.life    = 50 * fireSizeMult
     particleIDs[#particleIDs+1] = AddParticles('SimpleParticles2',smokeFX)
   end
+end
+
+function smokePuffUnit(unitID, sizeMult)
+    local x,y,z = Spring.GetUnitPosition(unitID)
+    if x then
+        Spring.SpawnCEG("smoke_puff", x,y,z, 0,0,0, 0, 0) --spawn CEG, cause no damage
+    end
 end
 

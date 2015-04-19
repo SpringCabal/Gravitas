@@ -122,7 +122,6 @@ function gadget:GameFrame(n)
     end
     
     for unitID,t in pairs(onFireUnits) do
-        Spring.Echo(t.caughtFire, t.proximity)
         if t.proximity > 0 then
             local fireSizeMult = 1
             SendToUnsynced("BurnUnitID", unitID, fireSizeMult) 
@@ -143,6 +142,19 @@ function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, w
     return damage,1.0
 end
 
+function gadget:UnitDestroyed(unitID)
+    if onFireUnits[unitID] then
+        SendToUnsynced("SmokePuffUnitID", unitID, 1.0) 
+        SendToUnsynced("BurnUnitID", unitID, 1.0)     
+        SendToUnsynced("BurnUnitID", unitID, 1.0)     
+    end
+    onFireUnits[unitID] = nil
+end
+
+
+
+
+
 
 
 -- UNSYNCED
@@ -150,14 +162,20 @@ else
 
 function gadget:Initialize()
     gadgetHandler:AddSyncAction("BurnUnitID", BurnUnitID)
+    gadgetHandler:AddSyncAction("SmokePuffUnitID", SmokePuffUnitID)
 end
 
 function gadget:Shutdown()
     gadgetHandler:RemoveSyncAction("BurnUnitID")
+    gadgetHandler:RemoveSyncAction("SmokePuffUnitID")
 end
                 
 function BurnUnitID(_,unitID,fireSizeMult)
     Script.LuaUI.onFireUnit(unitID, fireSizeMult)
+end
+
+function SmokePuffUnitID(_,unitID,sizeMult)
+    Script.LuaUI(unitID, sizeMult)
 end
 
 end
