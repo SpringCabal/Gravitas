@@ -50,6 +50,8 @@ local WallesRevenge = MissileBase:New {
 GRAVITY_NEG = GravityBase:New{
       name                    = [[Attractive Gravity]],
       soundStart              = [[weaponpull.ogg]],
+      rgbColor                = [[0 0 1]],
+      rgbColor2               = [[0.3 0.5 1]],
       customParams            = {
         impulse = [[-100]],
       },
@@ -58,6 +60,8 @@ GRAVITY_NEG = GravityBase:New{
 GRAVITY_POS = GravityBase:New{
       name                    = [[Repulsive Gravity]],
       soundStart              = [[weaponpush.ogg]],
+      rgbColor                = [[0 0 1]],
+      rgbColor2               = [[1 0.5 1]],
       customParams            = {
         impulse = [[100]],
       },
