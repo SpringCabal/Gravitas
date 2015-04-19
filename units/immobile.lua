@@ -41,6 +41,9 @@ local Gate = BaseWall:New {
     collisionVolumeOffsets  = '0 56 0',
     collisionVolumeTest     = 1,
     collisionVolumeType     = 'box',
+    customParams = {
+        radius = 260,
+    }
 }
 
 local Electrafi = BaseEffect:New {
@@ -76,6 +79,9 @@ local Wall1 = BaseWall:New {
     collisionVolumeOffsets  = '0 56 0',
     collisionVolumeTest     = 1,
     collisionVolumeType     = 'box',
+    customParams = {
+        radius = 490,
+    }
 }
 
 local Wall2 = BaseWall:New {
@@ -87,6 +93,9 @@ local Wall2 = BaseWall:New {
     collisionVolumeOffsets  = '0 56 0',
     collisionVolumeTest     = 1,
     collisionVolumeType     = 'box',
+    customParams = {
+        radius = 260,
+    }
 }
 
 local Wall3 = BaseWall:New {
@@ -98,6 +107,9 @@ local Wall3 = BaseWall:New {
     collisionVolumeOffsets  = '0 56 0',
     collisionVolumeTest     = 1,
     collisionVolumeType     = 'box',
+    customParams = {
+        radius = 160,
+    }
 }
 
 local Wall4 = BaseWall:New {
@@ -109,6 +121,9 @@ local Wall4 = BaseWall:New {
     collisionVolumeOffsets  = '0 56 0',
     collisionVolumeTest     = 1,
     collisionVolumeType     = 'box',
+    customParams = {
+        radius = 160,
+    }
 }
 
 
