@@ -51,7 +51,7 @@ GRAVITY_NEG = GravityBase:New{
       name                    = [[Attractive Gravity]],
       soundStart              = [[weaponpull.ogg]],
       customParams            = {
-        impulse = [[-125]],
+        impulse = [[-100]],
       },
 }
 
@@ -59,7 +59,7 @@ GRAVITY_POS = GravityBase:New{
       name                    = [[Repulsive Gravity]],
       soundStart              = [[weaponpush.ogg]],
       customParams            = {
-        impulse = [[125]],
+        impulse = [[100]],
       },
 
 }

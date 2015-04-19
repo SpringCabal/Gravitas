@@ -19,7 +19,7 @@ local BaseHuman = Unit:New {
     maxDamage           = 300, -- default only, <SIDE>Infantry.lua should overwrite
     maxVelocity         = 1.5,
     minCollisionSpeed   = 1,
-    movementClass       = "KBOT_Infantry", -- TODO: --KBOT
+    movementClass       = "Gravit", -- TODO: --KBOT
     repairable          = false,
     sightDistance       = 800,
 

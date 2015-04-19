@@ -36,7 +36,7 @@ local GravityBase = Weapon:New {
       range                   = 420,
       reloadtime              = 0.1,
       tolerance               = 32000, 
-      turret                  = false,
+      turret                  = true,
 
       avoidFriendly           = false,
       collideGround           = true,
@@ -46,7 +46,6 @@ local GravityBase = Weapon:New {
       },
       onlyTargetCategory      = "INFANTRY",
 
-      -- gfx
       coreThickness           = 0.5,
       intensity               = 0.7,
       renderType              = 4,
