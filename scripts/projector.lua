@@ -153,6 +153,7 @@
 					tP(armup01,-5,0,0, 0.25,false)
 					tP(armup02,-5,0,0, 0.25,false)	
 					end
+					if boolMove==false then break end
 					Sleep(100)
 					tP(legfront02,-15,-33,0, 5,false)
 					tP(frblade02,64,0,0, 5,false)
