@@ -8,13 +8,13 @@ local Bob = BaseRobot:New {
 
 local Wallier = BaseRobot:New {
     name                = "Wallier",
-	objectName          = "med_robot.s3o",
+    objectName          = "med_robot.s3o",
 }
 
 
 local Projector = BaseRobot:New {
     name                = "Projector",
-	objectName          = "small_robot.s3o",
+    objectName          = "small_robot.s3o",
 }
 
 return lowerkeys({
