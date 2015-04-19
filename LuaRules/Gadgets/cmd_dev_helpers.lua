@@ -31,15 +31,35 @@ function Plop()
     end
 end
 
+function CleanMap()
+	if not Spring.IsCheatingEnabled() then return end
+    local units = Spring.GetAllUnits()
+    for _,unitID in ipairs(units) do
+        Spring.DestroyUnit(unitID, false, true) 
+    end
+    local features = Spring.GetAllFeatures()
+    for _,featureID in ipairs(features) do
+        Spring.DestroyFeature(featureID, false, true) 
+    end
+end
 
+
+function RePlop()
+    CleanMap()
+    Plop()
+end
 
 function gadget:Initialize()
 	gadgetHandler:AddChatAction('plop', Plop, "")
+	gadgetHandler:AddChatAction('cleanmap', CleanMap, "")
+	gadgetHandler:AddChatAction('replop', RePlop, "")
 end
 
 
 function gadget:Shutdown()
 	gadgetHandler:RemoveChatAction('plop')
+	gadgetHandler:RemoveChatAction('cleanmap')
+	gadgetHandler:RemoveChatAction('replop')
 end
 
 
