@@ -1,3 +1,20 @@
+local Protector_Boss = BaseRobot:New {
+    name                = "Boss",
+    customParams = {
+        robot = true,
+    },
+    weapons = {
+        { name = "BossWeapon"},
+    },
+    mass                = 70,
+    maxDamage           = 300,
+    maxVelocity         = 1.5,
+    strafeToAttack      = true,
+    script              = "projector_boss.lua",
+	objectName = "ComeToPapa.s3o",
+}
+
+
 local Projector_ShortRange = BaseRobot:New {
     name                = "MG Projector",
     customParams = {
@@ -78,6 +95,7 @@ return lowerkeys({
 Projector_ShortRange    =Projector_ShortRange,
 Projector_LongRange     =Projector_LongRange,
 Projector_MedRange		=Projector_MedRange	,
+Protector_Boss		= Protector_Boss	,
 
  
     Bob       = Bob,

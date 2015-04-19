@@ -68,4 +68,5 @@ local GravityBase = Weapon:New {
 return {
     CannonBase = CannonBase,
     GravityBase = GravityBase,
-    MissileBase = MissileBase,
+    MissileBase = MissileBase
+}
