@@ -4,7 +4,7 @@ local Barrel = BaseImmobile:New {
         barrel = true,
     },
     maxDamage           = 150,
-    mass                = 80,
+    mass                = 60,
     script             = "barrel.lua",
 }
 
@@ -15,14 +15,14 @@ local Canister = BaseImmobile:New {
         barrel = true,
     },
     maxDamage               = 150,
-    mass                    = 80,
+    mass                    = 60,
     script                  = "canister.lua",
 }
 
 local Crate = BaseImmobile:New {
     name                    = "Crate",
     maxDamage               = 150,
-    mass                    = 100,
+    mass                    = 80,
     collisionVolumeScales   = '50 50 50',
     collisionVolumeOffsets  = '0 0 0',
     collisionVolumeTest     = 1,

@@ -36,7 +36,7 @@ local BaseRobot = Unit:New {
 }
 
 local CassosRobot = BaseRobot:New {
-    mass                = 70,
+    mass                = 50,
     maxDamage           = 300,
     maxVelocity         = 1.5,
     strafeToAttack      = true,
