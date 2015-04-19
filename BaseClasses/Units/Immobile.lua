@@ -22,7 +22,7 @@ local BaseImmobile = Unit:New {
 
 
 	stealth				= true,
-	turnRate			= 3000,
+	turnRate			= 0,
 	upright				= true,
     customParams = {
         radius = 30,
