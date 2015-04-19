@@ -63,7 +63,7 @@ local BaseWall = BaseImmobile:New {
         wall = true,
         invulnerable = true,
     },
-    mass                = math.huge,
+    mass                = 10e20,
     maxDamage           = 1500,
 }
 
