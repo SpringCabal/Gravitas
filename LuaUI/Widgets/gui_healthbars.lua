@@ -1097,15 +1097,15 @@ do
         local infotext = ''
         if (stunned) then
           paraUnits[#paraUnits+1]=unitID
-          if (fullText) then
-            infotext = floor((paralyzeDamage-maxHealth)/(maxHealth*empDecline)) .. 's'
-          end
+          --if (fullText) then
+            --infotext = floor((paralyzeDamage-maxHealth)/(maxHealth*empDecline)) .. 's'
+          --end
           emp = 1
         else
           if (emp>1) then emp=1 end
-          if (fullText and drawBarPercentage > 0) then
-            infotext = floor(emp*100)..'%'
-          end
+          --if (fullText and drawBarPercentage > 0) then
+            --infotext = floor(emp*100)..'%'
+          --end
         end
         local empcolor_index = (stunned and ((blink and "emp_b") or "emp_p")) or ("emp")
         AddBar("paralyze",emp,empcolor_index,infotext)
