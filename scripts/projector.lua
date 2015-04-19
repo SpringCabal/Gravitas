@@ -192,7 +192,7 @@
 					tP(armup02,5,0,0, 0.05,false)	
 				end
 				Move(center,y_axis,-5,2)
-				Sleep(100)
+				if boolMove==true then break end
 				tP(legfront01,-4*-1,0,0, 0.25,false)
 				tP(legfront02,-4*-1,0,0, 0.25,false)
 				tP(frblade01,4*-1,0,0, 0.25,false)
@@ -207,7 +207,7 @@
 					tP(armup02,10,0,0, 0.05,false)	
 				end
 				Move(center,y_axis,0,1)
-				Sleep(100)
+			
 					while boolStunned==true do
 					stunned()
 					end
