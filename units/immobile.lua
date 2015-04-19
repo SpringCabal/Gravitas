@@ -43,7 +43,8 @@ local Gate = BaseWall:New {
     collisionVolumeType     = 'box',
     customParams = {
         radius = 260,
-    }
+    },
+    onoffable               = true,
 }
 
 local Electrafi = BaseEffect:New {
