@@ -24,6 +24,9 @@ local BaseImmobile = Unit:New {
 	stealth				= true,
 	turnRate			= 3000,
 	upright				= true,
+    customParams = {
+        radius = 30,
+    }
 }
 
 local BaseEffect = Unit:New {
