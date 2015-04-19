@@ -69,4 +69,3 @@ return {
     CannonBase = CannonBase,
     GravityBase = GravityBase,
     MissileBase = MissileBase,
-}
