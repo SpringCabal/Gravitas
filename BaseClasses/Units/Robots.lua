@@ -49,5 +49,6 @@ local CassosRobot = BaseRobot:New {
 }
 
 return {
-    BaseRobot = BaseRobot,
+    BaseRobot   = BaseRobot,
+    CassosRobot = CassosRobot,
 }
