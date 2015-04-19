@@ -1,5 +1,5 @@
 local gate = piece('Gate')
-local rails = piece('Rails);
+local rails = piece('Rails');
 
 function script.Create()
 end
