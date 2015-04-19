@@ -70,11 +70,17 @@ function UpdateElec(n, x,y,z, uID)
     local r = config[uID] or 0
     local units = Spring.GetUnitsInSphere(x,y,z,r+250) -- +205 because its probably bigger than all unit radii
     for _,unitID in pairs(units) do
-        if not UnitDefs[Spring.GetUnitDefID(unitID)].customParams.invulnerable then
+        local unitDef = UnitDefs[Spring.GetUnitDefID(unitID)]
+        if not unitDef.customParams.invulnerable then
             local p = ProximityInsideElec(unitID, x,y,z, r)
             if p > 0 then
                 -- TODO: attenuation
-                Spring.DestroyUnit(unitID, true, false)
+                if unitDef.customParams.player then
+                    Spring.DestroyUnit(unitID, true, false)
+                elseif unitDef.customParams.robot then
+                    local _, maxHealth = Spring.GetUnitHealth(unitID)
+                    Spring.SetUnitHealth(unitID, {paralyze = maxHealth * 1.5})
+                end
             end
         end
     end
