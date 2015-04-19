@@ -26,21 +26,22 @@
 	 piecesTable[#piecesTable+1]= piece("gun02")
 	 piecesTable[#piecesTable+1]= piece("gun03")
 	 piecesTable[#piecesTable+1]= piece("gun04")
-	center=piece("center")
-	Body=piece("Body")
 
-	legfront02=piece("legfront02")
-	frblade02=piece("frblade02")
-	legrear02=piece("legrear02")
-	rblade02=piece("rblade02")
-	legrear01=piece("legrear01")
-	rblade01=piece("rblade01")
-	legfront01=piece("legfront01")
-	frblade01=piece("frblade01")
-	armup01=piece("armup01")
-	bladeup01=piece("bladeup01")
-	armup02=piece("armup02")
-	bladeup02=piece("bladeup02")
+    center          = piece("center")
+	Body            = piece("Body")
+    legfront01      = piece("legfront01")
+	legfront02      = piece("legfront02")
+    legrear01       = piece("legrear01")
+	legrear02       = piece("legrear02")
+    frblade01       = piece("frblade01")
+	frblade02       = piece("frblade02")
+    rblade01        = piece("rblade01")
+    rblade02        = piece("rblade02")
+	bladeup01       = piece("bladeup01")
+    bladeup02       = piece("bladeup02")
+    armup01         = piece("armup01")
+	armup02         = piece("armup02")
+
 
 	rocket01=piece("rocket01")
 	MG02=piece("MG02")
@@ -300,24 +301,25 @@
 	end
 	
 	function DeathAnimation()
-	tP(legfront01,x_axis,-44,3)
-	tP(legfront02,x_axis,-44,3)
-	tP(frblade01,x_axis,44,3)
-	tP(frblade02,x_axis,44,3)
-	tP(legrear01,x_axis,44,3)
-	tP(legrear02,x_axis,44,3)
-	tP(rblade01,x_axis,-44,3)
-	tP(rblade02,x_axis,-44,3)
-	tP(center,z_axis,-90,8,true)
+        tP(legfront01,x_axis,-44,3)
+        tP(legfront02,x_axis,-44,3)
+        tP(frblade01,x_axis,44,3)
+        tP(frblade02,x_axis,44,3)
+        tP(legrear01,x_axis,44,3)
+        tP(legrear02,x_axis,44,3)
+        tP(rblade01,x_axis,-44,3)
+        tP(rblade02,x_axis,-44,3)
+        -- FIXME: broken original code below (no clue what it does):
+        --tP(center,z_axis,-90,8,true)
+        tP(center,z_axis,-90,8)
 
 	end
 
-	function script.Killed(recentDamage,_)
-
-
-	DeathAnimation()
-	return 1
+	function script.Killed(recentDamage, _)
+        DeathAnimation()
+        return 1
 	end
+
 	SIG_RESET=2
 
 	function resetTurret()

@@ -25,44 +25,40 @@ local MissileBase = Weapon:New {
 
 
 local GravityBase = Weapon:New {
+      weaponType              = [[BeamLaser]],
+
       areaOfEffect            = 8,
-      avoidFriendly           = false,
-      burst                   = 9,
-      burstrate               = 0.01,
-      coreThickness           = 0.5,
       craterBoost             = 0,
       craterMult              = 0,
+      duration                = 0.1,
+      impactOnly              = true,
+      noSelfDamage            = true,
+      range                   = 420,
+      reloadtime              = 0.1,
+      tolerance               = 32000, 
+      turret                  = false,
+
+      avoidFriendly           = false,
+      collideGround           = true,
 
       damage                  = {
         default = 0.001,
-        planes  = 0.001,
-        subs    = 5E-05,
       },
+      onlyTargetCategory      = "INFANTRY",
 
-      duration                = 0.0333,
-      endsmoke                = [[0]],
-      explosionGenerator      = [[custom:NONE]],
-      impactOnly              = true,
+      -- gfx
+      coreThickness           = 0.5,
       intensity               = 0.7,
-      interceptedByShieldType = 0,
-      noSelfDamage            = true,
-      predictBoost            = 1,
-      proximityPriority       = -15,
-      range                   = 420,
-      reloadtime              = 0.2,
       renderType              = 4,
       rgbColor                = [[0 0 1]],
       rgbColor2               = [[1 0.5 1]],
       size                    = 2,
-      soundTrigger            = true,
+
       startsmoke              = [[0]],
+      endsmoke                = [[0]],
+      explosionGenerator      = [[custom:NONE]],
+      soundTrigger            = true,
       thickness               = 4,
-      tolerance               = 5000,
-      turret                  = true,
-      weaponTimer             = 0.1,
-      weaponType              = [[LaserCannon]],
-      weaponVelocity          = 2200,
-      onlyTargetCategory      = "INFANTRY",
 }
 
 return {

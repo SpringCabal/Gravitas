@@ -15,9 +15,12 @@ local LOG_LEVEL = LOG.DEBUG
 
 if (gadgetHandler:IsSyncedCode()) then
 
+    local testWall
 function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
     -- boom
+    Spring.Log(LOG_SECTION, LOG_LEVEL, "Is Wall Building?: ", UnitDefNames["wall1"].isBuilding)
     if UnitDefs[unitDefID].customParams.wall then
+        testWall = unitID
         Spring.Log(LOG_SECTION, LOG_LEVEL, "Setting wall stuff: " .. tostring(unitID))
         
     	Spring.SetUnitAlwaysVisible(unitID, true);
@@ -44,5 +47,21 @@ function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
 -- 		);
     end
 end
+
+-- local angle = 0
+-- local updateRate = 10
+-- function gadget:GameFrame()
+--     if Spring.GetGameFrame() % updateRate ~= 0 then
+--         return
+--     end
+--     if testWall then
+--         local x = math.sin(math.rad(angle))
+--         local z = math.cos(math.rad(angle))
+--         Spring.SetUnitBlocking(testWall, false)
+--         Spring.SetUnitDirection(testWall, x, 0, z)
+--         Spring.SetUnitBlocking(testWall, true)
+--         angle = angle + 1
+--     end
+-- end
 
 end
