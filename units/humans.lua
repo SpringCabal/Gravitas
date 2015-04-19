@@ -3,6 +3,7 @@ local Gravit = BaseHuman:New {
     activateWhenBuilt   = true,
     customParams = {
         player = true,
+        radius = 40,
     },
     weapons = {
         { name = "GRAVITY_POS"},

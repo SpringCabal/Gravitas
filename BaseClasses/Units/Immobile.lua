@@ -11,7 +11,7 @@ local BaseImmobile = Unit:New {
     pushResistant       = true,
     collisionVolumeScales   = '37 40 37',
     collisionVolumeTest     = 1,
-    collisionVolumeType     = 'CylY',
+    collisionVolumeType     = 'cylY',
 	-- corpse				= "",
 	footprintX			= 1,
 	footprintZ			= 1,
@@ -41,7 +41,7 @@ local BaseEffect = Unit:New {
 	mass				= 50,
     maxDamage           = 10000,
     collisionVolumeScales   = '0 0 0',
-    collisionVolumeType     = 'CylY',
+    collisionVolumeType     = 'cylY',
     pushResistant       = true,
     blocking            = false,
     canMove             = false, --effects cannot be moved (even by gravity)
@@ -63,6 +63,7 @@ local BaseWall = BaseImmobile:New {
         wall = true,
         invulnerable = true,
     },
+    canMove				= false,
     mass                = 10e20,
     maxDamage           = 1500,
 }
