@@ -229,17 +229,17 @@
 	function typeDef()
 	defID=Spring.GetUnitDefID(unitID)
 
-		if defID == UnitDefNames["projector_longrange"].id then
+		if defID == UnitDefNames["wallier"].id then
 		boolRocketType=true
 		Show(rocket01)
 		Show(rocket02)
-		elseif  defID == UnitDefNames["projector_shortrange"].id then
+		elseif  defID == UnitDefNames["bob"].id then
 		Show(MG01)
 		Show(MG02)
 		Show(MG_B01)
 		Show(MG_B02)
 		boolMGType=true
-		elseif  defID == UnitDefNames["projector_medrange"].id then
+		elseif  defID == UnitDefNames["projector"].id then
 		boolRay1Type=true
 		Show(turret)
 		Show(gun01)

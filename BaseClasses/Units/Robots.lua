@@ -46,7 +46,6 @@ local CassosRobot = BaseRobot:New {
     maxVelocity         = 1.5,
     strafeToAttack      = true,
     script              = "projector.lua",
-	
 }
 
 return {
