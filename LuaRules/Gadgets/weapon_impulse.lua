@@ -98,8 +98,8 @@ end
 
 function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponDefID, projectileID, attackerID, attackerDefID, attackerTeam)
 	if impulseWeaponID[weaponDefID] and Spring.ValidUnitID(attackerID) then
-		local _,_,_,ux, uy, uz = spGetUnitPosition(unitID, true)
-		local_,_,_,ax, ay, az = spGetUnitPosition(attackerID, true)
+		local ux, uy, uz = spGetUnitPosition(unitID, true)
+		local ax, ay, az = spGetUnitPosition(attackerID, true)
 		
 		local x,y,z = (ux-ax), (uy-ay), (uz-az)
 		local magnitude = impulseWeaponID[weaponDefID]
@@ -117,9 +117,9 @@ local function ActionImpulses()
 			local data = unit[unitID]
             --Spring.Echo(unitID, data.x, data.y, data.x, UNSTICK_CONSTANT)
             
-			spAddUnitImpulse(unitID, UNSTICK_CONSTANT,0,0) --dummy impulse (applying impulse>1 make unit less sticky to map surface)
+			--spAddUnitImpulse(unitID, UNSTICK_CONSTANT,0,0) --dummy impulse (applying impulse>1 make unit less sticky to map surface)
 			spAddUnitImpulse(unitID, data.x, data.y, data.z)
-			spAddUnitImpulse(unitID, -UNSTICK_CONSTANT,0,0) --remove dummy impulse
+			--spAddUnitImpulse(unitID, -UNSTICK_CONSTANT,0,0) --remove dummy impulse
 		end
 		unitByID = {count = 0, data = {}}
 		unit = {}
