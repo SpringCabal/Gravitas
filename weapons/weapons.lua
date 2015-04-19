@@ -16,7 +16,7 @@ GRAVITY_NEG = GravityBase:New{
       customParams            = {
         impulse = [[-125]],
       },
-
+      range = GravityBase.range + 100,
 }
 
 GRAVITY_POS = GravityBase:New{

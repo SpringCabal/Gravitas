@@ -36,7 +36,7 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
         -- do damage to all nearby units
         -- TODO: make some sensible game mechanic
         for _, nearbyUnitID in pairs(nearbyUnits) do
-            if not UnitDefs[Spring.GetUnitDefID(nearbyUnitID)].customParams.effect then
+            if not UnitDefs[Spring.GetUnitDefID(unitID)].customParams.invulnerable then
                 Spring.AddUnitDamage(nearbyUnitID, 500)
             end
         end

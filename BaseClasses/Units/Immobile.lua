@@ -32,6 +32,8 @@ local BaseImmobile = Unit:New {
 local BaseEffect = Unit:New {
     customParams        = {
         effect = true,
+        -- invulnerable means that most instances are invulnerable through normal damage and effects (could still be manually destroyed)
+        invulnerable = true, 
     },
     category            = "EFFECT",
     footprintX			= 1,
@@ -59,6 +61,7 @@ local BaseEffect = Unit:New {
 local BaseWall = BaseImmobile:New {
     customParams = {
         wall = true,
+        invulnerable = true,
     },
     mass                = math.huge,
     maxDamage           = 1500,

@@ -98,7 +98,7 @@ function UpdateFire(n, x,y,z, uID)
     local fireRadius = config[uID]
     local units = Spring.GetUnitsInCylinder(x,z,fireRadius * fireSpeed * 1.1)
     for _,unitID in pairs(units) do
-        if fireID ~= Spring.GetUnitDefID(unitID) then
+        if not UnitDefs[Spring.GetUnitDefID(unitID)].customParams.invulnerable then
             local p = ProximityInsideFire(unitID, x,y,z)
             if p > 0 then
                 -- TODO: attenuation

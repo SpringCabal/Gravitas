@@ -64,6 +64,7 @@ local Plate = BaseWall:New {
     script              = "plate.lua",
     footprintX          = 8,
     footprintZ          = 8,
+    blocking            = false,
 }
 
 local Wall1 = BaseWall:New {
