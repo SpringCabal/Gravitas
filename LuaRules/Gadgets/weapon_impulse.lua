@@ -8,13 +8,13 @@ end
 
 function gadget:GetInfo()
   return {
-    name      = "Weapon Impulse",
-    desc      = "Implements impulse relaint weapons because engine impelementation is prettymuch broken.",
-    author    = "Google Frog",
-    date      = "1 April 2012",
-    license   = "GNU GPL, v2 or later",
+    name      = "Impulse",
+    desc      = "",
+    author    = "[Fx]Bluestone, based on original gadget by Google Frog",
+    date      = "April 20152012",
+    license   = "GNU GPL, v3 or later",
     layer     = 0,
-    enabled   = true  --  loaded by default?
+    enabled   = true
   }
 end
 
