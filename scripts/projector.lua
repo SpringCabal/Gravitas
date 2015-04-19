@@ -1,7 +1,5 @@
 include "toolKit.lua"
 
-function script.HitByWeapon ( x, z, weaponDefID, damage ) 
-end
 piecesTable={}
  piecesTable[#piecesTable+1]= piece("center")
  piecesTable[#piecesTable+1]= piece("Body")
@@ -59,156 +57,146 @@ boolAiming=false
 
 function walkAnimation()
 
-while true do
-	while boolMove==true do
-		Sleep(100)
-		tP(legfront01,-15,-33,0, 5,false)
-		tP(frblade01,64,0,0, 5,false)
-		tP(legrear02,-59,0,0, 5,false)
-		tP(rblade02,89,0,0, 5,false)
-		resetPiece(legfront02,5)
-		resetPiece(frblade02,5)
-		resetPiece(legrear01,5)
-		resetPiece(rblade01,5,true)
-		
-		if boolAiming==false then
-		tP(armup01,-5,0,0, 0.25,false)
-		tP(armup02,-5,0,0, 0.25,false)	
-		end
-		Sleep(100)
-		tP(legfront02,-15,-33,0, 5,false)
-		tP(frblade02,64,0,0, 5,false)
-		tP(legrear01,-59,0,0, 5,false)
-		tP(rblade01,89,0,0, 5,false)
-		resetPiece(legfront01,5)
-		resetPiece(frblade01,5)
-		resetPiece(legrear02,5)
-		resetPiece(rblade02,5,true)
-		
-		if boolAiming==false then
-		tP(armup01,15,0,0, 0.25,false)
-		tP(armup02,15,0,0, 0.25,false)	
-		end
+    while true do
+        while boolMove == true do
+            Sleep(100)
+            tP(legfront01,-15,-33,0, 5,false)
+            tP(frblade01,64,0,0, 5,false)
+            tP(legrear02,-59,0,0, 5,false)
+            tP(rblade02,89,0,0, 5,false)
+            resetPiece(legfront02,5)
+            resetPiece(frblade02,5)
+            resetPiece(legrear01,5)
+            resetPiece(rblade01,5,true)
 
+            if boolAiming == false then
+                tP(armup01,-5,0,0, 0.25,false)
+                tP(armup02,-5,0,0, 0.25,false)	
+            end
+            Sleep(100)
+            tP(legfront02,-15,-33,0, 5,false)
+            tP(frblade02,64,0,0, 5,false)
+            tP(legrear01,-59,0,0, 5,false)
+            tP(rblade01,89,0,0, 5,false)
+            resetPiece(legfront01,5)
+            resetPiece(frblade01,5)
+            resetPiece(legrear02,5)
+            resetPiece(rblade02,5,true)
 
-	end
-	resetPiece(legfront02,5,false)
-	resetPiece(legfront01,5,false)
-	resetPiece(frblade02,5 ,false)
-	resetPiece(frblade01,5 ,false)
-	resetPiece(legrear01,5 ,false)
-	resetPiece(legrear02,5 ,true)
-	
-	
-	while boolMove==false do
-	
-	--idle
+            if boolAiming == false then
+                tP(armup01,15,0,0, 0.25,false)
+                tP(armup02,15,0,0, 0.25,false)	
+            end
 
-	tP(legfront01,-4,0,0, 0.25,false)
-	tP(legfront02,-4,0,0, 0.25,false)
-	tP(frblade01,4,0,0, 0.25,false)
-	tP(frblade02,4,0,0, 0.25,false)
-	
-	tP(legrear01,4,0,0, 0.25,false)
-	tP(legrear02,4,0,0, 0.25,false)
-	tP(rblade01,-4,0,0, 0.25,false)
-	tP(rblade02,-4,0,0, 0.25,true)
-		tP(armup01,5,0,0, 0.05,false)
-		tP(armup02,5,0,0, 0.05,false)	
-	Move(center,y_axis,-5,2)
-	Sleep(100)
-	tP(legfront01,-4*-1,0,0, 0.25,false)
-	tP(legfront02,-4*-1,0,0, 0.25,false)
-	tP(frblade01,4*-1,0,0, 0.25,false)
-	tP(frblade02,4*-1,0,0, 0.25,false)
-	
-	tP(legrear01,4*-1,0,0, 0.25,false)
-	tP(legrear02,4*-1,0,0, 0.25,false)
-	tP(rblade01,-4*-1,0,0, 0.25,false)
-	tP(rblade02,-4*-1,0,0, 0.25,true)
-	
-		tP(armup01,10,0,0, 0.05,false)
-		tP(armup02,10,0,0, 0.05,false)	
-	Move(center,y_axis,0,1)
-	Sleep(100)
-	end
+        end
+        resetPiece(legfront02,5,false)
+        resetPiece(legfront01,5,false)
+        resetPiece(frblade02,5 ,false)
+        resetPiece(frblade01,5 ,false)
+        resetPiece(legrear01,5 ,false)
+        resetPiece(legrear02,5 ,true)
 
+        while boolMove == false do
 
-Sleep(100)
-end
+            --idle
 
+            tP(legfront01,-4,0,0, 0.25,false)
+            tP(legfront02,-4,0,0, 0.25,false)
+            tP(frblade01,4,0,0, 0.25,false)
+            tP(frblade02,4,0,0, 0.25,false)
 
+            tP(legrear01,4,0,0, 0.25,false)
+            tP(legrear02,4,0,0, 0.25,false)
+            tP(rblade01,-4,0,0, 0.25,false)
+            tP(rblade02,-4,0,0, 0.25,true)
+            tP(armup01,5,0,0, 0.05,false)
+            tP(armup02,5,0,0, 0.05,false)	
+            Move(center,y_axis,-5,2)
+            Sleep(100)
+            tP(legfront01,-4*-1,0,0, 0.25,false)
+            tP(legfront02,-4*-1,0,0, 0.25,false)
+            tP(frblade01,4*-1,0,0, 0.25,false)
+            tP(frblade02,4*-1,0,0, 0.25,false)
+
+            tP(legrear01,4*-1,0,0, 0.25,false)
+            tP(legrear02,4*-1,0,0, 0.25,false)
+            tP(rblade01,-4*-1,0,0, 0.25,false)
+            tP(rblade02,-4*-1,0,0, 0.25,true)
+
+            tP(armup01,10,0,0, 0.05,false)
+            tP(armup02,10,0,0, 0.05,false)	
+            Move(center,y_axis,0,1)
+            Sleep(100)
+        end
+
+        Sleep(100)
+    end
 
 end
 
+function script.HitByWeapon(x, z, weaponDefID, damage) 
+end
  
 function script.Create()
-StartThread(walkAnimation)
-
+    StartThread(walkAnimation)
 end
 
-function script.Killed(recentDamage,_)
-
-suddenDeathV(recentDamage)
-return 1
+function script.Killed(recentDamage, _)
+    --suddenDeathV(recentDamage)
+    return 1
 end
 
 
 ----aimining & fire weapon
 function script.AimFromWeapon1() 
-	return center 
+    return center 
 end
-
 
 
 function script.QueryWeapon1() 
-	return center
+    return turret
 end
 
-function script.AimWeapon1( Heading ,pitch)	
-	--aiming animation: instantly turn the gun towards the enemy
-	
-boolAiming=true
-	tP(armup01,pitch,12)
-	tP(turret,0,-heading,0,12)
-	tP(armup02,pitch,12,true)
-	return true
+function script.AimWeapon1(heading, pitch)	
+    --aiming animation: instantly turn the gun towards the enemy
+--     boolAiming=true
+--     tP(armup01, pitch, 12)
+--     tP(turret, 0, -heading, 0, 12)
+--     tP(armup02, pitch, 12, true)
+    return true
 
 end
  
 
-function script.FireWeapon1()	
-boolAiming=false
-resetPiece(turret,5)
-	return true
+function script.FireWeapon1()
+    boolAiming = false
+    resetPiece(turret, 5)
+    return true
 end
 
 
 
 function script.StartMoving()
-boolMove=true
+    boolMove = true
 end
 
 function script.StopMoving()
-boolMove=false		
-		
+    boolMove = false
 end
 
 function script.Activate()
-
-return 1
+    return 1
 end
 
 function script.Deactivate()
-
-return 0
+    return 0
 end
 
 function script.QueryBuildInfo() 
-  return center 
+    return center 
 end
 
 function script.QueryNanoPiece()
-     return center
+    return center
 end
 
