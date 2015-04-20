@@ -271,14 +271,14 @@ end
 function StartJump()
 	jumping = true
 	--StartThread(anim_StartJump)
-	local x,y,z = GetUnitPosition(unitID)
+	local x,y,z = Spring.GetUnitPosition(unitID)
 --	SpawnCEG("mech_jump_dust", x,y,z)
 end
 
 function Jumping()-- Gets called throughout by gadget
-	for i = 1, info.jumpjets do -- emit JumpJetTrail
+	--for i = 1, info.jumpjets do -- emit JumpJetTrail
 		--EmitSfx(jets[i], SFX.CEG)
-	end
+	--end
 end
 
 function HalfJump()
@@ -287,7 +287,7 @@ end
 
 function StopJump()
 	jumping = false
-	local x,y,z = GetUnitPosition(unitID)
+	local x,y,z = Spring.GetUnitPosition(unitID)
 --	SpawnCEG("mech_jump_dust", x,y,z)
 	--StartThread(anim_StopJump)
 end

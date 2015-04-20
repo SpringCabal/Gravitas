@@ -420,6 +420,7 @@ local function TurnOrder(unitID, x, y, z)
    PrintCommands(unitID)
    
    Spring.Echo("Now insert TURN")]]
+    Spring.Echo("turn GRAVIT, TURN!")
    Spring.GiveOrderToUnit(unitID, CMD.INSERT, {0, CMD_TURN, CMD.OPT_ALT, x, y, z}, {"alt"})
    
    --Spring.Echo("Now insert JUMP")
