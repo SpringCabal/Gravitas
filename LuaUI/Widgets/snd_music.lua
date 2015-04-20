@@ -11,23 +11,25 @@ function widget:GetInfo()
 end
 
 local VOLUME = 0.3
-local BUFFER = 1
+local BUFFER = 0.015
 
 local playingTime = 0
 local trackTime
+local gameStarted = false
 
-function widget:Initialize()
+function widget:GameStart()
     Spring.PlaySoundStream("sounds/music.ogg", VOLUME)
-    trackTime = Spring.GetSoundStreamTime()
+    _, trackTime = Spring.GetSoundStreamTime()
+    gameStarted = true
 end
 
--- sets status to ready & hide pre-game UI
+
 function widget:Update(dt)
-    playingTime = playingTime + dt
-    if playingTime > trackTime then
-        playingTime = playingTime - trackTime
-    elseif playingTime > trackTime - BUFFER then
-        Spring.PlaySoundStream("sounds/music.ogg", VOLUME, true)
+    if gameStarted then
+        playingTime = Spring.GetSoundStreamTime()
+        if playingTime > trackTime - BUFFER then
+            Spring.PlaySoundStream("sounds/music.ogg", VOLUME)
+        end
     end
 end 
 
