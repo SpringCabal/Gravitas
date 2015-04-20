@@ -13,12 +13,8 @@ end
 
 local Chili, window
 
-local spGetMyTeamID      = Spring.GetMyTeamID
-local myTeamID = spGetMyTeamID()
-
 local onOffState
 local panel
-local attackCmd
 
 local playerUnitID = nil
 
@@ -50,11 +46,11 @@ local function resizeUI(vsx,vsy)
 end
 
 local function addOnOffState(cmd)
-    local param = cmd.params[cmd.params[1] + 2]
-    if param:find("On") then
-        param = ColStr(pushCol) .. "Push\b"
+    local text = cmd.params[cmd.params[1] + 2]
+    if text:find("On") then
+        text = ColStr(pushCol) .. "Push\b"
     else
-        param = ColStr(pullCol) .. "Pull\b"
+        text = ColStr(pullCol) .. "Pull\b"
     end
 
     panel = Chili.Panel:New{
@@ -65,14 +61,13 @@ local function addOnOffState(cmd)
     resizeUI(vsx,vsy)
     panel:AddChild(Chili.Label:New 
         {
-            caption = param, --"RMB (or Q) to change\nLMB (or A) to select",
+            caption = text, --"RMB (or Q) to change\nLMB (or A) to select",
             align = "center",
             valign = "center",
             x = 0, y = 0,
             bottom = 0, right = 0,
-            --x = 0,
             font = {
-                size = 20,
+                size = 22,
             },
         }
     )
