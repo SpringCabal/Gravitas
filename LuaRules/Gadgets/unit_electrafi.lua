@@ -222,7 +222,7 @@ function SpawnElec(_,unitID, r)
 
       rotSpeed     = dir,
       rotSpread    = 360,
-      rotExp       = 1,
+      rotExp       = 0.1,
 
       speed        = 10,
       speedSpread  = 0,
