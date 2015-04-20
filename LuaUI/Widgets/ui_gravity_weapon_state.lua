@@ -17,7 +17,7 @@ local spGetMyTeamID      = Spring.GetMyTeamID
 local myTeamID = spGetMyTeamID()
 
 local onOffState
-local onOffStateBtn
+local panel
 local attackCmd
 
 local playerUnitID = nil
@@ -44,29 +44,8 @@ end
 -------------------------------------------
 
 local function resizeUI(vsx,vsy)
-    if onOffStateBtn ~= nil then
-        onOffStateBtn:SetPos(vsx*0.28, vsy*(1-0.10-0.01), vsx*0.07, vsy*0.10) 
-    end
-end
-
-local function GravityPress(obj, x, y, button, mods)
-    if button==1 then
-        -- left mouse, select command
-        if obj.disabled then return end
-        local index = Spring.GetCmdDescIndex(CMD.ATTACK)
-        if (index) then
-            local left, right = (button == 1), (button == 3)
-            local alt, ctrl, meta, shift = mods.alt, mods.ctrl, mods.meta, mods.shift
-            Spring.SetActiveCommand(index, button, left, right, alt, ctrl, meta, shift)
-        end
-    elseif button==3 and playerUnitID then
-        -- right mouse, switch between push/pull
-        local state = Spring.GetUnitIsActive(playerUnitID)
-        if state ~= nil then
-            local newState = state and 0 or 1
-            Spring.GiveOrderToUnit(playerUnitID, CMD.ONOFF, {[1] = newState}, {})
-            updateRequired = true
-        end        
+    if panel ~= nil then
+        panel:SetPos(vsx*0.28, vsy*(1-0.07-0.01), vsx*0.07, vsy*0.07) 
     end
 end
 
@@ -77,37 +56,32 @@ local function addOnOffState(cmd)
     else
         param = ColStr(pullCol) .. "Pull\b"
     end
-    onOffStateBtn = Chili.Button:New{
-		caption   = param,
-		padding   = {10,0,0,0},
-		margin    = {0,0,0,0},
-		OnMouseUp = {GravityPress},
-		font      = {
-			size  = 20,
-		},
+
+    panel = Chili.Panel:New{
+        parent = Chili.Screen0,
+		--OnMouseUp = {GravityPress},
         children = {
             Chili.Label:New {
-                caption = "", --"RMB (or Q) to change\nLMB (or A) to select",
-                bottom = 10,
-                x = 0,
+                caption = param, --"RMB (or Q) to change\nLMB (or A) to select",
+                align = "center",
+                valign = "ascender",
+                --x = 0,
                 font = {
-                    size = 12,
+                    size = 20,
                 },
             },
         },
-        parent = Chili.Screen0,
-		--backgroundColor = black,
-	}
+    }
     local vsx,vsy = Spring.GetViewGeometry()
     resizeUI(vsx,vsy)
 end
 
 local function parseCmds()
-	-- Parses through each cmd and gives it its own button
+	-- Parses through each cmd and gives it its own panel
     onOffState = nil
-    if onOffStateBtn ~= nil then
-        onOffStateBtn:Dispose()
-        onOffStateBtn = nil
+    if panel ~= nil then
+        panel:Dispose()
+        panel = nil
     end
 	for _, cmd in pairs(Spring.GetActiveCmdDescs()) do
 		if cmd.action == "onoff" then
