@@ -15,7 +15,6 @@ function widget:Initialize()
     local devMode = (tonumber(Spring.GetModOptions().play_mode) or 0) == 0
     if not devMode then
         Spring.SendCommands("Console 0")
-        Spring.SendCommands({"unbindkeyset e", "bind e jump"})
     end
 
     -- remove Springs default UI stuff
