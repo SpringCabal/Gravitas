@@ -336,26 +336,46 @@
 
 	function QueryWeapon1() 	return rocket01 end
 
+    function ReloadMissiles()
+        Sleep(50)
+        boolMGLoaded=true
+        Turn(armup01,x_axis,0,0.1,true)
+        Turn(armup02,x_axis,0,0.1,true)
+    end
 	function AimWeapon1( Heading ,pitch)	
 		if boolRocketType==false then return false end
 		Signal(SIG_RESET)
 		boolAiming=true
 		
-		Turn(armup01,x_axis,pitch,19)
-		Turn(turret,y_axis,-Heading,19)
-		Turn(armup02,x_axis,pitch,19,true)
+		Turn(turret,y_axis,Heading,19)
+        StartThread(ReloadMissiles)
 		return boolRocketType
 	end
 	 
-	 function FireWeapon1()	boolAiming=false; Signal(SIG_RESET); StartThread(resetTurret);return true; end
+	 function FireWeapon1()	
+         Turn(armup01,x_axis,-2,5)
+         Turn(armup02,x_axis,-2,5)
+         boolAiming=false; Signal(SIG_RESET); StartThread(resetTurret);return true; end
 
 
 	----Weapon2
-	function AimFromWeapon2() return gun01 end
+    local rotateGun = gun01
+	function AimFromWeapon2() return rotateGun end
 
-	function QueryWeapon2() 	return gun01 end
+	function QueryWeapon2()
+        if rotateGun == gun01 then
+            rotateGun = gun02
+        elseif rotateGun == gun02 then
+            rotateGun = gun03
+        elseif rotateGun == gun03 then
+            rotateGun = gun04
+        else
+            rotateGun = gun01
+        end
+        return rotateGun 
+    end
 
-	function AimWeapon2( Heading ,pitch)	
+	function AimWeapon2(Heading ,pitch)	
 		if boolRay1Type==false then return false end
 		Signal(SIG_RESET)
 		boolAiming=true
@@ -370,18 +390,29 @@
 
 
 	----Weapon1
-	function AimFromWeapon3() return MG01 end
+    local rotateMG = MG01
+	function AimFromWeapon3() 
+        return rotateMG
+    end
 
-	function QueryWeapon3() 	return MG01 end
+	function QueryWeapon3() 
+        if rotateMG == MG01 then
+            rotateMG = MG02
+        else
+            rotateMG = MG01
+        end
+        return rotateMG 
+    end
 	
 	function ReloadMG()
-	Sleep(5000)
-	boolMGLoaded=true
+        Sleep(5000)
+        boolMGLoaded=true
 		StopSpin(MG_B01,z_axis,0.15)
 		StopSpin(MG_B02,z_axis,0.15)
 	end
 	quartPI_Innt= 8192
 	boolMGLoaded=true
+    
 	function AimWeapon3( Heading ,pitch)	
 		if boolRay2Type==false then return false end
 		Signal(SIG_RESET)
@@ -389,9 +420,9 @@
 		Spin(MG_B02,z_axis,5,5)
 		boolAiming=true
 		
-		Turn(armup01,x_axis,pitch-8192,19)
-		Turn(turret,y_axis,-Heading,19)
-		Turn(armup02,x_axis,pitch-8192,19,true)
+		--Turn(armup01, x_axis, -pitch,19)
+		Turn(turret, y_axis, Heading,19)
+		--Turn(armup02, x_axis, -pitch,19,true)
 		return boolMGType and boolMGLoaded
 	end
 	 
@@ -405,16 +436,17 @@
 	 
 	 end
      
-     function script.AimWeapon1()
+     function script.AimFromWeapon1()
         if boolRocketType then
-            return AimWeapon1()
+            return AimFromWeapon1()
         elseif boolRay1Type then
-            return AimWeapon2()
+            return AimFromWeapon2()
         elseif boolMGType then
-            return AimWeapon3()
+            return AimFromWeapon3()
         end
      end
 	function script.QueryWeapon1()
+        
         if boolRocketType then
             return QueryWeapon1()
         elseif boolRay1Type then
