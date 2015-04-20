@@ -45,6 +45,36 @@ local BobGun = CannonBase:New {
 
 local WallesRevenge = MissileBase:New {
     name                    = "WallesRevenge",
+    areaOfEffect            = 75,
+    cegTag                  = [[missiletrailred]],
+
+    damage                  = {
+        default = 280,
+    },
+
+    fireStarter             = 70,
+    flightTime              = 3.5,
+    impulseBoost            = 0,
+    impulseFactor           = 0.4,
+    interceptedByShieldType = 2,
+    --model                   = [[wep_m_hailstorm.s3o]],
+    --texture2                = [[darksmoketrail]],
+    noSelfDamage            = true,
+    predictBoost            = 1,
+    range                   = 530,
+    reloadtime              = 10,
+    smokeTrail              = true,
+    --       soundHit                = [[explosion/ex_med4]],
+    --       soundHitVolume          = 8,
+    --       soundStart              = [[weapon/missile/missile2_fire_bass]],
+    --       soundStartVolume        = 7,
+    startVelocity           = 170,
+    
+    tracks                  = false,
+    trajectoryHeight        = 0.6,
+    turnrate                = 1000,
+    turret                  = false,
+    weaponVelocity          = 170,
 }
 
 GRAVITY_NEG = GravityBase:New{
