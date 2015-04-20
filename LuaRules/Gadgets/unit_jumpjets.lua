@@ -14,9 +14,8 @@ function gadget:GetInfo()
   }
 end
 
-if (not gadgetHandler:IsSyncedCode()) then
-  return false -- no unsynced code
-end
+if gadgetHandler:IsSyncedCode() then
+
 
 Spring.SetGameRulesParam("jumpJets",1)
 
@@ -106,8 +105,7 @@ GG.jumpDefs = jumpDefs
 local jumpCmdDesc = {
   id      = CMD_JUMP,
   type    = CMDTYPE.ICON_MAP,
-  name    = '  Jump    ',
-  cursor  = 'Attack',  -- add with LuaUI?
+  name    = 'jump',
   action  = 'jump',
   tooltip = 'Jump to selected position.',
 }
@@ -510,4 +508,14 @@ end
 
 function gadget:GameFrame(n)
   UpdateCoroutines()
+end
+
+
+else --UNSYNCED
+
+function gadget:Initialize()
+    -- register cursor
+	Spring.AssignMouseCursor("jump", "cursorjump", true)
+end
+
 end
