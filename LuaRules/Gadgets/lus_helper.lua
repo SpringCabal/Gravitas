@@ -362,14 +362,6 @@ function gadget:MoveCtrlNotify(unitID, unitDefID, unitTeam, data)
 	end
 end
 
-function gadget:ProjectileCreated(proID, proOwnerID, weaponDefID)
-	if weaponDefID == WeaponDefNames["meltdown"].id then
-		Spring.SetProjectileAlwaysVisible(proID, true)
-	end
-end
-
-else
-
 -- UNSYNCED
 
 local PlaySoundFile	= Spring.PlaySoundFile
