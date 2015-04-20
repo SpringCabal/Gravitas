@@ -10,20 +10,22 @@ local Bob = CassosRobot:New {
     },
 }
 
-local Protector_Boss = BaseRobot:New {
-    name                = "Boss",
+local ComeToPapa = BaseRobot:New {
+    name                = "ComeToPapa",
     customParams = {
         robot = true,
     },
     weapons = {
-        { name = "BossWeapon"},
+        { name = "Kannon"},
+        { name = "Kannon"},
+        { name = "Kannon"},
     },
     mass                = 70,
-    maxDamage           = 300,
+    maxDamage           = 3000,
     maxVelocity         = 1.5,
     strafeToAttack      = true,
     script              = "projector_boss.lua",
-	objectName = "ComeToPapa.s3o",
+	objectName          = "ComeToPapa.s3o",
 }
 
 
@@ -45,8 +47,8 @@ local Projector = CassosRobot:New {
 }
 
 return lowerkeys({
-    Bob           =    Bob,
-    Projector     =    Projector,
-    Wallier       =    Wallier,
-Protector_Boss		= Protector_Boss	,
+    Bob            =    Bob,
+    Projector      =    Projector,
+    Wallier        =    Wallier,
+    ComeToPapa     =    ComeToPapa,
 })

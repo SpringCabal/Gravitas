@@ -329,3 +329,42 @@
 	 
 	 function script.FireWeapon1()	boolAiming=false; Signal(SIG_RESET); StartThread(resetTurret);return true; end
 
+         
+         
+    -- copy pasted 
+	function script.AimFromWeapon2() return turret end
+
+	function script.QueryWeapon2() 	return turret end
+
+	function script.AimWeapon2( Heading ,pitch)	
+	
+		Signal(SIG_RESET)
+		boolAiming=true
+		
+		Turn(armup01,x_axis,pitch,19)
+		Turn(turret,y_axis,-Heading,19)
+		Turn(armup02,x_axis,pitch,19,true)
+		return true
+	end
+	 
+	 function script.FireWeapon2()	boolAiming=false; Signal(SIG_RESET); StartThread(resetTurret);return true; end
+         
+         
+         -- copy pasted 
+         
+    function script.AimFromWeapon3() return turret end
+
+	function script.QueryWeapon3() 	return turret end
+
+	function script.AimWeapon3( Heading ,pitch)	
+	
+		Signal(SIG_RESET)
+		boolAiming=true
+		
+		Turn(armup01,x_axis,pitch,19)
+		Turn(turret,y_axis,-Heading,19)
+		Turn(armup02,x_axis,pitch,19,true)
+		return true
+	end
+	 
+	 function script.FireWeapon3()	boolAiming=false; Signal(SIG_RESET); StartThread(resetTurret);return true; end
