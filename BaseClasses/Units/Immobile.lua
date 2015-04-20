@@ -64,7 +64,7 @@ local BaseWall = BaseImmobile:New {
         invulnerable = true,
     },
     mass                = 10e20,
-    maxDamage           = 1500,
+    maxDamage           = 420,
     turnRate            = 0,
     movementClass		= "Wall5x17",
 }
