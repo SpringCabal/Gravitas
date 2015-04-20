@@ -18,8 +18,6 @@ function widget:Initialize()
 
     local binds = {
         
-        "esc  quitmenu",
-        
         "Any+pause  pause",
         -- space pause (widget)
         
