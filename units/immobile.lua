@@ -95,6 +95,7 @@ local Plate = Unit:New {
 
     name                = "Plate",
     script              = "plate.lua",
+    onoffable               = true,
 }
 
 local Wall1 = BaseWall:New {
