@@ -19,7 +19,7 @@ local plates = {}
 local bitmaskLinks = {}
 local linkChecksEnabled = false
 local reportedError = false
-local updateRate = 13
+local updateRate = 5
 local PLATE_ACTIVATION_RANGE = 40
 
 function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
@@ -89,13 +89,24 @@ function DisableLinkChecks()
     linkChecksEnabled = false
 end
 
-local function SetGateState(gateID, state)
-    local _, _, _, _, active = Spring.GetUnitStates(gateID)
+local function GetUnitState(unitID)
+    if plates[unitID] then 
+        return plates[unitID].state
+    end
+    local _, _, _, _, active = Spring.GetUnitStates(unitID)
+    return active
+end
+
+local function SetUnitState(unitID, state)
+    if plates[unitID] then 
+        plates[unitID].state = state
+    end
+    local _, _, _, _, active = GetUnitState(unitID)
     if active ~= state then
         if state then
-            Spring.GiveOrderToUnit(gateID, CMD.ONOFF, { 1 }, {})
+            Spring.GiveOrderToUnit(unitID, CMD.ONOFF, { 1 }, {})
         else
-            Spring.GiveOrderToUnit(gateID, CMD.ONOFF, { 0 }, {})
+            Spring.GiveOrderToUnit(unitID, CMD.ONOFF, { 0 }, {})
         end
     end
 end
@@ -118,31 +129,29 @@ function gadget:GameFrame()
                         break
                     end
                 end
-                if plate.state ~= nil and plate.state ~= newState then
-                    Spring.PlaySoundFile("sounds/click.ogg", 1, x, y, z)
-                end
-                plate.state = newState
+                SetUnitState(plateID, newState)
             elseif not reportedError then
                 Spring.Log(LOG_SECTION, LOG_LEVEL, "Plate has no gate: " .. tostring(plateID))
             end
         end
         reportedError = true
+        
         -- issue simple links
         for plateID, plate in pairs(plates) do
             if plate.gateID then
-                SetGateState(plate.gateID, plate.state)
+                SetUnitState(plate.gateID, GetUnitState(plateID))
             end
         end
         -- issue bitmask links
         for gateID, bitmaskLink in pairs(bitmaskLinks) do
             local totalState = 1
-            for _, plateObj in pairs(bitmaskLink) do
-                if plateObj[2] ~= plates[plateObj[1]].state then
+            for plateID, plateObj in pairs(bitmaskLink) do
+                if plateObj[2] ~= GetUnitState(plateID) then
                     totalState = false
                     break
                 end
             end
-            SetGateState(gateID, totalState)
+            SetUnitState(gateID, totalState)
         end
     end
 end
