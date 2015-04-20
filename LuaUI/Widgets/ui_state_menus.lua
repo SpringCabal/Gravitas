@@ -16,54 +16,10 @@ end
 local imageDir = 'luaui/images/'
 
 local ignoreCMDs = {
-	selfd 	     = '',
-	loadonto 	   = '',
-	timewait 	   = '',
-	deathwait    = '',
-	squadwait	   = '',
-	gatherwait	 = '',
-    
-    attack = "",
-    move = "",
-    fight = "",
-    patrol = "",
-    stop = "",
-    repair = "",
-    guard = "",
-    wait = "",
-}
-
-local orderColors = {
-	wait        = {0.8, 0.8, 0.8 ,1.0},
-	attack      = {1.0, 0.0, 0.0, 1.0},
-	fight       = {1.0, 0.3, 0.0, 1.0},
-	areaattack  = {0.8, 0.0, 0.0, 1.0},
-	manualfire  = {0.8, 0.2, 0.0, 1.0},
-	move        = {0.2, 1.0, 0.0, 1.0},
-	reclaim     = {0.2, 0.6, 0.0, 1.0},
-	patrol      = {0.4, 0.4, 1.0, 1.0},
-	guard       = {0.0, 0.0, 1.0, 1.0},
-	repair      = {0.2, 0.2, 0.8, 1.0},
-	loadunits   = {1.0, 1.0, 1.0, 1.0},
-	unloadunits = {1.0, 1.0, 1.0, 1.0},
-	stockpile   = {1.0, 1.0, 1.0, 1.0},
-	upgrademex  = {0.6, 0.6, 0.6, 1.0},
-	capture     = {0.6, 0.0, 0.8, 1.0},
-	resurrect   = {0.0, 0.0, 1.0, 1.0},
-    restore     = {0.5, 1.0, 0.2, 1.0},
-    stop        = {0.4, 0.0, 0.0, 1.0},
-    leechlife   = {0.7, 0.1, 0.7, 1.0},
-}
-
-local topOrders = {
---     [1] = "move",
---     [2] = "fight",
---     [3] = "attack",
---     [4] = "patrol",
---     [5] = "stop",
---     [6] = "repair",
---     [7] = "guard",
---     [8] = "wait",
+	["TimeWait"] 	 = '',
+	["DeathWait"]    = '',
+	["SquadWait"]	 = '',
+	["GatherWait"]	 = '',
 }
 
 local topStates = {
@@ -107,32 +63,12 @@ local paramColors = {
 	['High traj']    = green,
 }
 
-local Hotkey = {
-    ["attack"] = "A",
-    ["guard"] = "G",
-    ["fight"] = "F",
-    ["patrol"] = "P",
-    ["reclaim"] = "E",
-    ["loadonto"] = "L",
-    ["loadunits"] = "L",
-    ["unloadunit"] = "U",
-    ["unloadunits"] = "U",
-    ["stop"] = "S",
-    ["wait"] = "W",
-    ["repair"] = "R",
-    ["manualfire"] = "D",
-    ["cloak"] = "K",
-    ["move"] = "M",
-    ["resurrect"] = "O",
-}
 ------------
 
 
 -- Chili vars --
 local Chili
-local panH, panW, winW, winH, winX, winB, tabH, minMapH, minMapW
-local screen0, buildMenu, stateMenu, orderMenu, orderBG, menuTabs 
-local orderArray = {}
+local screen0, buildMenu, stateMenu
 local stateArray = {}
 local unit = {}
 ----------------
@@ -176,8 +112,6 @@ local function resizeUI(vsx,vsy)
 	local winY = vsy * 0.2
 	local winH = vsy * 0.5
     
-	orderMenu:SetPos(vsx*0.01,ordY,ordH*21,ordH)
-	orderBG:SetPos(vsx*0.01,ordY,ordH*#orderMenu.children,ordH)
 	stateMenu:SetPos(vsx*0.01,vsy*0.01,200,winY)
 end
 
@@ -186,26 +120,6 @@ function widget:ViewResize(vsx,vsy)
 end
 
 ---------------------------------------------------------------
-
-local function HotkeyString(action)
-    if Hotkey[action] then
-        return " " .. "[" .. Hotkey[action] .. "]"
-    else
-        return ""
-    end
-end
-
-local function cmdAction(obj, x, y, button, mods)
-	if obj.disabled then return end
-	if gameStarted then
-		local index = spGetCmdDescIndex(obj.cmdId)
-		if (index) then
-			local left, right = (button == 1), (button == 3)
-			local alt, ctrl, meta, shift = mods.alt, mods.ctrl, mods.meta, mods.shift
-			spSetActiveCommand(index, button, left, right, alt, ctrl, meta, shift)
-		end  
-    end
-end
 
 local function cmdAction(obj, x, y, button, mods)
 	if obj.disabled then return end
@@ -253,68 +167,6 @@ local function addDummyState(cmd)
 	})
 end
 
-local function addOrder(cmd)
-	local button = Chili.Button:New{
-		caption   = '',
-		cmdName   = cmd.name,
-		tooltip   = cmd.tooltip .. getInline(orderColors[cmd.action]) .. HotkeyString(cmd.action),
-		cmdId     = cmd.id,
-		cmdAName  = cmd.action,
-		padding   = {0,0,0,0},
-		margin    = {0,0,0,0},
-		OnMouseUp = {cmdAction},
-		Children  = {
-			Chili.Image:New{
-				parent  = button,
-				x       = 5,
-				bottom  = 5,
-				y       = 5,
-				right   = 5,
-				color   = orderColors[cmd.action] or {1,1,1,1},
-				file    = imageDir..'Commands/'..cmd.action..'.png',
-			}
-		}
-	}
-
-    if cmd.id==CMD.STOCKPILE then
-        for _,uID in ipairs(sUnits) do -- we just pick the first unit that can stockpile
-            local n,q = Spring.GetUnitStockpile(uID)
-            if n and q then
-                local stockpile_q = Chili.Label:New{right=0,bottom=0,caption=n.."/"..q, font={size=14,shadow=false,outline=true,autooutlinecolor=true,outlineWidth=4,outlineWeight=6}}
-                button.children[1]:AddChild(stockpile_q)
-                break
-            end
-        end
-    end
-
-	orderMenu:AddChild(button)
-	orderBG:Resize(orderMenu.height*#orderMenu.children,orderMenu.height)
-end
-
-local function addDummyOrder(cmd)
-	local button = Chili.Button:New{
-		caption   = '',
-		--tooltip   = cmd.tooltip .. getInline(orderColors[cmd.action]) .. HotkeyString(cmd.action),
-		padding   = {0,0,0,0},
-		margin    = {0,0,0,0},
-		OnMouseUp = {},
-		Children  = {
-			Chili.Image:New{
-				parent  = button,
-				x       = 5,
-				bottom  = 5,
-				y       = 5,
-				right   = 5,
-				color   = grey,
-				file    = imageDir..'Commands/'..cmd.action..'.png',
-			}
-		}
-	}
-
-	orderMenu:AddChild(button)
-	orderBG:Resize(orderMenu.height*#orderMenu.children,orderMenu.height)
-end
-
 local function AddInSequence(cmds, t, func, dummyFunc)
     for _,k in ipairs(t) do
         if cmds[k] then
@@ -336,31 +188,21 @@ end
 
 local function parseCmds()
 	local cmdList = spGetActiveCmdDescs()
-    local orders = {}
     local states = {}
     
 	-- Parses through each cmd and gives it its own button
 	for i = 1, #cmdList do
 		local cmd = cmdList[i]
-		if cmd.name ~= '' and not (ignoreCMDs[cmd.name] or ignoreCMDs[cmd.action]) then
+		if cmd.name ~= '' and not ignoreCMDs[cmd.name] then
 			if #cmd.params > 1 then
+                Spring.Echo(cmd.name)
 				states[cmd.action] = cmd
-			elseif cmd.id > 0 then
-				orderMenu.active = true
-				orders[cmd.action] = cmd
 			end
 		end
 	end
     
-    -- Include stop command, if needed
-    if orderMenu.active then
-        local stop_cmd = {name="Stop", action='stop', id=CMD.STOP, tooltip="Clears the command queue"}
-        orders[stop_cmd.action] = stop_cmd
-    end
-    
-    -- Add the orders/states in the wanted order, from L->R
+    -- Add the states in the wanted order, from L->R
     if #cmdList>0 then
-        AddInSequence(orders, topOrders, addOrder, addDummyOrder)
         AddInSequence(states, topStates, addState, addDummyState)
     end
 end
@@ -382,10 +224,8 @@ local function loadPanels()
 		newUnit = true
 	end
 
-	orderMenu:ClearChildren()
 	stateMenu:ClearChildren()
 
-	orderArray = {}
 	stateArray = {}
 
 	if newUnit then
@@ -406,18 +246,6 @@ function widget:Initialize()
 	Chili = WG.Chili
 	screen0 = Chili.Screen0
 	
-	orderMenu = Chili.Grid:New{
-		parent  = screen0,
-		active  = false,
-		columns = 21,
-		rows    = 1,
-		padding = {0,0,0,0},
-	}
-	
-	orderBG = Chili.Panel:New{
-		parent = screen0,
-	}
-
 	stateMenu = Chili.Grid:New{
 		parent  = screen0,
 		columns = 2,
@@ -450,15 +278,7 @@ function widget:Update()
 		local r,g,b = Spring.GetTeamColor(Spring.GetMyTeamID())
 		teamColor = {r,g,b,0.8}
 		updateRequired = false
-		orderMenu.active = false -- if order cmd is found during parse this will become true
-
 		loadPanels()
-
-		if not orderMenu.active and orderBG.visible then
-			orderBG:Hide()
-		elseif orderMenu.active and orderBG.hidden then
-			orderBG:Show()
-		end		
 	end
 end
 
