@@ -87,13 +87,9 @@ end
 local function SetGateState(gateID, state)
     local _, _, _, _, active = Spring.GetUnitStates(gateID)
     if active ~= state then
-        -- FIXME: not sure if we should be setting unit blocking here...
-        -- best to handle on/off for each gate
         if state then
-            Spring.SetUnitBlocking(gateID, false)
             Spring.GiveOrderToUnit(gateID, CMD.ONOFF, { 1 }, {})
         else
-            Spring.SetUnitBlocking(gateID, true)
             Spring.GiveOrderToUnit(gateID, CMD.ONOFF, { 0 }, {})
         end
     end
