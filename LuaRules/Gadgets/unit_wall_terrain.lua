@@ -13,11 +13,7 @@ end
 
 if (gadgetHandler:IsSyncedCode()) then 
 
-local Y_SCALE_FACTOR = 1.8
-
-function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
-    local unitDef = UnitDefs[unitDefID]
-    if not unitDef.customParams.wall then return end
+local function AdjustWallTerrain(unitID, height)
     
     local wx, wy, wz = Spring.GetUnitPosition(unitID)
     local scaleX, scaleY, scaleZ, offsetX, offsetY, offsetZ = Spring.GetUnitCollisionVolumeData(unitID)
@@ -32,16 +28,34 @@ function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
     local x, z = x1, z1
     local xdiff = dz * 8
     local zdiff = -(dx * 8)
-    local num = math.min(math.ceil(math.abs((x1 - x2) / (xdiff * 8))), math.ceil(math.abs((z1 - z2) / zdiff)))
+    local num
+    if xdiff > zdiff then
+        num = math.ceil(math.abs(x1 - x2) / xdiff)
+    else
+        num = math.ceil(math.abs(z1 - z2) / zdiff)
+    end
     --local rows = math.floor(math.abs(z1 - z2) / zdiff)
     --Spring.Echo(num, xdiff, zdiff)
     -- local minx, maxx, minz, maxz = math.min(x1, x2), math.max(x1, x2), math.min(z1, z2), math.max(z1, z2)
     -- Spring.Echo(x, z, 
     for i = 1, num do
-        Spring.LevelHeightMap(x, z, x + 8, z + 8, wy + scaleY)
+        Spring.LevelHeightMap(x, z, x + 8, z + 8, wy + height * scaleY)
         x = x + xdiff
         z = z + zdiff
     end
+end
+
+
+function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
+    local unitDef = UnitDefs[unitDefID]
+    if not unitDef.customParams.wall then return end
+    GG.Delay.DelayCall(AdjustWallTerrain, {unitID, 1})
+end
+
+function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, builderID)
+    local unitDef = UnitDefs[unitDefID]
+    if not unitDef.customParams.wall then return end
+    GG.Delay.DelayCall(AdjustWallTerrain, {unitID, 0})
 end
 
 
