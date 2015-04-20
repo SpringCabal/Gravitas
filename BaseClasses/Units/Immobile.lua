@@ -64,6 +64,8 @@ local BaseWall = BaseImmobile:New {
         invulnerable = true,
     },
     mass                = 10e20,
+    -- maybe walls should have larger health so they aren't easily destroyable by units
+    -- but take more damage from explosive barrels
     maxDamage           = 420,
     turnRate            = 0,
     movementClass		= "Wall5x17",
