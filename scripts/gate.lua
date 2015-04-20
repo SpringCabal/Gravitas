@@ -10,9 +10,17 @@ end
 
 local signalMask = 0
 
+local collisionData
+-- TODO: blocking/collision will be incosistent while it's pulling down/up
 function script.Activate()
     StartThread(function()
         Spring.SetUnitBlocking(unitID, false)
+        collisionData = {Spring.GetUnitCollisionVolumeData(unitID)}
+        Spring.SetUnitCollisionVolumeData(unitID,
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0
+        )
         Move(rails, z_axis, -150, 180);
         WaitForMove(gate, z_axis);
         Move(gate, z_axis, -150, 150);
@@ -25,6 +33,10 @@ end
 function script.Deactivate()
     StartThread(function()
         Spring.SetUnitBlocking(unitID, true)
+        if collisionData ~= nil then
+            Spring.SetUnitCollisionVolumeData(unitID, unpack(collisionData))
+            collisionData = nil
+        end
         Move(rails, z_axis, 0, 190);
         WaitForMove(gate, z_axis);
         Move(gate, z_axis, 0, 150);
