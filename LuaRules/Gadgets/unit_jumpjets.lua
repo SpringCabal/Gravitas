@@ -234,7 +234,7 @@ local function Jump(unitID, goal, cmdTag)
   if not cob then
     env = Spring.UnitScript.GetScriptEnv(unitID)
   end
-  
+
   if (delay == 0) then
 	if cob then
 		spCallCOBScript(unitID, "StartJump", 0)
@@ -360,7 +360,7 @@ end
 
 function gadget:Initialize()
   Spring.SetCustomCommandDrawData(CMD_JUMP, "Attack", {0, 1, 0, 1})
-  Spring.SendCommands({"bind j jump"})
+  Spring.SendCommands({"unbindkeyset e", "bind e jump"})
   --gadgetHandler:RegisterCMDID(CMD_JUMP) -- auto-registered by GetCmdID()
   for _, unitID in pairs(Spring.GetAllUnits()) do
     gadget:UnitCreated(unitID, Spring.GetUnitDefID(unitID))
@@ -395,6 +395,12 @@ function gadget:AllowCommand(unitID, unitDefID, teamID,
       return true --false FIX ME!
   end
   if cmdID == CMD_JUMP then
+      local jumpY = cmdParams[2]
+      local x, y, z = Spring.GetUnitPosition(unitID)
+      if math.abs(y - jumpY) > 50 then
+          Spring.Echo("NOT SO HIGH GRAVIT!")
+          return false
+      end
       Spring.Echo("JUMP GRAVIT JUMP!")
   end
   if not cmdOptions.shift then goalSet[unitID] = false end
@@ -451,14 +457,12 @@ function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmd
 	local distSqr = GetDist2Sqr({x, y, z}, cmdParams)
 	local jumpDef = jumpDefs[unitDefID]
 	local range   = spGetUnitRulesParam(unitID, "jumpRange") or jumpDef.range
-	local reload  = spGetUnitRulesParam(unitID, "jumpReload") or jumpDef.reload or 0
-	local barFull = spGetUnitRulesParam(unitID, "jump_reload_bar") == 100
 	local t       = spGetGameSeconds()
-  
+    
 	if (distSqr < (range*range)) then -- we are within jumping range
 		-- Extra FLOZi code
 		local dx, dz = cmdParams[1] - x, cmdParams[3] - z
-		local MINIMUM_TURN = 10 * 182
+		local MINIMUM_TURN = 10 * 18200
 		local newHeading = math.deg(math.atan2(dx, dz)) * 182 -- COB_ANGULAR	
 		local currHeading = Spring.GetUnitCOBValue(unitID, COB.HEADING)
 		local deltaHeading = newHeading - currHeading
@@ -466,7 +470,7 @@ function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmd
 			-- don't have to turn, continue as normal
 			local cmdTag = spGetCommandQueue(unitID,1)[1].tag
 			-- reload perk can change reload before bar is full so check both
-			if ((t - lastJump[unitID]) >= reload) and barFull then
+			if true then
 				local coords = table.concat(cmdParams)
 				if (not jumps[coords]) then
 					if (not Jump(unitID, cmdParams, cmdTag)) then
