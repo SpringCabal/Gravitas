@@ -42,18 +42,18 @@ function widget:Initialize()
 --         name = spring,
 --     }
     s = {
-        px = 578.68402099609,
+        px = 484.81878662109,
         py = 144.259765625,
-        pz = 3245.6091308594,
-        zscale = 0.54931640625,
+        pz = 3279.1237792969,
+        mode = 1,
         flipped = -1,
-        dy = -0.87646859884262,
-        name = "sm",
+        dy = -0.84741073846817,
+        dz = -0.53217732906342,
         fov = 45,
-        height = 794.41467285156,
-        mode = 5,
+        height = 657.36724853516,
+        angle = 0.57099866867065,
         dx = 0,
-        dz = -0.48145857453346,
+        name = "ta",
     }
     Spring.SetCameraState(s, 0)
 end
