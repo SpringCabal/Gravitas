@@ -19,9 +19,9 @@ local function AdjustWallTerrain(unitID, height)
     local scaleX, scaleY, scaleZ, offsetX, offsetY, offsetZ = Spring.GetUnitCollisionVolumeData(unitID)
     local dx, dy, dz = Spring.GetUnitDirection(unitID)
     local x1 = wx - ((scaleX * dz / 2) + scaleZ * dx / 2)
-    local z1 = wz - ((scaleZ * dz / 2) - scaleX * dx / 2)
+    local z1 = wz + scaleX * dx / 2 -- ((scaleZ * dz / 2) - scaleX * dx / 2)
     local x2 = wx + ((scaleX * dz / 2) + scaleZ * dx / 2)
-    local z2 = wz + ((scaleZ * dz / 2) - scaleX * dx / 2)
+    local z2 = wz + scaleX * dx / 2 -- ((scaleZ * dz / 2) - scaleX * dx / 2)
     
     --Spring.Echo(wx, wy, wz, dx, dy, dz, x1, z1, x2, z2, scaleZ)
     
@@ -30,16 +30,16 @@ local function AdjustWallTerrain(unitID, height)
     local zdiff = -(dx * 8)
     local num
     if xdiff > zdiff then
-        num = math.ceil(math.abs(x1 - x2) / xdiff)
+        num = math.ceil(math.abs(x1 - x2) / xdiff) + 1
     else
-        num = math.ceil(math.abs(z1 - z2) / zdiff)
+        num = math.ceil(math.abs(z1 - z2) / zdiff) + 1
     end
     --local rows = math.floor(math.abs(z1 - z2) / zdiff)
     --Spring.Echo(num, xdiff, zdiff)
     -- local minx, maxx, minz, maxz = math.min(x1, x2), math.max(x1, x2), math.min(z1, z2), math.max(z1, z2)
     -- Spring.Echo(x, z, 
     for i = 1, num do
-        Spring.LevelHeightMap(x, z, x + 8, z + 8, wy + height * scaleY)
+        Spring.LevelHeightMap(x - 4, z - 4, x + 4, z + 4, wy + height * scaleY)
         x = x + xdiff
         z = z + zdiff
     end
