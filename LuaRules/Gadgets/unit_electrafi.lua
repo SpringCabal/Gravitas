@@ -171,6 +171,7 @@ function SpawnElec(_,unitID, r)
     local x,y,z = Spring.GetUnitPosition(unitID)
     local sx,sy,sz = Spring.GetUnitVelocity(unitID)
     local partpos = "x*delay,y*delay,z*delay|x=0,y=0,z=0"
+    local dir = math.random()>0.5 and 1 or 0.2
     
     particleList[#particleList+1] = {
       class        = 'JitterParticles2',
@@ -205,7 +206,7 @@ function SpawnElec(_,unitID, r)
                        {0.5, 0.5, 0.75, 0.01},
                        {0.15, 0.15, 0.35, 0.25}, 
                        {0.025, 0.005, 0.1, 0.2},
-                       {0, 0, 0.1, 0} },
+                       {0, 0, 0, 0} },
       count        = 2,
       life         = r,
       delaySpread  = 25,
@@ -219,16 +220,16 @@ function SpawnElec(_,unitID, r)
       emitVector   = {0,0.1,0},
       emitRotSpread= 16,
 
-      rotSpeed     = 1,
+      rotSpeed     = dir,
       rotSpread    = 360,
-      rotExp       = 9,
+      rotExp       = 0.1,
 
       speed        = 10,
       speedSpread  = 0,
       speedExp     = 1.5,
 
       size         = 2,
-      sizeGrowth   = 4.0,
+      sizeGrowth   = 5.0,
       sizeExp      = 0.7,
 
       texture     = "bitmaps/GPL/electricity.png",

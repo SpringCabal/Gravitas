@@ -13,6 +13,15 @@ end
 
 if (gadgetHandler:IsSyncedCode()) then 
 
+local function RoundToHeightScale(x)
+    local diff = x % Game.squareSize
+    if diff > Game.squareSize / 2 then
+        return x + Game.squareSize - diff
+    else
+        return x - diff
+    end
+end
+    
 local function AdjustWallTerrain(unitID, height)
     
     local wx, wy, wz = Spring.GetUnitPosition(unitID)
@@ -39,7 +48,7 @@ local function AdjustWallTerrain(unitID, height)
     -- local minx, maxx, minz, maxz = math.min(x1, x2), math.max(x1, x2), math.min(z1, z2), math.max(z1, z2)
     Spring.Echo(x, z, xdiff, zdiff, num)
     for i = 1, num do
-        Spring.LevelHeightMap(x - 4, z - 4, x + 4, z + 4, wy + height * scaleY)
+        Spring.LevelHeightMap(RoundToHeightScale(x)-4, RoundToHeightScale(z)-4, RoundToHeightScale(x)+4, RoundToHeightScale(z)+4,  wy + height * scaleY)
         x = x + xdiff
         z = z + zdiff
     end
