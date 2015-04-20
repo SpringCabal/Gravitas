@@ -26,6 +26,28 @@ local playerUnitID
 
 -------------------------------------------
 
+local hpcolormap      = { {1.0, 0.0, 0.0, 1.0},  {0.8, 0.60, 0.0, 1.0}, {0.0, 0.75, 0.0, 1.0} }
+
+function GetColor(colormap,slider)
+  local coln = #colormap
+  if (slider>=1) then
+    local col = colormap[coln]
+    return col[1],col[2],col[3],col[4]
+  end
+  if (slider<0) then slider=0 elseif(slider>1) then slider=1 end
+  local posn  = 1+(coln-1) * slider
+  local iposn = math.floor(posn)
+  local aa    = posn - iposn
+  local ia    = 1-aa
+
+  local col1,col2 = colormap[iposn],colormap[iposn+1]
+
+  return col1[1]*ia + col2[1]*aa, col1[2]*ia + col2[2]*aa,
+         col1[3]*ia + col2[3]*aa, col1[4]*ia + col2[4]*aa
+end
+
+-------------------------------------------
+
 local function initWindow()
 	local screen0 = Chili.Screen0
 	
@@ -83,8 +105,9 @@ local function SetBarValue(name,value,maxValue)
     meter[name]:SetMinMax(0, maxValue)
 	meter[name]:SetCaption(tostring(math.floor(value)) .. '/' .. tostring(math.floor(maxValue)))
 end
-function SetBarColor(name,r,g,b,a)
-    meter[name]:SetColor(0.2,1.0,0.2,a)
+function SetBarColor(name,slider)
+    local r,g,b,a = GetColor(hpcolormap,slider) 
+    meter[name]:SetColor(r,g,b,a)
 end
 
 -------------------------------------------
@@ -104,7 +127,7 @@ function updateHealthBar()
     local h, mh = Spring.GetUnitHealth(playerUnitID)
     h = math.max(0, h)
     SetBarValue('Health', h, mh)
-    SetBarColor('Health', 0.2+0.75*(1-h/mh), 0.2+0.75*h/mh, 0.2,0.8)
+    SetBarColor('Health', h/mh)
 end
 
 function widget:GameFrame(n)
