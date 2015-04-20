@@ -49,7 +49,7 @@ end
 function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
     local unitDef = UnitDefs[unitDefID]
     if not unitDef.customParams.wall then return end
-    local dx, dy, dz = Spring.SetUnitRotation(unitID, 0, 0.6, 0)
+    --local dx, dy, dz = Spring.SetUnitRotation(unitID, 0, , 0)
     GG.Delay.DelayCall(AdjustWallTerrain, {unitID, 1})
 end
 
