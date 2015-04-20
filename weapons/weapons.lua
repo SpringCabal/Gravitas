@@ -52,6 +52,7 @@ local WallesRevenge = MissileBase:New {
         default = 280,
     },
 
+    craterMult              = 0,
     fireStarter             = 70,
     flightTime              = 3.5,
     impulseBoost            = 0,
