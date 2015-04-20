@@ -54,7 +54,7 @@ local function makeBar(name)
         name   = 'heart',
 		height = '100%',
 		width  = '8%',
-		x      = '3%', 
+		x      = '5%', 
 		y      = 0, 
         bottom = 0,
 	}
