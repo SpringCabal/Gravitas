@@ -60,20 +60,22 @@ local function addOnOffState(cmd)
     panel = Chili.Panel:New{
         parent = Chili.Screen0,
 		--OnMouseUp = {GravityPress},
-        children = {
-            Chili.Label:New {
-                caption = param, --"RMB (or Q) to change\nLMB (or A) to select",
-                align = "center",
-                valign = "ascender",
-                --x = 0,
-                font = {
-                    size = 20,
-                },
-            },
-        },
     }
     local vsx,vsy = Spring.GetViewGeometry()
     resizeUI(vsx,vsy)
+    panel:AddChild(Chili.Label:New 
+        {
+            caption = param, --"RMB (or Q) to change\nLMB (or A) to select",
+            align = "center",
+            valign = "center",
+            x = 0, y = 0,
+            bottom = 0, right = 0,
+            --x = 0,
+            font = {
+                size = 20,
+            },
+        }
+    )
 end
 
 local function parseCmds()
