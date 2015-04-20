@@ -81,7 +81,7 @@ local Plate = Unit:New {
     collisionVolumeScales   = '0 0 0',
     collisionVolumeType     = 'cylY',
     pushResistant           = true,
-    -- set in UnitCreated
+    -- set in UnitCreated, because this isn't enough, obviously
     --blocking                = false,
     canMove                 = false, --effects cannot be moved (even by gravity)
     canGuard                = false,
