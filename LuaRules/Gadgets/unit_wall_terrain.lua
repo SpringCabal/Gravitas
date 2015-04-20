@@ -26,6 +26,8 @@ local function AdjustWallTerrain(unitID, height)
     
     local wx, wy, wz = Spring.GetUnitPosition(unitID)
     local scaleX, scaleY, scaleZ, offsetX, offsetY, offsetZ = Spring.GetUnitCollisionVolumeData(unitID)
+    
+    -- hack for gate opening:
     local dx, dy, dz = Spring.GetUnitDirection(unitID)
     local x1 = wx - ((scaleX * dz / 2) + scaleZ * dx / 2)
     local z1 = wz + scaleX * dx / 2 -- ((scaleZ * dz / 2) - scaleX * dx / 2)
@@ -46,9 +48,8 @@ local function AdjustWallTerrain(unitID, height)
     --local rows = math.floor(math.abs(z1 - z2) / zdiff)
     --Spring.Echo(num, xdiff, zdiff)
     -- local minx, maxx, minz, maxz = math.min(x1, x2), math.max(x1, x2), math.min(z1, z2), math.max(z1, z2)
-    Spring.Echo(x, z, xdiff, zdiff, num)
     for i = 1, num do
-        Spring.LevelHeightMap(RoundToHeightScale(x)-4, RoundToHeightScale(z)-4, RoundToHeightScale(x)+4, RoundToHeightScale(z)+4,  wy + height * scaleY)
+        Spring.LevelHeightMap(RoundToHeightScale(x) - 2, RoundToHeightScale(z) - 2, RoundToHeightScale(x) + 2, RoundToHeightScale(z) + 2,  wy + height * scaleY)
         x = x + xdiff
         z = z + zdiff
     end
@@ -56,10 +57,17 @@ end
 
 
 function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
-    local unitDef = UnitDefs[unitDefID]
-    if not unitDef.customParams.wall then return end
-    --local dx, dy, dz = Spring.SetUnitRotation(unitID, 0, , 0)
-    GG.Delay.DelayCall(AdjustWallTerrain, {unitID, 1})
+    GG.Delay.DelayCall(function()
+        local unitDef = UnitDefs[unitDefID]
+        if unitDef.name == "gate" or (unitDef.customParams.wall and Spring.GetUnitRulesParam(unitID, "destroyable") == 1) then
+            AdjustWallTerrain(unitID, 1)
+        end
+    end, {})
+    
+--     
+--     if not unitDef.customParams.wall then return end
+--     --local dx, dy, dz = Spring.SetUnitRotation(unitID, 0, , 0)
+--     GG.Delay.DelayCall(AdjustWallTerrain, {unitID, 1})
 end
 
 function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, builderID)
@@ -68,5 +76,6 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, builderID)
     GG.Delay.DelayCall(AdjustWallTerrain, {unitID, 0})
 end
 
+GG.AdjustWallTerrain = AdjustWallTerrain
 
 end

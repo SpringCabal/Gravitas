@@ -24,7 +24,7 @@ end
 function script.Activate()
     StartThread(function()
         local x, y, z = Spring.GetUnitPosition(unitID)
-        Spring.PlaySoundFile("sounds/click.ogg", 1, x, y, z)
+        Spring.PlaySoundFile("sounds/click.ogg", 1)
         Move(button, z_axis, -15, 150);
         WaitForMove(middle, z_axis);
         Move(middle, z_axis, -5, 50);
@@ -36,7 +36,7 @@ end
 function script.Deactivate()
     StartThread(function()
         local x, y, z = Spring.GetUnitPosition(unitID)
-        Spring.PlaySoundFile("sounds/click.ogg", 1, x, y, z)
+        Spring.PlaySoundFile("sounds/click.ogg", 1)
         Move(button, z_axis, 0, 150);
         WaitForMove(middle, z_axis);
         Move(middle, z_axis, 0, 50);
