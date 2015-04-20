@@ -25,21 +25,22 @@ local Kannon = CannonBase:New {
 
 local BobGun = CannonBase:New {
     name                    = "BobGun",
-    reloadtime              = 5.0,
-    range                   = 110,
+    reloadtime              = 0.1,
+    range                   = 260,
 --     soundHit                = [[explosion.ogg]],
---     soundStart              = [[laser.ogg]],
+    soundStart              = [[laser.ogg]],
     impulseFactor           = 0.2,
     rgbColor                = {150, 0, 190},
     rgbColor                = {200, 0, 140},
     weaponVelocity          = 1030,
     duration                = 0.15,
-    thickness               = 6,
-    coreThickNess           = 6,
+    thickness               = 1,
+    coreThickNess           = 1,
     impactOnly              = true,
     maxDamage               = 15000,
+    turret                  = false,
     damage                  = {
-        default = 700.1,
+        default = 7.1,
     },
 }
 
@@ -52,9 +53,11 @@ local WallesRevenge = MissileBase:New {
         default = 280,
     },
 
+    burst                   = 2,
+    burstRate               = 0.8,
     craterMult              = 0,
     fireStarter             = 70,
-    flightTime              = 3.5,
+    flightTime              = 7,
     impulseBoost            = 0,
     impulseFactor           = 0.4,
     interceptedByShieldType = 2,

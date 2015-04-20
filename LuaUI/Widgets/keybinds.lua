@@ -48,6 +48,8 @@ function widget:Initialize()
     local devMode = (tonumber(Spring.GetModOptions().play_mode) or 0) == 0
     if not devMode then 
         Spring.SendCommands("unbindall") --muahahahaha
+    else
+        Spring.SendCommands("unbindkeyset w", "unbindkeyset p") --why p?
     end
     SetBindings()
     
