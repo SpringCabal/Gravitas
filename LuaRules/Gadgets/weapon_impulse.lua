@@ -76,9 +76,12 @@ local function AddImpulse(unitID, unitDefID, x, y, z, magnitude)
 	local myMass = mass[unitDefID]
 	local mag = magnitude*GRAVITY_BASELINE/dis*(0.0032)/myMass
 	
+    local oldX, oldY, oldZ = x, y, z
 	x,y,z = x*mag, y*mag, z*mag
     y = y + abs(magnitude)/(20*myMass)
 	
+   -- Spring.Echo("dis, x, y, z, mag, magnitude", dis, x,y, z, mag, magnitude)
+  --  Spring.Echo("oldX, oldY, oldZ", oldX, oldY, oldZ)
 	if not unit[unitID] then
 		unit[unitID] = {
 			moveType = moveType,
@@ -104,6 +107,7 @@ function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, w
 		local x,y,z = (ux-ax), (uy-ay), (uz-az)
 		local magnitude = impulseWeaponID[weaponDefID]
 		
+        
 		AddImpulse(unitID, unitDefID, x, y, z, magnitude) 		
 	end
 	return damage,1.0
@@ -117,9 +121,10 @@ local function ActionImpulses()
 			local data = unit[unitID]
             --Spring.Echo(unitID, data.x, data.y, data.x, UNSTICK_CONSTANT)
             
-			--spAddUnitImpulse(unitID, UNSTICK_CONSTANT,0,0) --dummy impulse (applying impulse>1 make unit less sticky to map surface)
+			spAddUnitImpulse(unitID, UNSTICK_CONSTANT,0,0) --dummy impulse (applying impulse>1 make unit less sticky to map surface)
+            --Spring.Echo(data.x, data.y, data.z)
 			spAddUnitImpulse(unitID, data.x, data.y, data.z)
-			--spAddUnitImpulse(unitID, -UNSTICK_CONSTANT,0,0) --remove dummy impulse
+			spAddUnitImpulse(unitID, -UNSTICK_CONSTANT,0,0) --remove dummy impulse
 		end
 		unitByID = {count = 0, data = {}}
 		unit = {}
