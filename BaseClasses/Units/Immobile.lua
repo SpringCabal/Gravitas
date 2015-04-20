@@ -59,7 +59,7 @@ local BaseEffect = Unit:New {
 }
 
 local BaseWall = BaseImmobile:New {
-    blocking = false
+    blocking = false,
     customParams = {
         wall = true,
         invulnerable = true,
