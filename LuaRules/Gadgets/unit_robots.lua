@@ -1,7 +1,7 @@
 function gadget:GetInfo()
   return {
-    name      = "Crate mechanics",
-    desc      = "Invulnerable crates and stuff",
+    name      = "Robot mechanics",
+    desc      = "No-friendly fire robots and stuff",
     author    = "gajop",
     date      = "April 2015",
     license   = "GNU GPL, v3",
@@ -14,7 +14,7 @@ end
 if gadgetHandler:IsSyncedCode() then
 
 function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponDefID, projectileID, attackerID, attackerDefID, attackerTeam)
-    if UnitDefs[unitDefID].name == "crate" then
+    if UnitDefs[unitDefID].customParams.robot and unitTeam == attackerTeam then
         return 0
     end
     return damage

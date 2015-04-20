@@ -12,9 +12,6 @@ local Bob = CassosRobot:New {
 
 local ComeToPapa = BaseRobot:New {
     name                = "ComeToPapa",
-    customParams = {
-        robot = true,
-    },
     weapons = {
         { name = "Kannon"},
         { name = "Kannon"},

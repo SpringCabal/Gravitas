@@ -10,9 +10,6 @@ function gadget:GetInfo()
   }
 end
 
-
--- FlameRaw format: posx,posy,posz, dirx,diry,dirz, speedx,speedy,speedz, range
-
 -- SYNCED
 if gadgetHandler:IsSyncedCode() then
     
