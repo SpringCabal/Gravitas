@@ -100,7 +100,7 @@ function UpdateFire(n, x,y,z, uID)
 
     -- kill 
     local fireRadius = config[uID]
-    local units = Spring.GetUnitsInCylinder(x,z,fireRadius * fireSpeed * 1.1)
+    local units = Spring.GetUnitsInCylinder(x,z,fireRadius * fireSpeed * 1.7)
     for _,unitID in pairs(units) do
         if not UnitDefs[Spring.GetUnitDefID(unitID)].customParams.invulnerable then
             watchedUnits[unitID] = watchedUnits[unitID] or {} 
