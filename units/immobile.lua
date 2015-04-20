@@ -22,7 +22,7 @@ local Canister = BaseImmobile:New {
 local Crate = BaseImmobile:New {
     name                    = "Crate",
     maxDamage               = 150,
-    mass                    = 80,
+    mass                    = 50,
     collisionVolumeScales   = '50 50 50',
     collisionVolumeOffsets  = '0 0 0',
     collisionVolumeTest     = 1,
@@ -68,12 +68,32 @@ local Fire = BaseEffect:New {
     },
 }
 
-local Plate = BaseWall:New {
+local Plate = Unit:New {
+    customParams        = {
+        -- invulnerable means that most instances are invulnerable through normal damage and effects (could still be manually destroyed)
+        invulnerable = true, 
+        radius = 0,
+    },
+    footprintX			    = 8,
+	footprintZ			    = 8,
+	mass				    = 10e5,
+    maxDamage               = 10000,
+    collisionVolumeScales   = '0 0 0',
+    collisionVolumeType     = 'cylY',
+    pushResistant           = true,
+    -- set in UnitCreated
+    --blocking                = false,
+    canMove                 = false, --effects cannot be moved (even by gravity)
+    canGuard                = false,
+    canPatrol               = false,
+    canRepeat               = false,
+    stealth				    = true,
+	turnRate			    = 0,
+	upright				    = true,
+    sightDistance		    = 0,
+
     name                = "Plate",
     script              = "plate.lua",
-    footprintX          = 8,
-    footprintZ          = 8,
-    blocking            = false,
 }
 
 local Wall1 = BaseWall:New {

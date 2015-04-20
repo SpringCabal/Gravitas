@@ -25,6 +25,11 @@ local PLATE_ACTIVATION_RANGE = 40
 function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
     if UnitDefs[unitDefID].name == "plate" then
         plates[unitID] = { pressed = false }
+        Spring.SetUnitCollisionVolumeData(unitID, 
+            0, 0, 0, 
+            0, 0, 0, 
+            0, 0, 0);
+        Spring.SetUnitBlocking(unitID, false)
     end
 --     -- EXAMPLE:
 --     if UnitDefs[unitDefID].customParams.gate then
