@@ -32,6 +32,7 @@ local Crate = BaseImmobile:New {
     script                  = "crate.lua",
     customParams = {
         plate_toggler = true,
+        invulnerable = true,
     }
 }
 
