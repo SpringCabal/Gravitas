@@ -362,6 +362,8 @@ function gadget:MoveCtrlNotify(unitID, unitDefID, unitTeam, data)
 	end
 end
 
+else
+
 -- UNSYNCED
 
 local PlaySoundFile	= Spring.PlaySoundFile
