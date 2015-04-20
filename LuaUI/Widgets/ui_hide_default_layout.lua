@@ -20,8 +20,6 @@ function widget:Initialize()
         Spring.SendCommands("unbindkeyset w", "unbindkeyset p")
     end
 
-    Spring.SendCommands("bind q onoff")
-    
     -- remove Springs default UI stuff
     Spring.SendCommands("ResBar 0", "ToolTip 0", "Clock 0", "Info 0")
     gl.SlaveMiniMap(true)
