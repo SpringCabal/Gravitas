@@ -14,17 +14,12 @@ local collisionData
 -- TODO: blocking/collision will be incosistent while it's pulling down/up
 function script.Activate()
     StartThread(function()
+        GG.AdjustWallTerrain(unitID, 0)
+        Sleep(500)
         local x, y, z = Spring.GetUnitPosition(unitID)
-        Spring.PlaySoundFile("sounds/gate.ogg", 0.7, x, y, z)
+        Spring.PlaySoundFile("sounds/gate.ogg", 0.7)
         Move(gate, z_axis, -168, 180);
         WaitForMove(gate, z_axis);
-        Spring.SetUnitBlocking(unitID, false)
-        collisionData = {Spring.GetUnitCollisionVolumeData(unitID)}
-        Spring.SetUnitCollisionVolumeData(unitID,
-            0, 0, 0,
-            0, 0, 0,
-            0, 0, 0
-        )
     end)
     Spring.UnitScript.Signal(signalMask)
   --  Spring.UnitScript.SetSignalMask(signalMask)
@@ -33,15 +28,12 @@ end
 
 function script.Deactivate()
     StartThread(function()
+        Sleep(500)
         local x, y, z = Spring.GetUnitPosition(unitID)
-        Spring.PlaySoundFile("sounds/gate.ogg", 0.7, x, y, z)
+        Spring.PlaySoundFile("sounds/gate.ogg", 0.7)
         Move(gate, z_axis, 0, 190);
         WaitForMove(gate, z_axis);
-        Spring.SetUnitBlocking(unitID, true)
-        if collisionData ~= nil then
-            Spring.SetUnitCollisionVolumeData(unitID, unpack(collisionData))
-            collisionData = nil
-        end
+        GG.AdjustWallTerrain(unitID, 1)
     end)
     Spring.UnitScript.Signal(signalMask)
   --  Spring.UnitScript.SetSignalMask(signalMask)
