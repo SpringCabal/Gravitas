@@ -374,7 +374,6 @@ function gadget:UnitCreated(unitID, unitDefID, unitTeam)
   end 
   local t = spGetGameSeconds()
   lastJump[unitID] = t - jumpDefs[unitDefID].reload
-  Spring.Echo(jumpDefs[unitDefID].reload)
   spInsertUnitCmdDesc(unitID, jumpCmdDesc)
   spSetUnitRulesParam(unitID,"jump_reload_bar",100)
   spSetUnitRulesParam(unitID,"jumpReload", jumpDefs[unitDefID].reload)
