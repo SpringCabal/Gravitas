@@ -68,10 +68,9 @@ local WallesRevenge = MissileBase:New {
     range                   = 530,
     reloadtime              = 10,
     smokeTrail              = true,
-    --       soundHit                = [[explosion/ex_med4]],
-    --       soundHitVolume          = 8,
-    --       soundStart              = [[weapon/missile/missile2_fire_bass]],
-    --       soundStartVolume        = 7,
+    soundHit                = [[explosion.ogg]],
+    soundStart              = [[rocket.ogg]],
+    soundStartVolume        = 10,
     startVelocity           = 170,
     
     tracks                  = false,
