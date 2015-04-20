@@ -361,7 +361,7 @@
 		boolAiming=true
 		
 		Turn(armup01,x_axis,pitch,19)
-		Turn(turret,y_axis,-Heading,19)
+		Turn(turret,y_axis,Heading,19)
 		Turn(armup02,x_axis,pitch,19,true)
 		return boolRay1Type
 	end
