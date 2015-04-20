@@ -47,7 +47,7 @@ local function AdjustWallTerrain(unitID, height)
     end
     --local rows = math.floor(math.abs(z1 - z2) / zdiff)
     --Spring.Echo(num, xdiff, zdiff)
-    -- local minx, maxx, minz, maxz = math.min(x1, x2), math.max(x1, x2), math.min(z1, z2), math.max(z1, z2)
+    -- local minx, maxx, minz, maxz = math.min(x1, x2), math.max(x1, x2), math.min(z1, z2), math.max(z1, z2)2
     for i = 1, num do
         Spring.LevelHeightMap(RoundToHeightScale(x) - 2, RoundToHeightScale(z) - 2, RoundToHeightScale(x) + 2, RoundToHeightScale(z) + 2,  wy + height * scaleY)
         x = x + xdiff
@@ -73,7 +73,9 @@ end
 function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, builderID)
     local unitDef = UnitDefs[unitDefID]
     if not unitDef.customParams.wall then return end
-    GG.Delay.DelayCall(AdjustWallTerrain, {unitID, 0})
+    if Spring.GetUnitRulesParam(unitID, "destroyable") == 1 or unitDef.name == "gate" then
+        GG.Delay.DelayCall(AdjustWallTerrain, {unitID, 0})
+    end
 end
 
 GG.AdjustWallTerrain = AdjustWallTerrain
