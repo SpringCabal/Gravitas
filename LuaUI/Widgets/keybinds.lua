@@ -20,17 +20,6 @@ function widget:Initialize()
         
         "esc  quitmenu",
         
-        "Any+enter  chat",
-        "Any+enter  edit_return",
-        "Any+escape  edit_escape",
-        "Any+tab  edit_complete",
-        "Any+backspace  edit_backspace",
-        "Any+delete  edit_delete",
-        "Any+left  edit_prev_char",
-        "Any+right  edit_next_char",
-        "Ctrl+left  edit_prev_word",
-        "Ctrl+right  edit_next_word",
-        
         "Any+pause  pause",
         -- space pause (widget)
         
