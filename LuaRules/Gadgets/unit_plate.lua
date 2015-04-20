@@ -104,7 +104,7 @@ function gadget:GameFrame()
         -- check if plates are toggled or not
         for plateID, plate in pairs(plates) do
             if plate.gateID or plate.bitmaskLink then
-                local x, _, z = Spring.GetUnitPosition(plateID)
+                local x, y, z = Spring.GetUnitPosition(plateID)
                 local units = Spring.GetUnitsInCylinder(x, z, PLATE_ACTIVATION_RANGE)
                 local newState = false
                 for _, unitID in pairs(units) do
@@ -112,6 +112,9 @@ function gadget:GameFrame()
                         newState = true
                         break
                     end
+                end
+                if plate.state ~= nil and plate.state ~= newState then
+                    Spring.PlaySoundFile("sounds/click.ogg", 1, x, y, z)
                 end
                 plate.state = newState
             elseif not reportedError then

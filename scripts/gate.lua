@@ -14,6 +14,8 @@ local collisionData
 -- TODO: blocking/collision will be incosistent while it's pulling down/up
 function script.Activate()
     StartThread(function()
+        local x, y, z = Spring.GetUnitPosition(unitID)
+        Spring.PlaySoundFile("sounds/gate.ogg", 0.7, x, y, z)
         Spring.SetUnitBlocking(unitID, false)
         collisionData = {Spring.GetUnitCollisionVolumeData(unitID)}
         Spring.SetUnitCollisionVolumeData(unitID,
@@ -32,6 +34,8 @@ end
 
 function script.Deactivate()
     StartThread(function()
+        local x, y, z = Spring.GetUnitPosition(unitID)
+        Spring.PlaySoundFile("sounds/gate.ogg", 0.7, x, y, z)
         Spring.SetUnitBlocking(unitID, true)
         if collisionData ~= nil then
             Spring.SetUnitCollisionVolumeData(unitID, unpack(collisionData))
