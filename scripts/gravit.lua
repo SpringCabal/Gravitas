@@ -43,9 +43,11 @@ local scriptEnv = {
  z_axis = z_axis,
 }
 
-local SIG_WALK = "walk";
-local SIG_AIM = "aim";
-local SIG_STOP = "stop";
+local SIG_WALK = tonumber("00001",2);
+local SIG_AIM =  tonumber("00010",2);
+local SIG_STOP = tonumber("00100",2);
+local SIG_IDLE = tonumber("01000",2);
+local SIG_JUMP = tonumber("10000",2);
 
 local Animations = {};
 
@@ -53,6 +55,12 @@ Animations['stop'] = VFS.Include("scripts/animations/gravit_stop.lua", scriptEnv
 Animations['idle'] = VFS.Include("scripts/animations/gravit_idle.lua", scriptEnv);
 Animations['walk'] = VFS.Include("scripts/animations/gravit_walk.lua", scriptEnv);
 Animations['die']  = VFS.Include("scripts/animations/gravit_die.lua",  scriptEnv);
+Animations['prejump']  = VFS.Include("scripts/animations/gravit_prejump.lua",  scriptEnv);
+Animations['startjump']  = VFS.Include("scripts/animations/gravit_startjump.lua",  scriptEnv);
+Animations['midjump']  = VFS.Include("scripts/animations/gravit_midjump.lua",  scriptEnv);
+Animations['stopjump']  = VFS.Include("scripts/animations/gravit_stopjump.lua",  scriptEnv);
+
+local jumping = false;
 
 -- brutal infrastructure of brutality 
 
@@ -160,7 +168,6 @@ end
 
 local function Walk()
 	Signal(SIG_WALK)
-	Signal(SIG_IDLE)
 	SetSignalMask(SIG_WALK)
 	PlayAnimation("walk", true);
 	while true do
@@ -174,19 +181,23 @@ end
 function script.AimWeapon1(heading, pitch)
     --aiming animation: instantly turn the gun towards the enemy
     if(Spring.GetUnitStates(unitID).active) then
-		Signal( SIG_AIM )
-		Signal( SIG_IDLE)
-		SetSignalMask( SIG_AIM )
-		
-		Turn(torso, z_axis, heading, 5) 
-		
-		Turn(forearmright, y_axis, 0, 5);
-		Turn(forearmright, z_axis, 0, 5);
-		Turn(forearmright, x_axis, 0, 5);
-		
-		Turn(armright, y_axis, 0,0);
-		Turn(armright, z_axis, math.pi/2,0);
-		Turn(armright, x_axis, -pitch, 5);
+    
+		if not jumping then
+			Signal( SIG_AIM )
+			Signal( SIG_IDLE)
+			Signal( SIG_STOP)
+			SetSignalMask( SIG_AIM )
+			
+			Turn(torso, z_axis, heading, 5) 
+			
+			Turn(forearmright, y_axis, 0, 5);
+			Turn(forearmright, z_axis, 0, 5);
+			Turn(forearmright, x_axis, 0, 5);
+			
+			Turn(armright, y_axis, 0,0);
+			Turn(armright, z_axis, math.pi/2,0);
+			Turn(armright, x_axis, -pitch, 5);
+		end
 		
 		return true
     end
@@ -197,20 +208,22 @@ end
 function script.AimWeapon2(heading, pitch)
     --aiming animation: instantly turn the gun towards the enemy
     if( not Spring.GetUnitStates(unitID).active) then
-		Signal( SIG_AIM )
-		Signal( SIG_IDLE)
-		SetSignalMask( SIG_AIM )
-		
-		Turn(torso, z_axis, heading, 5) 
-		
-		Turn(forearmleft, y_axis, 0, 5);
-		Turn(forearmleft, z_axis, 0, 5);
-		Turn(forearmleft, x_axis, 0, 5);
-		
-		Turn(armleft, y_axis, 0,0);
-		Turn(armleft, z_axis, -math.pi/2,0);
-		Turn(armleft, x_axis, -pitch, 5);
-		
+		if not jumping then
+			Signal( SIG_AIM )
+			Signal( SIG_IDLE)
+			Signal( SIG_STOP)
+			SetSignalMask( SIG_AIM )
+			
+			Turn(torso, z_axis, heading, 5) 
+			
+			Turn(forearmleft, y_axis, 0, 5);
+			Turn(forearmleft, z_axis, 0, 5);
+			Turn(forearmleft, x_axis, 0, 5);
+			
+			Turn(armleft, y_axis, 0,0);
+			Turn(armleft, z_axis, -math.pi/2,0);
+			Turn(armleft, x_axis, -pitch, 5);
+		end
 		return true
     end
     
@@ -238,7 +251,7 @@ function script.QueryWeapon(n)
 end
 
 function script.StartMoving()
-	Signal(SIG_WALK);
+	Signal(SIG_IDLE);
 	StartThread(Walk);
 end
 
@@ -263,14 +276,48 @@ function script.QueryNanoPiece()
     return head
 end
 
+-- jumpstuff
+
+function AllSignal()
+	Signal(SIG_IDLE);
+	Signal(SIG_STOP);
+	Signal(SIG_WALK);
+	Signal(SIG_AIM);
+	Signal(SIG_JUMP);
+end
+
+function anim_PreJump()
+	AllSignal();
+	SetSignalMask(SIG_JUMP);
+	PlayAnimation('prejump');
+end
+
+function anim_StartJump()
+	AllSignal();
+	SetSignalMask(SIG_JUMP);
+	PlayAnimation('startjump');
+end
+
+function anim_MidJump()
+	AllSignal();
+	SetSignalMask(SIG_JUMP);
+	PlayAnimation('midjump');
+end
+
+function anim_StopJump()
+	AllSignal();
+	SetSignalMask(SIG_JUMP);
+	PlayAnimation('stopjump');
+	StartThread(Stop);
+end
 
 function PreJump(delay, turn, lineDist)
-	--StartThread(anim_PreJump)
+	StartThread(anim_PreJump)
 end
 
 function StartJump()
 	jumping = true
-	--StartThread(anim_StartJump)
+	StartThread(anim_StartJump)
 	local x,y,z = Spring.GetUnitPosition(unitID)
 --	SpawnCEG("mech_jump_dust", x,y,z)
 end
@@ -282,12 +329,12 @@ function Jumping()-- Gets called throughout by gadget
 end
 
 function HalfJump()
-	--StartThread(anim_HalfJump)
+	StartThread(anim_MidJump)
 end
 
 function StopJump()
 	jumping = false
 	local x,y,z = Spring.GetUnitPosition(unitID)
 --	SpawnCEG("mech_jump_dust", x,y,z)
-	--StartThread(anim_StopJump)
+	StartThread(anim_StopJump)
 end
