@@ -49,11 +49,11 @@ local function resizeUI(vsx,vsy)
     end
 end
 
-local function cmdAction(obj, x, y, button, mods)
+local function GravityPress(obj, x, y, button, mods)
     if button==1 then
         -- left mouse, select command
         if obj.disabled then return end
-        local index = Spring.GetCmdDescIndex(obj.cmdId)
+        local index = Spring.GetCmdDescIndex(CMD.ATTACK)
         if (index) then
             local left, right = (button == 1), (button == 3)
             local alt, ctrl, meta, shift = mods.alt, mods.ctrl, mods.meta, mods.shift
@@ -79,16 +79,22 @@ local function addOnOffState(cmd)
     end
     onOffStateBtn = Chili.Button:New{
 		caption   = param,
-		cmdName   = attackCmd.name,
-		tooltip   = cmd.tooltip,
-		cmdId     = attackCmd.id,
-		cmdAName  = attackCmd.action,
 		padding   = {10,0,0,0},
 		margin    = {0,0,0,0},
-		OnMouseUp = {cmdAction},
+		OnMouseUp = {GravityPress},
 		font      = {
 			size  = 20,
 		},
+        children = {
+            Chili.Label:New {
+                caption = "", --"RMB (or Q) to change\nLMB (or A) to select",
+                bottom = 10,
+                x = 0,
+                font = {
+                    size = 12,
+                },
+            },
+        },
         parent = Chili.Screen0,
 		--backgroundColor = black,
 	}
@@ -105,14 +111,9 @@ local function parseCmds()
     end
 	for _, cmd in pairs(Spring.GetActiveCmdDescs()) do
 		if cmd.action == "onoff" then
-            onOffState = cmd
-        elseif cmd.action == "attack" then
-            attackCmd = cmd
+            addOnOffState(cmd)
         end
 	end
-    if onOffState ~= nil then
-        addOnOffState(onOffState)
-    end
 end
 
 function widget:ViewResize(vsx,vsy)

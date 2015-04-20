@@ -195,7 +195,6 @@ local function parseCmds()
 		local cmd = cmdList[i]
 		if cmd.name ~= '' and not ignoreCMDs[cmd.name] then
 			if #cmd.params > 1 then
-                Spring.Echo(cmd.name)
 				states[cmd.action] = cmd
 			end
 		end
