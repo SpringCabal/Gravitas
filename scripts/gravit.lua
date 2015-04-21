@@ -137,15 +137,15 @@ function script.Killed(recentDamage, _)
 	Signal(SIG_AIM);
 	Signal(SIG_WALK);
 	Signal(SIG_IDLE);
+	Spring.PlaySoundFile("sounds/death.ogg", 1)
 	PlayAnimation('die');
-	Sleep(2000);
 	Explode(thighleft, SFX.EXPLODE);
 	Explode(thighright, SFX.EXPLODE);
 	Explode(head, SFX.EXPLODE);
 	Explode(pelvis, SFX.EXPLODE);
 	Explode(armleft, SFX.EXPLODE);
 	Explode(armright, SFX.EXPLODE);
-    return 1
+	return 1
 end
 
 --- thread functions

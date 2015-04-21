@@ -14,6 +14,7 @@ local VOLUME = 0.3
 local BUFFER = 0.015
 
 local playingTime = 0
+local dtTime = 0
 local trackTime
 local gameStarted = false
 
@@ -26,9 +27,11 @@ end
 
 function widget:Update(dt)
     if gameStarted then
-        playingTime = Spring.GetSoundStreamTime()
+        playingTime = playingTime + dt
+        --playingTime = Spring.GetSoundStreamTime()
         if playingTime > trackTime - BUFFER then
             Spring.PlaySoundStream("sounds/music.ogg", VOLUME)
+            playingTime = 0
         end
     end
 end 
