@@ -109,10 +109,13 @@ function widget:Initialize()
 
 end
 
-function widget:GameOver()
-	Spring.SendCommands("endgraph 0")
-	SetupControls()
-	ShowEndGameWindow()
+function widget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerDefID, attackerTeam)
+    Spring.Echo("unit destroyed!")
+    if UnitDefs[unitDefID].name == "gravit" then
+        Spring.SendCommands("endgraph 0")
+        SetupControls()
+        ShowEndGameWindow()
+    end
 end
 
 function widget:Shutdown()
