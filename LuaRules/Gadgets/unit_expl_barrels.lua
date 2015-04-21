@@ -23,8 +23,10 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
     if UnitDefs[unitDefID].customParams.barrel then
         Spring.Log(LOG_SECTION, LOG_LEVEL, "Destroyed explosive barrel: " .. tostring(unitID))
         local x, y, z = Spring.GetUnitPosition(unitID)
-        local r = 150 -- explosion radius
+        local r = 250 -- explosion radius
         
+        --boom
+        Spring.PlaySoundFile("sounds/explosion.ogg", 20)
         --draw  
         Spring.SpawnCEG("flashnuke", x,y,z, 0,0,0, 0, 0) --spawn CEG, cause no damage
         Script.LuaRules.FlameRaw(x+5*rand(),y,z+5*rand(), 0,0.1,0, 0,0,0, 500)
