@@ -926,7 +926,7 @@ do
   end
 
   function DrawBars(fullText)
-    local yoffset = 0
+    local yoffset = 20
     for i=1,barsN do
       local barInfo = bars[i]
       DrawUnitBar(yoffset,barInfo.progress,barInfo.color)
