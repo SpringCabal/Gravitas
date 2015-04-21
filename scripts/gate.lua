@@ -20,7 +20,7 @@ function script.Activate()
         Spring.PlaySoundFile("sounds/gate.ogg", 0.7)
         Move(gate, z_axis, -168, 180);
         WaitForMove(gate, z_axis);
-        Spring.SetUnitBlocking(unitID, false)
+        Spring.SetUnitBlocking(unitID, false, false, false, false, false, false, false)
     end)
     Spring.UnitScript.Signal(signalMask)
   --  Spring.UnitScript.SetSignalMask(signalMask)
