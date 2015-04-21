@@ -20,10 +20,6 @@ function resizeUI(vsx,vsy)
     end
 end
 
-function Quit()
-    Spring.SendCommands("quit")
-end
-
 function widget:ViewResize(vsx,vsy)
 	resizeUI(vsx,vsy)
 end
@@ -36,7 +32,7 @@ function widget:Initialize()
 		caption   = "Quit",
 		padding   = {0,0,0,0},
 		margin    = {0,0,0,0},
-		OnMouseUp = {Quit},
+		OnClick = {function() Spring.SendCommands("quitforce")end },
         font = {
             size = 14,
         },
