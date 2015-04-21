@@ -32,6 +32,7 @@ function SetBindings()
         "Any+pagedown  movedown",
         "Any+shift  movefast",
         "Any+ctrl  moveslow",
+        "Any+enter  edit_return",
         
         "a attack",
         "s stop",
