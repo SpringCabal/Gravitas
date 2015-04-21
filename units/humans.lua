@@ -5,10 +5,16 @@ local Gravit = BaseHuman:New {
         player = true,
         radius = 40,
     },
+    
+    idletime = 120, --in simframes
+    idleautoheal = 50,
+    autoheal = 1,    
+    
     weapons = {
         { name = "GRAVITY_POS"},
         { name = "GRAVITY_NEG"},
     },
+    
     maxDamage           = 800,
     maxVelocity         = 5,
     onoffable           = true,
