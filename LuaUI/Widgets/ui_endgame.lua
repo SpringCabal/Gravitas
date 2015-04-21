@@ -65,7 +65,7 @@ local function SetupControls()
  		parent = window_endgame,
  		caption = "GAME OVER",
  		fontsize = 80,
- 		textColor = {0.5,1,0.5,1},
+ 		textColor = {1,0,0,1},
  	}
 	
 	Button:New{
