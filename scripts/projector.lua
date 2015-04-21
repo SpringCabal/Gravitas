@@ -58,9 +58,6 @@
 	boolStunned=false
 	boolAiming=false
 
-	function script.HitByWeapon ( x, z, weaponDefID, damage ) 
-	StartThread(stunDetect)
-	end
 	
 	
 	
@@ -256,21 +253,21 @@
 
 	 
 	function script.Create()
-	Hide(MG01    )               
-	Hide(MG02    )               
-	Hide(MG_B01  )               
-	Hide(MG_B02  )               
-	Hide(rocket01)               
-	Hide(rocket02)               
-	Hide(turret  )               
-	Hide(gun01   )               
-	Hide(gun02   )               
-	Hide(gun03   )               
-	Hide(gun04   )  
-	typeDef()
+		Hide(MG01    )               
+		Hide(MG02    )               
+		Hide(MG_B01  )               
+		Hide(MG_B02  )               
+		Hide(rocket01)               
+		Hide(rocket02)               
+		Hide(turret  )               
+		Hide(gun01   )               
+		Hide(gun02   )               
+		Hide(gun03   )               
+		Hide(gun04   )  
+		typeDef()
 
-	StartThread(walkAnimation)
-             
+		StartThread(walkAnimation)
+		StartThread(stunDetect)
 	end
 
 
