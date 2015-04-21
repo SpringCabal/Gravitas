@@ -61,65 +61,65 @@
 
 	
 	function stunDetect()
-	while true do
-	Sleep(50)
-	
-	  health,   maxHealth,   paralyzeDamage,   captureProgress,   buildProgress=Spring.GetUnitHealth(unitID)
-		while health < paralyzeDamage do
-		boolStunned=true
-		Sleep(500)
-		health,   maxHealth,   paralyzeDamage,   captureProgress,   buildProgress=Spring.GetUnitHealth(unitID)
-		end
-	boolStunned=false
-	end 
+		while true do
+		Sleep(50)
+		
+		  health,   maxHealth,   paralyzeDamage,   captureProgress,   buildProgress=Spring.GetUnitHealth(unitID)
+			while health < paralyzeDamage do
+			boolStunned=true
+			Sleep(500)
+			health,   maxHealth,   paralyzeDamage,   captureProgress,   buildProgress=Spring.GetUnitHealth(unitID)
+			end
+		boolStunned=false
+		end 
 	end
 
 	function stunned()
 		decrease=44
-		while decrease > 1 do
-		--contract spasm
-		tP(legfront02,math.random(-10,10),0,0,5)
-		tP(legfront01,math.random(-10,10),0,0,5)
-		tP(legrear01,math.random(-10,10),0,0,5)
-		tP(legrear02,math.random(-10,10),0,0,5,true)	
-		
-			tP(legfront01,x_axis,-1*decrease,5)
-			tP(legfront02,x_axis,-1*decrease,5)
-			tP(frblade01,x_axis,decrease,5)
-			tP(frblade02,x_axis,decrease,5)
-			tP(legrear01,x_axis,decrease,5)
-			tP(legrear02,x_axis,decrease,5)
-			tP(rblade01,x_axis,-1*decrease,5)
-			tP(rblade02,x_axis,-1*decrease,5)
-
-		decrease=decrease*-1
-			if maRa()==true then
-				for i=1, 5 do
-				tP(frblade01,math.random(-10,10)+decrease,0,0,5)
-				tP(frblade02,math.random(-10,10)+decrease,0,0,5)
-				tP(rblade01,math.random(-10,10)+decrease,0,0,5)
-				tP(rblade02,math.random(-10,10)+decrease,0,0,5)
+			while decrease > 1 do
+			--contract spasm
+			tP(legfront02,math.random(-10,10),0,0,5)
+			tP(legfront01,math.random(-10,10),0,0,5)
+			tP(legrear01,math.random(-10,10),0,0,5)
+			tP(legrear02,math.random(-10,10),0,0,5,true)	
+			
+				tP(legfront01,x_axis,-1*decrease,5)
+				tP(legfront02,x_axis,-1*decrease,5)
+				tP(frblade01,x_axis,decrease,5)
+				tP(frblade02,x_axis,decrease,5)
+				tP(legrear01,x_axis,decrease,5)
+				tP(legrear02,x_axis,decrease,5)
+				tP(rblade01,x_axis,-1*decrease,5)
+				tP(rblade02,x_axis,-1*decrease,5)
+	
+			decrease=decrease*-1
+				if maRa()==true then
+					for i=1, 5 do
+					tP(frblade01,math.random(-10,10)+decrease,0,0,5)
+					tP(frblade02,math.random(-10,10)+decrease,0,0,5)
+					tP(rblade01,math.random(-10,10)+decrease,0,0,5)
+					tP(rblade02,math.random(-10,10)+decrease,0,0,5)
+					end
 				end
+	
+			--release
+			equiTurn(bladeup01,armup01,x_axis,math.random(decrease,-1*decrease),4.5)
+			equiTurn(bladeup02,armup02,x_axis,math.random(decrease,-1*decrease),4.5)
+			equiTurn(frblade02,legfront02,x_axis,math.random(-10,0)+decrease,4.5)
+			equiTurn(frblade01,legfront01,x_axis,math.random(-10,0)+decrease,4.5)
+			equiTurn(legrear01,rblade01,x_axis,math.random(-10,0)+decrease,4.5)
+			equiTurn(legrear02,rblade02,x_axis,math.random(-10,0)+decrease,4.5)
+			Sleep(500)
+			
+			tP(legfront02,math.random(-10,10),0,0,5)
+			tP(legfront01,math.random(-10,10),0,0,5)
+			tP(legrear01,math.random(-10,10),0,0,5)
+			tP(legrear02,math.random(-10,10),0,0,5,true)	
+			
+			decrease=decrease*-1
+			decrease=decrease/2
+			Sleep(100)
 			end
-
-		--release
-		equiTurn(bladeup01,armup01,x_axis,math.random(decrease,-1*decrease),4.5)
-		equiTurn(bladeup02,armup02,x_axis,math.random(decrease,-1*decrease),4.5)
-		equiTurn(frblade02,legfront02,x_axis,math.random(-10,0)+decrease,4.5)
-		equiTurn(frblade01,legfront01,x_axis,math.random(-10,0)+decrease,4.5)
-		equiTurn(legrear01,rblade01,x_axis,math.random(-10,0)+decrease,4.5)
-		equiTurn(legrear02,rblade02,x_axis,math.random(-10,0)+decrease,4.5)
-		Sleep(500)
-		
-		tP(legfront02,math.random(-10,10),0,0,5)
-		tP(legfront01,math.random(-10,10),0,0,5)
-		tP(legrear01,math.random(-10,10),0,0,5)
-		tP(legrear02,math.random(-10,10),0,0,5,true)	
-		
-		decrease=decrease*-1
-		decrease=decrease/2
-		Sleep(100)
-		end
 		
 		piq=3.14159*0.45
 			while boolStunned==true do
@@ -146,12 +146,13 @@
 					resetPiece(frblade02,5)
 					resetPiece(legrear01,5)
 					resetPiece(rblade01,5,true)
+						
+						if boolAiming==false then
+						tP(armup01,-5,0,0, 0.25,false)
+						tP(armup02,-5,0,0, 0.25,false)	
+						end
 					
-					if boolAiming==false then
-					tP(armup01,-5,0,0, 0.25,false)
-					tP(armup02,-5,0,0, 0.25,false)	
-					end
-					if boolMove==false then break end
+						if boolMove==false then break end
 					Sleep(100)
 					tP(legfront02,-15,-33,0, 5,false)
 					tP(frblade02,64,0,0, 5,false)
@@ -162,14 +163,14 @@
 					resetPiece(legrear02,5)
 					resetPiece(rblade02,5,true)
 					
-					if boolAiming==false then
-					tP(armup01,15,0,0, 0.25,false)
-					tP(armup02,15,0,0, 0.25,false)	
-					end
+						if boolAiming==false then
+						tP(armup01,15,0,0, 0.25,false)
+						tP(armup02,15,0,0, 0.25,false)	
+						end
 
-					while boolStunned==true do
-					stunned()
-					end
+						while boolStunned==true do
+						stunned()
+						end
 				end
 			
 				
@@ -187,12 +188,12 @@
 				tP(legrear02,4,0,0, 0.25,false)
 				tP(rblade01,-4,0,0, 0.25,false)
 				tP(rblade02,-4,0,0, 0.25,true)
-				if boolAiming==false then
-					tP(armup01,5,0,0, 0.05,false)
-					tP(armup02,5,0,0, 0.05,false)	
-				end
+					if boolAiming==false then
+						tP(armup01,5,0,0, 0.05,false)
+						tP(armup02,5,0,0, 0.05,false)	
+					end
 				Move(center,y_axis,-5,2)
-				if boolMove==true then break end
+					if boolMove==true then break end
 				tP(legfront01,-4*-1,0,0, 0.25,false)
 				tP(legfront02,-4*-1,0,0, 0.25,false)
 				tP(frblade01,4*-1,0,0, 0.25,false)
@@ -202,10 +203,10 @@
 				tP(legrear02,4*-1,0,0, 0.25,false)
 				tP(rblade01,-4*-1,0,0, 0.25,false)
 				tP(rblade02,-4*-1,0,0, 0.25,true)
-				if boolAiming==false then
-					tP(armup01,10,0,0, 0.05,false)
-					tP(armup02,10,0,0, 0.05,false)	
-				end
+					if boolAiming==false then
+						tP(armup01,10,0,0, 0.05,false)
+						tP(armup02,10,0,0, 0.05,false)	
+					end
 				Move(center,y_axis,0,1)
 			
 					while boolStunned==true do
@@ -233,19 +234,19 @@
 		boolRocketType=true
 		Show(rocket01)
 		Show(rocket02)
-		elseif  defID == UnitDefNames["bob"].id then
-		Show(MG01)
-		Show(MG02)
-		Show(MG_B01)
-		Show(MG_B02)
-		boolMGType=true
-		elseif  defID == UnitDefNames["projector"].id then
-		boolRay1Type=true
-		Show(turret)
-		Show(gun01)
-		else
-		Spring.Echo("Projector is of unknown type")
-		end
+			elseif  defID == UnitDefNames["bob"].id then
+			Show(MG01)
+			Show(MG02)
+			Show(MG_B01)
+			Show(MG_B02)
+			boolMGType=true
+				elseif  defID == UnitDefNames["projector"].id then
+				boolRay1Type=true
+				Show(turret)
+				Show(gun01)
+					else
+					Spring.Echo("Projector is of unknown type")
+					end
 
 
 
