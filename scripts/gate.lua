@@ -20,6 +20,7 @@ function script.Activate()
         Spring.PlaySoundFile("sounds/gate.ogg", 0.7)
         Move(gate, z_axis, -168, 180);
         WaitForMove(gate, z_axis);
+        Spring.SetUnitBlocking(unitID, false)
     end)
     Spring.UnitScript.Signal(signalMask)
   --  Spring.UnitScript.SetSignalMask(signalMask)
@@ -28,11 +29,11 @@ end
 
 function script.Deactivate()
     StartThread(function()
-        Sleep(500)
         local x, y, z = Spring.GetUnitPosition(unitID)
         Spring.PlaySoundFile("sounds/gate.ogg", 0.7)
         Move(gate, z_axis, 0, 190);
         WaitForMove(gate, z_axis);
+        Spring.SetUnitBlocking(unitID, true)
         GG.AdjustWallTerrain(unitID, 1)
     end)
     Spring.UnitScript.Signal(signalMask)
