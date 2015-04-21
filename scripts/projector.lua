@@ -58,11 +58,18 @@
 	boolStunned=false
 	boolAiming=false
 
-	
+	SIG_STUN=4
+	function script.HitByWeapon()
+		Signal(SIG_STUN)
+		StartThread(stunDetect)
+		
+		end
 	
 	
 	function stunDetect()
+	SetSignalMask(SIG_STUN)
 	Sleep(50)
+	
 	  health,   maxHealth,   paralyzeDamage,   captureProgress,   buildProgress=Spring.GetUnitHealth(unitID)
 		while health < paralyzeDamage do
 		boolStunned=true
