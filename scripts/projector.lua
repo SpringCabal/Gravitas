@@ -301,18 +301,17 @@
 	end
 	
 	function DeathAnimation()
-        tP(legfront01,x_axis,-44,3)
-        tP(legfront02,x_axis,-44,3)
-        tP(frblade01,x_axis,44,3)
-        tP(frblade02,x_axis,44,3)
-        tP(legrear01,x_axis,44,3)
-        tP(legrear02,x_axis,44,3)
-        tP(rblade01,x_axis,-44,3)
-        tP(rblade02,x_axis,-44,3)
-        -- FIXME: broken original code below (no clue what it does):
-        --tP(center,z_axis,-90,8,true)
-        tP(center,z_axis,-90,8)
-
+		Explode(legfront01, SFX.EXPLODE);     
+        Explode(legfront02, SFX.EXPLODE);
+        Explode(frblade01, SFX.EXPLODE);
+        Explode(frblade02, SFX.EXPLODE);
+        Sleep(200)
+        Explode(legrear01, SFX.EXPLODE);
+        Explode(legrear02, SFX.EXPLODE);
+        Explode(rblade01, SFX.EXPLODE);
+        Explode(rblade02, SFX.EXPLODE);
+        Sleep(200)
+        Explode(center, SFX.EXPLODE);
 	end
 
 	function script.Killed(recentDamage, _)
