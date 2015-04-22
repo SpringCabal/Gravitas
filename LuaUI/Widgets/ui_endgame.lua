@@ -124,8 +124,10 @@ function widget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
         SetupControls()
         ShowEndGameWindow()
     elseif UnitDefs[unitDefID].name == "cometopapa" then
+        SetupControls()
 		caption:SetCaption("You win!");
 		caption.font.color={0,1,0,1};
+        ShowEndGameWindow()
     end
 end
 
