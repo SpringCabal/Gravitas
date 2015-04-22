@@ -88,6 +88,13 @@ end
 --------------------------------------------------------------------------------
 --callins
 function widget:Initialize()
+    -- allows work with scened
+    local devMode = (tonumber(Spring.GetModOptions().play_mode) or 0) == 0
+    if devMode then
+        widgetHandler:RemoveWidget(widget)
+        return
+    end
+    
 	if (not WG.Chili) then
 		widgetHandler:RemoveWidget()
 		return
