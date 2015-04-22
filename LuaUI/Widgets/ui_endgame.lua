@@ -4,9 +4,9 @@
 function widget:GetInfo()
   return {
     name      = "Chili EndGame Window",
-    desc      = "v0.005 Chili EndGame Window. Creates award control and receives stats control from another widget.",
-    author    = "CarRepairer",
-    date      = "2013-09-05",
+    desc      = "Derived from v0.005 Chili EndGame Window by CarRepairer",
+    author    = "Anarchid",
+    date      = "April 2015",
     license   = "GNU GPL, v2 or later",
     layer     = 0,
     enabled   = true,
@@ -18,6 +18,8 @@ end
 local spSendCommands			= Spring.SendCommands
 
 local echo = Spring.Echo
+
+local caption
 
 local Chili
 local Image
@@ -58,12 +60,12 @@ local function SetupControls()
 		minHeight=400;
 	}
 	
- 	killed_caption = Chili.Label:New{
+ 	caption = Chili.Label:New{
  		x = '20%',
  		y = '40%',
  		width = 100,
  		parent = window_endgame,
- 		caption = "GAME OVER",
+ 		caption = "You died.",
  		fontsize = 80,
  		textColor = {1,0,0,1},
  	}
@@ -121,11 +123,13 @@ function widget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
         Spring.SendCommands("endgraph 0")
         SetupControls()
         ShowEndGameWindow()
+    elseif UnitDefs[unitDefID].name == "cometopapa" then
+		caption:SetCaption("You win!");
+		caption.font.color={0,1,0,1};
     end
 end
 
 function widget:Shutdown()
-	widgetHandler:DeregisterGlobal("SetAwardList")
 end
 
 
