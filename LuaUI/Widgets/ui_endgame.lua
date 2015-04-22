@@ -110,7 +110,6 @@ function widget:Initialize()
 end
 
 function widget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerDefID, attackerTeam)
-    Spring.Echo("unit destroyed!")
     if UnitDefs[unitDefID].name == "gravit" then
         Spring.SendCommands("endgraph 0")
         SetupControls()
