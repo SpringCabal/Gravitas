@@ -19,7 +19,7 @@ local plates = {}
 local bitmaskLinks = {}
 local linkChecksEnabled = false
 local reportedError = false
-local updateRate = 5
+local UPDATE_RATE = 5
 local PLATE_ACTIVATION_RANGE = 40
 
 function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
@@ -116,7 +116,7 @@ function gadget:GameFrame()
         return
     end
 
-    if Spring.GetGameFrame() % updateRate == 0 then
+    if Spring.GetGameFrame() % UPDATE_RATE == 0 then
         -- check if plates are toggled or not
         for plateID, plate in pairs(plates) do
             if plate.gateID or plate.bitmaskLink then
@@ -135,7 +135,7 @@ function gadget:GameFrame()
             end
         end
         reportedError = true
-        
+
         -- issue simple links
         for plateID, plate in pairs(plates) do
             if plate.gateID then
@@ -145,8 +145,8 @@ function gadget:GameFrame()
         -- issue bitmask links
         for gateID, bitmaskLink in pairs(bitmaskLinks) do
             local totalState = 1
-            for plateID, plateObj in pairs(bitmaskLink) do
-                if plateObj[2] ~= GetUnitState(plateID) then
+            for _, plateObj in pairs(bitmaskLink) do
+                if plateObj[2] ~= GetUnitState(plateObj[1]) then
                     totalState = false
                     break
                 end
