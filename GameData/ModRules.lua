@@ -8,6 +8,9 @@ local modRules = {
     allowUnitCollisionOverlap = false,
     allowGroundUnitGravity = false,
   },
+ system = {
+        pathFinderSystem = 1,
+	  },
 }
 
 return modRules
