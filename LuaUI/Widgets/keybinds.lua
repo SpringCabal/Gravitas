@@ -39,6 +39,7 @@ function widget:Initialize()
     local devMode = (tonumber(Spring.GetModOptions().play_mode) or 0) == 0
     if not devMode then 
         Spring.SendCommands("unbindall") --muahahahaha
+        Spring.SendCommands("unbind enter") --because because.
     else
         Spring.SendCommands("unbindkeyset w", "unbindkeyset p") --why p?
     end
