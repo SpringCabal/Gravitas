@@ -23,14 +23,7 @@ function SetBindings()
         
         "Alt+b  debug",
         "Alt+v  debugcolvol",
-        
-        "Any+up  moveforward",
-        "Any+down  moveback",
-        "Any+right  moveright",
-        "Any+left  moveleft",
-        "Any+shift  movefast",
-        "Any+ctrl  moveslow",
-        
+
         "a attack",
         "s stop",
         "w jump",
