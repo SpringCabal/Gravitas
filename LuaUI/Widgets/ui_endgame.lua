@@ -74,10 +74,109 @@ local function SetupControls()
 		y=0;
 		width='80';
 		right=0;
-		height=B_HEIGHT;
+		height=40;
 		caption="Exit",
 		OnClick = {
 			function() Spring.SendCommands("quit","quitforce") end
+		};
+		parent = window_endgame;
+	}
+    
+    Button:New{
+		y=40+20;
+		width='80';
+		right=0;
+		height=40;
+		caption="Restart",
+		OnClick = {
+			function() Spring.Restart("", 
+[[
+    [GAME]
+{
+	MapName=Gravitas Enterprise;
+	GameMode=0;
+	GameType=Scenario Editor Gravitas git;
+
+
+	NumTeams=2;
+	NumUsers=2;
+
+	HostIP=127.0.0.1;
+	HostPort=8452;
+	IsHost=1;
+	NumPlayers=1;
+    GameStartDelay=0;
+
+	StartMetal=1000;
+	StartEnergy=1000;
+
+	StartposType=3;
+	LimitDGun=0;
+	DiminishingMMs=0;
+	GhostedBuildings=1;
+	MyPlayerNum=1;
+	MyPlayerName=0;
+	NumRestrictions=0;
+	MaxSpeed=20;
+	MinSpeed=0.1;
+	[MODOPTIONS]
+	{
+        play_mode = 1;
+        deathmode = neverend;
+        has_scenario_file = 0;
+        project_dir = projects/Gravity-Enterprise;
+	}
+
+    [TEAM1]
+    {
+        AllyTeam=1;
+        Side=;
+        RGBColor=0.7843137383461 0 0;
+
+        TeamLeader=1;
+        Handicap=0;
+        StartPosX=0;
+        StartPosZ=0;
+    }
+    [AI1]
+    {
+		Name=1: NullAI;
+		ShortName=NullAI;
+		Team=1;
+		IsFromDemo=0;
+		Host=1;
+		[Options] {}
+    }
+    [TEAM0]
+    {
+        AllyTeam=0;
+        Side=;
+        RGBColor=0.35294118523598 0.35294118523598 1;
+
+        TeamLeader=1;
+        Handicap=0;
+        StartPosX=0;
+        StartPosZ=0;
+    }
+    [PLAYER1]
+    {
+        Name=0;
+        Spectator=0;
+        Team=0;
+    }
+    [ALLYTEAM0]
+    {
+        NumAllies=0;
+    }
+    [ALLYTEAM1]
+    {
+        NumAllies=0;
+    }
+
+}
+]]
+            ) 
+            end
 		};
 		parent = window_endgame;
 	}
