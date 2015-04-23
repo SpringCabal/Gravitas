@@ -28,8 +28,6 @@ function SetBindings()
         "Any+down  moveback",
         "Any+right  moveright",
         "Any+left  moveleft",
-        "Any+pageup  moveup",
-        "Any+pagedown  movedown",
         "Any+shift  movefast",
         "Any+ctrl  moveslow",
         
