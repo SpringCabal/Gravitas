@@ -76,6 +76,11 @@ local function AddImpulse(unitID, unitDefID, x, y, z, magnitude)
 	local myMass = mass[unitDefID]
 	local mag = magnitude*GRAVITY_BASELINE/dis*(0.0032)/myMass
 	
+    local r = Spring.GetUnitRadius(unitID) or math.huge
+    if dis<math.max(75,r) and mag<0 then
+        mag = 0 -- don't apply pull when target is too close
+    end
+    
     local oldX, oldY, oldZ = x, y, z
 	x,y,z = x*mag, y*mag, z*mag
     y = y + abs(magnitude)/(20*myMass)
@@ -107,7 +112,6 @@ function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, w
 		local x,y,z = (ux-ax), (uy-ay), (uz-az)
 		local magnitude = impulseWeaponID[weaponDefID]
 		
-        
 		AddImpulse(unitID, unitDefID, x, y, z, magnitude) 		
 	end
 	return damage,1.0
