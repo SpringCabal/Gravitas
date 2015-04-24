@@ -29,7 +29,7 @@ function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
             0, 0, 0, 
             0, 0, 0, 
             0, 0, 0);
-        Spring.SetUnitBlocking(unitID, false)
+        Spring.SetUnitBlocking(unitID, false, false, false, false, false, false, false)
     end
 --     -- EXAMPLE:
 --     if UnitDefs[unitDefID].customParams.gate then

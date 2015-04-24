@@ -27,6 +27,7 @@ function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
         Spring.Log(LOG_SECTION, LOG_LEVEL, "Setting wall stuff: " .. tostring(unitID))
         
     	Spring.SetUnitAlwaysVisible(unitID, true);
+        Spring.SetUnitBlocking(unitID, false, false, false, false, false, false, false)
 -- 		Spring.SetUnitCollisionVolumeData(unitID, 0, 0, 0,
 -- 											0, 0, 0,
 -- 											0, 0, 0 
@@ -34,7 +35,7 @@ function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
 -- 		Spring.SetUnitPosition(unitID,512,0,512);
 		Spring.SetUnitNeutral(unitID, true)
 		Spring.MoveCtrl.Enable(unitID)
---         Spring.MoveCtrl.SetNoBlocking(unitID, true)
+        Spring.MoveCtrl.SetNoBlocking(unitID, true)
 		Spring.MoveCtrl.SetGravity(unitID,0)
 -- 		Spring.MoveCtrl.SetPhysics(unitID,
 -- 		   512,-150,512,

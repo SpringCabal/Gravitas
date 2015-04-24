@@ -15,6 +15,7 @@ if gadgetHandler:IsSyncedCode() then
 function SetupUnitEffectProperties(unitID)
     Spring.SetUnitNoDraw(unitID, true)
     Spring.SetUnitNeutral(unitID, true)
+    Spring.SetUnitBlocking(unitID, false, false, false, false, false, false, false)
 --     Spring.MoveCtrl.Enable(unitID)
 --     Spring.MoveCtrl.SetGravity(unitID, 0)
 end
