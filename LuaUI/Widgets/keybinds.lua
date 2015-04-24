@@ -53,7 +53,7 @@ function widget:Initialize()
         purple .. "Q : " .. white .. "swap pull / push",
         purple .. "A : " .. white .. "stop shooting",
         purple .. "W : " .. white .. "jump (+ left mouse)",
-        purple .. "S : " .. white .. "stop shooting/moving",
+        purple .. "S : " .. white .. "stop shooting & moving",
     }
     
     mouseText = {
