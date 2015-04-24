@@ -1,7 +1,10 @@
+local can = piece('canister')
+
 function script.Create()
 end
 
 function script.Killed(recentDamage, _)
+	Explode(can, SFX.SHATTER);
     return 1
 end
 
