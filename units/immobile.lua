@@ -73,7 +73,7 @@ local Plate = Unit:New {
     customParams        = {
         -- invulnerable means that most instances are invulnerable through normal damage and effects (could still be manually destroyed)
         invulnerable = true, 
-        radius = 0,
+        radius = 50,
     },
     footprintX			    = 8,
 	footprintZ			    = 8,
