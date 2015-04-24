@@ -27,6 +27,7 @@ function SetBindings()
         "Alt+b  debug",
         "Alt+v  debugcolvol",
 
+        "a canceltarget",
         "s stop",
         "w jump",
         "q onoff",         
@@ -43,14 +44,15 @@ function widget:Initialize()
         Spring.SendCommands("unbindall") --muahahahaha
         Spring.SendCommands("unbindkeyset enter chat") --because because.
     else
-        Spring.SendCommands("unbindkeyset w", "unbindkeyset p") --why p?
+        Spring.SendCommands("unbindkeyset w", "unbindkeyset p", "unbindkeyset q", "unbindkeyset a", "unbindkeyset s") --why p?
     end
     SetBindings()
     
     
     bindText = { -- keybinds told to player
-        purple .. "Q : " .. white .. "swap pull/push",
-        purple .. "W : " .. white .. "jump",
+        purple .. "Q : " .. white .. "swap pull / push",
+        purple .. "A : " .. white .. "drop target",
+        purple .. "W : " .. white .. "jump (+ left mouse)",
         purple .. "S : " .. white .. "stop",
     }
     
@@ -83,14 +85,14 @@ function MakeBindingText()
     y = h*(#bindText + #mouseText)
     x = 10
     
-    for _,text in ipairs(bindText) do
-        AddLine(text,x,y)
-        y = y - h
-    end
     for _,text in ipairs(mouseText) do
         AddLine(text,x,y)
         y = y - h
     end    
+    for _,text in ipairs(bindText) do
+        AddLine(text,x,y)
+        y = y - h
+    end
 end
 
 function  AddLine(text,x,y,h)   
