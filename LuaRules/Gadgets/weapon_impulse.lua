@@ -76,7 +76,7 @@ local function AddImpulse(unitID, unitDefID, x, y, z, magnitude)
 	local myMass = mass[unitDefID]
 	local mag = magnitude*GRAVITY_BASELINE/dis*(0.0032)/myMass
 	
-    local r = Spring.GetUnitRadius(unitID) or math.huge
+    local r = Spring.GetUnitRadius(unitID) or 0
     if dis<math.max(75,r) and mag<0 then
         mag = 0 -- don't apply pull when target is too close
     end
