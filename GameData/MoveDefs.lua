@@ -10,7 +10,6 @@ local moveDefs  =    {
         maxSlope        =   36,
         crushStrength   =   5,
         heatmapping     =   false,
-        allowTerrainCollisions  = false,
     },
     {
         name = "Projector",
@@ -47,7 +46,6 @@ local moveDefs  =    {
         maxSlope        =   36,
         crushStrength   =   5,
         heatmapping     =   false,
-        allowTerrainCollisions  = false,
     },
     {
         name = "Wall5x17",
@@ -56,7 +54,6 @@ local moveDefs  =    {
         maxWaterDepth = 10,
         maxSlope = 2,
         crushStrength = 55,
-        allowTerrainCollisions  = false,
     },
     {
         name = "Default2x2",
