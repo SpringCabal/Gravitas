@@ -24,6 +24,19 @@
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 local options = {
+ 
+  {
+    key    = "play_mode",
+    name   = "Play Mode",
+    desc   = "Turn off to enable dev mode",
+    type   = "bool",
+    def    = 1,
+    min    = 0,
+    max    = 1,
+    step   = 1,  -- quantization is aligned to the def value
+                    -- (step <= 0) means that there is no quantization
+  },
+  
 }
 
 return options
