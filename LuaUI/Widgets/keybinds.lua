@@ -15,6 +15,9 @@ local Chili, screen0
 local children = {}
 local x,y,h
 
+local purple = "\255\255\10\255"
+local white = "\255\255\255\255"
+
 function SetBindings()
     local binds = { --real keybinds
         
@@ -24,7 +27,6 @@ function SetBindings()
         "Alt+b  debug",
         "Alt+v  debugcolvol",
 
-        "a attack",
         "s stop",
         "w jump",
         "q onoff",         
@@ -39,22 +41,21 @@ function widget:Initialize()
     local devMode = (tonumber(Spring.GetModOptions().play_mode) or 0) == 0
     if not devMode then 
         Spring.SendCommands("unbindall") --muahahahaha
-        Spring.SendCommands("unbind enter") --because because.
+        Spring.SendCommands("unbindkeyset enter chat") --because because.
     else
         Spring.SendCommands("unbindkeyset w", "unbindkeyset p") --why p?
     end
     SetBindings()
     
+    
     bindText = { -- keybinds told to player
-        "A : gravity gun",
-        "Q : swap pull/push",
-        "W : jump",
-        "S : stop",
+        purple .. "Q : " .. white .. "swap pull/push",
+        purple .. "W : " .. white .. "jump",
+        purple .. "S : " .. white .. "stop",
     }
     
     mouseText = {
-        "Left mouse : fire",
-        "Right mouse : move",
+        purple .. "Right mouse : " .. white .. "move / use gravity gun",
     }
 
 
