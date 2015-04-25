@@ -1,7 +1,7 @@
 function gadget:GetInfo()
   return {
     name      = "Unselectable objects",
-    desc      = "Unselectable objects (hidden during play mode)",
+    desc      = "Makes some objects unselectable (during play mode)",
     author    = "gajop",
     date      = "April 2015",
     license   = "GNU GPL, v3",

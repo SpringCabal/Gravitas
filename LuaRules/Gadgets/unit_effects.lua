@@ -1,7 +1,7 @@
 function gadget:GetInfo()
   return {
-    name      = "Effects gadgets",
-    desc      = "Common gadgetry for effects",
+    name      = "Effects via units",
+    desc      = "Make units that emit effects NoDraw, Neutral, etc",
     author    = "gajop",
     date      = "April 2015",
     license   = "GNU GPL, v3",

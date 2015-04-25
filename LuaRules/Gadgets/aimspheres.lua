@@ -2,7 +2,7 @@
 function gadget:GetInfo()
   return {
     name    = "Aim sphere Fixer",
-    desc    = "Sets aimi spheres to sane values",
+    desc    = "Sets aim spheres to sane values",
     author  = "ashdnazg",
     date    = "",
     license = "Public Domain",
