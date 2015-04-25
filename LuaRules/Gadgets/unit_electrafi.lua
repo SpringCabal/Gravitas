@@ -124,11 +124,11 @@ function gadget:GameFrame(n)
             local numSparks = 1
             local intensity = 1.0
             SendToUnsynced("SpawnSpark", unitID, intensity)
-            Spring.AddUnitDamage(unitID, 2+0.1*t.proximity, t.attackerID)                
+            Spring.AddUnitDamage(unitID, 2+0.1*t.proximity, 0, t.attackerID)
         elseif t.elecFrame and (t.elecFrame+burnTime>currentFrame) then
             local intensity = (t.elecFrame+burnTime - currentFrame) / burnTime
             SendToUnsynced("SpawnSpark", unitID, intensity)
-            Spring.AddUnitDamage(unitID, 2, t.attackerID)        
+            Spring.AddUnitDamage(unitID, 2, 0, t.attackerID)
         else
             watchedUnits[unitID] = nil
         end        

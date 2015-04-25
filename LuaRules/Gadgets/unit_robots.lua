@@ -164,12 +164,11 @@ function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, w
                 end
                 Spring.GiveOrderToUnit(unitID, CMD.INSERT, {0, CMD.MOVE, 0, best.x, best.y, best.z}, {"alt"})
                 movingAway[unitID] = Spring.GetGameFrame()
-                return 0,0
             end
         end    
     end
     
-    return damage,1.0
+    return damage
 end
 
 function gadget:UnitCmdDone(unitID)

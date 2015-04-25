@@ -128,11 +128,11 @@ function gadget:GameFrame(n)
         if t.proximity > 0 then
             local fireSizeMult = 1
             SendToUnsynced("BurnUnitID", unitID, fireSizeMult) 
-            Spring.AddUnitDamage(unitID, 2+0.1*t.proximity, t.attackerID)      
+            Spring.AddUnitDamage(unitID, 2+0.1*t.proximity, 0, t.attackerID)      
         elseif t.caughtFire and (t.caughtFire+burnTime>currentFrame) then
             local fireSizeMult = (t.caughtFire+burnTime - currentFrame) / burnTime
             SendToUnsynced("BurnUnitID", unitID, fireSizeMult) 
-            Spring.AddUnitDamage(unitID, 2, t.attackerID)        
+            Spring.AddUnitDamage(unitID, 2, 0, t.attackerID)        
         else
             watchedUnits[unitID] = nil
         end
