@@ -81,13 +81,19 @@ function UpdateElec(n, x,y,z, uID)
             watchedUnits[unitID] = watchedUnits[unitID] or {} 
             local p = ProximityInsideElec(unitID, x,y,z, r)
             local prev_p = watchedUnits[unitID] and watchedUnits[unitID].proximity or 0
-            watchedUnits[unitID].proximity = math.max(prev_p,p)
+            watchedUnits[unitID].proximity = math.max(p,prev_p)
+            if p>prev_p and p>0 then
+                watchedUnits[unitID].attackerID = uID
+            end
             if (p>0) then watchedUnits[unitID].elecFrame = currentFrame end
         elseif unitDef.customParams.robot then
             watchedRobots[unitID] = watchedRobots[unitID] or {} 
             local p = ProximityInsideElec(unitID, x,y,z, r)
             local prev_p = watchedRobots[unitID] and watchedRobots[unitID].proximity or 0
-            watchedRobots[unitID].proximity = math.max(prev_p,p)
+            watchedRobots[unitID].proximity = math.max(p,prev_p)
+            if p>prev_p and p>0 then
+                watchedRobots[unitID].attackerID = uID
+            end
             if (p>0) then watchedRobots[unitID].elecFrame = currentFrame end
         end
     end
@@ -118,11 +124,11 @@ function gadget:GameFrame(n)
             local numSparks = 1
             local intensity = 1.0
             SendToUnsynced("SpawnSpark", unitID, intensity)
-            Spring.AddUnitDamage(unitID, 2+0.1*t.proximity)                
+            Spring.AddUnitDamage(unitID, 2+0.1*t.proximity, t.attackerID)                
         elseif t.elecFrame and (t.elecFrame+burnTime>currentFrame) then
             local intensity = (t.elecFrame+burnTime - currentFrame) / burnTime
             SendToUnsynced("SpawnSpark", unitID, intensity)
-            Spring.AddUnitDamage(unitID, 2)        
+            Spring.AddUnitDamage(unitID, 2, t.attackerID)        
         else
             watchedUnits[unitID] = nil
         end        
@@ -134,10 +140,10 @@ function gadget:GameFrame(n)
         if t.proximity > 0 then
             local intensity = 1.0
             SendToUnsynced("SpawnSpark", unitID, intensity)
-            Spring.AddUnitDamage(unitID, 2+0.1*t.proximity, 1)
+            Spring.AddUnitDamage(unitID, 2+0.1*t.proximity, 1, t.attackerID)
         elseif t.elecFrame and (t.elecFrame+burnTime>currentFrame) then
             local intensity = (t.elecFrame+burnTime - currentFrame) / burnTime
-            SendToUnsynced("SpawnSpark", unitID, intensity)
+            SendToUnsynced("SpawnSpark", unitID, intensity, t.attackerID)
         else
             watchedRobots[unitID] = nil
         end

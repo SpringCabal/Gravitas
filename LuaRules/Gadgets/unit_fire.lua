@@ -17,7 +17,7 @@ end
 if gadgetHandler:IsSyncedCode() then
 
 local config = {} -- config[unitID] = radius
-local watchedUnits = {} -- watchedUnits[unitID] = {caughtFire=, proximity=}
+local watchedUnits = {} -- watchedUnits[unitID] = {caughtFire=, proximity=, attackerID=}
 
 local fireSpeed = 0.5 -- IF YOU CHANGE THIS THE SKY WILL FALL ON YOUR HEAD
 local fireID = UnitDefNames["fire"].id
@@ -106,7 +106,10 @@ function UpdateFire(n, x,y,z, uID)
             watchedUnits[unitID] = watchedUnits[unitID] or {} 
             local p = ProximityInsideFire(unitID, x,y,z)
             local prev_p = watchedUnits[unitID] and watchedUnits[unitID].proximity or 0
-            watchedUnits[unitID].proximity = math.max(prev_p,p)
+            watchedUnits[unitID].proximity = math.max(p,prev_p)
+            if p>prev_p and p>0 then
+                watchedUnits[unitID].attackerID = uID
+            end
             if (p>0) then watchedUnits[unitID].caughtFire = currentFrame end
         end
     end
@@ -125,11 +128,11 @@ function gadget:GameFrame(n)
         if t.proximity > 0 then
             local fireSizeMult = 1
             SendToUnsynced("BurnUnitID", unitID, fireSizeMult) 
-            Spring.AddUnitDamage(unitID, 2+0.1*t.proximity)      
+            Spring.AddUnitDamage(unitID, 2+0.1*t.proximity, t.attackerID)      
         elseif t.caughtFire and (t.caughtFire+burnTime>currentFrame) then
             local fireSizeMult = (t.caughtFire+burnTime - currentFrame) / burnTime
             SendToUnsynced("BurnUnitID", unitID, fireSizeMult) 
-            Spring.AddUnitDamage(unitID, 2)        
+            Spring.AddUnitDamage(unitID, 2, t.attackerID)        
         else
             watchedUnits[unitID] = nil
         end
