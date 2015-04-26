@@ -10,6 +10,7 @@ local Bob = CassosRobot:New {
     movementClass       = "BoB",
     customParams = {
         invulnerable = true,
+        radius = 30,
     },
     weapons = {
         { name = "BobGun"}
@@ -26,6 +27,9 @@ local ComeToPapa = BaseRobot:New {
     collisionVolumeTest	    = 1,
     collisionVolumeType	    = 'CylZ',    
     movementClass       = "ComeToPapa",
+    customParams = {
+        radius = 70,
+    },
     weapons = {
         { name = "Kannon"},
         { name = "Kannon"},
@@ -50,6 +54,9 @@ local Wallier = CassosRobot:New {
     collisionVolumeTest	    = 1,
     collisionVolumeType	    = 'CylY',    
     movementClass       = "Wallier",
+    customParams = {
+        radius = 27,
+    },
     weapons = {
         { name = "WallesRevenge"},
     },
@@ -66,6 +73,9 @@ local Projector = CassosRobot:New {
     collisionVolumeTest	    = 1,
     collisionVolumeType	    = 'CylZ',    
     movementClass       = "Projector",
+    customParams = {
+        radius = 15,
+    },
     weapons = {
         { name = "Kannon"},
     },
