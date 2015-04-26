@@ -2,6 +2,7 @@ local Barrel = BaseImmobile:New {
     name                = "Barrel",
     customParams = {
         barrel = true,
+        nonparalyzable = 1,
     },
     maxDamage           = 150,
     mass                = 60,
@@ -13,6 +14,7 @@ local Canister = BaseImmobile:New {
     name                    = "Canister",
     customParams = {
         barrel = true,
+        nonparalyzable = 1,
     },
     maxDamage               = 150,
     mass                    = 60,
@@ -33,6 +35,7 @@ local Crate = BaseImmobile:New {
     customParams = {
         plate_toggler = true,
         invulnerable = 1,
+        nonparalyzable = 1,
     }
 }
 
@@ -49,6 +52,7 @@ local Gate = BaseWall:New {
     customParams = {
         radius = 260,
         invulnerable = 1,
+        nonparalyzable = 1,
         gate   = true,
     },
     onoffable               = true,
@@ -69,6 +73,7 @@ local Fire = BaseEffect:New {
     customParams = {
         fire = true,
         invulnerable = 1,
+        nonparalyzable = 1,
     },
 }
 
@@ -99,6 +104,11 @@ local Plate = Unit:New {
     name                = "Plate",
     script              = "plate.lua",
     onoffable               = true,
+
+    customParams = {
+        invulnerable = 1,
+        nonparalyzable = 1,
+    }
 }
 
 local Wall1 = BaseWall:New {
@@ -113,6 +123,7 @@ local Wall1 = BaseWall:New {
     customParams = {
         radius = 490,
         invulnerable = 1,
+        nonparalyzable = 1,
     }
 }
 
@@ -128,6 +139,7 @@ local Wall2 = BaseWall:New {
     customParams = {
         radius = 260,
         invulnerable = 1,
+        nonparalyzable = 1,
     }
 }
 
@@ -143,6 +155,7 @@ local Wall3 = BaseWall:New {
     customParams = {
         radius = 160,
         invulnerable = 1,
+        nonparalyzable = 1,
     }
 }
 
@@ -158,6 +171,7 @@ local Wall4 = BaseWall:New {
     customParams = {
         radius = 160,
         invulnerable = 1,
+        nonparalyzable = 1,
     }
 }
 
