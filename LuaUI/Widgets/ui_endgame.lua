@@ -227,20 +227,21 @@ function widget:Initialize()
 
 end
 
-function widget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerDefID, attackerTeam)
-    if UnitDefs[unitDefID].name == "gravit" then
-        Spring.SendCommands("endgraph 0")
-        SetupControls()
-        ShowEndGameWindow()
-    elseif UnitDefs[unitDefID].name == "cometopapa" then
-        SetupControls()
-		caption:SetCaption("You win!");
-		caption.font.color={0,1,0,1};
-        ShowEndGameWindow()
+function widget:GameOver(winningAllyTeams)
+    local myAllyTeamID = Spring.GetMyAllyTeamID()
+    for _, winningAllyTeamID in pairs(winningAllyTeams) do
+        if myAllyTeamID == winningAllyTeamID then
+            Spring.SendCommands("endgraph 0")
+            SetupControls()
+            caption:SetCaption("You win!");
+            caption.font.color={0,1,0,1};
+            ShowEndGameWindow()
+            return
+        end
     end
-end
-
-function widget:Shutdown()
+    Spring.SendCommands("endgraph 0")
+    SetupControls()
+    ShowEndGameWindow()
 end
 
 
