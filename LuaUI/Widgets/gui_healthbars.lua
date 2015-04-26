@@ -1271,7 +1271,9 @@ do
       
       glColor(0.25,0.25,1,0.25)
       for i=1,#paraUnits do
-        glUnit(paraUnits[i],true)
+        if Spring.GetUnitIsDead(paraUnits[i])==false then
+          glUnit(paraUnits[i],true)
+        end
       end
       local shift = widgetHandler:GetHourTimer() / 15
       
@@ -1287,7 +1289,9 @@ do
 
       glColor(0.8,0.8,1,0.45)
       for i=1,#paraUnits do
-        glUnit(paraUnits[i],true)
+        if Spring.GetUnitIsDead(paraUnits[i])==false then
+          glUnit(paraUnits[i],true)
+        end
       end
 
       glTexture(false)
