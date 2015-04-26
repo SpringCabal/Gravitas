@@ -111,6 +111,11 @@ function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, w
 		
 		local x,y,z = (ux-ax), (uy-ay), (uz-az)
 		local magnitude = impulseWeaponID[weaponDefID]
+        
+        if y>5 and magnitude>0 then 
+            y=0
+            magnitude = 0
+        end
 		
 		AddImpulse(unitID, unitDefID, x, y, z, magnitude) 		
 	end
