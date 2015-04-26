@@ -59,7 +59,7 @@ end
 function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
     GG.Delay.DelayCall(function()
         local unitDef = UnitDefs[unitDefID]
-        if unitDef.name == "gate" or (unitDef.customParams.wall and Spring.GetUnitRulesParam(unitID, "destroyable") == 1) then
+        if unitDef.name == "gate" or (unitDef.customParams.wall and Spring.GetUnitRulesParam(unitID, "invulnerable") == 0) then
             AdjustWallTerrain(unitID, 1)
         end
     end, {})
@@ -73,7 +73,7 @@ end
 function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, builderID)
     local unitDef = UnitDefs[unitDefID]
     if not unitDef.customParams.wall then return end
-    if Spring.GetUnitRulesParam(unitID, "destroyable") == 1 or unitDef.name == "gate" then
+    if Spring.GetUnitRulesParam(unitID, "invulnerable") == 0 or unitDef.name == "gate" then
         GG.Delay.DelayCall(AdjustWallTerrain, {unitID, 0})
     end
 end
