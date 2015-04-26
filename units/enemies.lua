@@ -9,7 +9,7 @@ local Bob = CassosRobot:New {
     collisionVolumeType	    = 'CylZ',
     movementClass       = "BoB",
     customParams = {
-        invulnerable = true,
+        invulnerable = 1,
         radius = 30,
     },
     weapons = {

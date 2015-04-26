@@ -34,14 +34,10 @@ function gadget:UnitDestroyed(unitID, unitDefID, unitTeam, attackerID, attackerD
         Script.LuaRules.FlameRaw(x+2*rand(),y+10,z+2*rand(), 0,0.5,0, 0,0,0, 500)
         --SendToUnsynced("DeadBarrel", x,y,z, r) 
         
+        -- damage all nearby units
         local nearbyUnits = Spring.GetUnitsInCylinder(x, z, r)
-        -- do damage to all nearby units
-        -- TODO: make some sensible game mechanic
         for _, nearbyUnitID in pairs(nearbyUnits) do
-            local destroyable = Spring.GetUnitRulesParam(unitID, "destroyable")
-            if not UnitDefs[Spring.GetUnitDefID(unitID)].customParams.invulnerable or (destroyable ~= nil and destroyable == 1) then
-                Spring.AddUnitDamage(nearbyUnitID, 500)
-            end
+            Spring.AddUnitDamage(nearbyUnitID, 500)
         end
     end
 end

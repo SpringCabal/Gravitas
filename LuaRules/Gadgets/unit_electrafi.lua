@@ -47,7 +47,6 @@ function gadget:UnitCreated(unitID, unitDefID)
         end
         config[unitID] = Spring.GetUnitRulesParam(unitID,"elecSize")
         Spring.SetUnitNoDraw(unitID, true)
-        -- Spring.SetUnitNoSelect(unitID, true) --I'm guessing this isn't wanted while we are working
     end
 end
 
@@ -99,7 +98,7 @@ function UpdateElec(uID)
     local r = config[uID] or 0
     for _, unitID in pairs(GetUnitsInProximity(uID)) do
         local unitDef = UnitDefs[Spring.GetUnitDefID(unitID)]
-        if unitDef.customParams.player then 
+        if unitDef.customParams.player then --ignore everything except players and robots
             watchedUnits[unitID] = watchedUnits[unitID] or {} 
             local p = ProximityInsideElec(unitID, x,y,z, r)
             local prev_p = watchedUnits[unitID] and watchedUnits[unitID].proximity or 0

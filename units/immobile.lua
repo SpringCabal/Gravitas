@@ -32,7 +32,7 @@ local Crate = BaseImmobile:New {
     script                  = "crate.lua",
     customParams = {
         plate_toggler = true,
-        invulnerable = true,
+        invulnerable = 1,
     }
 }
 
@@ -48,6 +48,7 @@ local Gate = BaseWall:New {
     movementClass		    = "Wall5x17", 
     customParams = {
         radius = 260,
+        invulnerable = 1,
         gate   = true,
     },
     onoffable               = true,
@@ -58,6 +59,7 @@ local Electrafi = BaseEffect:New {
     script              = "electrafi.lua",
     customParams = {
         electric_field = true,
+        invulnerable = 1,
     },
 }
 
@@ -66,6 +68,7 @@ local Fire = BaseEffect:New {
     script              = "fire.lua",
     customParams = {
         fire = true,
+        invulnerable = 1,
     },
 }
 
@@ -109,6 +112,7 @@ local Wall1 = BaseWall:New {
     collisionVolumeType     = 'box',
     customParams = {
         radius = 490,
+        invulnerable = 1,
     }
 }
 
@@ -123,6 +127,7 @@ local Wall2 = BaseWall:New {
     collisionVolumeType     = 'box',
     customParams = {
         radius = 260,
+        invulnerable = 1,
     }
 }
 
@@ -137,6 +142,7 @@ local Wall3 = BaseWall:New {
     collisionVolumeType     = 'box',
     customParams = {
         radius = 160,
+        invulnerable = 1,
     }
 }
 
@@ -151,6 +157,7 @@ local Wall4 = BaseWall:New {
     collisionVolumeType     = 'box',
     customParams = {
         radius = 160,
+        invulnerable = 1,
     }
 }
 

@@ -168,7 +168,7 @@ function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, w
         end    
     end
     
-    return damage
+    return damage, 1.0
 end
 
 function gadget:UnitCmdDone(unitID)

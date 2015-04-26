@@ -19,10 +19,6 @@ local testWall
 function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
     -- boom
     if UnitDefs[unitDefID].customParams.wall then
-        if Spring.GetUnitRulesParam(unitID, "destroyable") == nil then
-            Spring.SetUnitRulesParam(unitID, "destroyable", 0)
-        end
-        
         testWall = unitID
         Spring.Log(LOG_SECTION, LOG_LEVEL, "Setting wall stuff: " .. tostring(unitID))
         
@@ -67,12 +63,5 @@ end
 --         angle = angle + 1
 --     end
 -- end
-
-function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, weaponDefID, projectileID, attackerID, attackerDefID, attackerTeam)
-    if UnitDefs[unitDefID].customParams.wall and Spring.GetUnitRulesParam(unitID, "destroyable") == 0 then
-        return 0
-    end
-    return damage
-end
 
 end
