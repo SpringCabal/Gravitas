@@ -72,7 +72,7 @@ local function SetupControls()
 	
 	Button:New{
 		y=0;
-		width='80';
+		width=80;
 		right=0;
 		height=40;
 		caption="Exit",
@@ -82,9 +82,10 @@ local function SetupControls()
 		parent = window_endgame;
 	}
     
+   
     Button:New{
 		y=40+20;
-		width='80';
+		width=80;
 		right=0;
 		height=40;
 		caption="Restart",
@@ -180,7 +181,23 @@ local function SetupControls()
 		};
 		parent = window_endgame;
 	}
-	
+
+    -- allows work with scened
+    local devMode = (tonumber(Spring.GetModOptions().play_mode) or 0) == 0
+    if devMode then
+        Button:New{
+            y=100;
+            width='80';
+            right=0;
+            height=40;
+            caption="Close me (dev mode)",
+            OnClick = {
+                function() window_endgame:Dispose() end
+            };
+            parent = window_endgame;
+        }
+    end
+    
 	screen0:AddChild(window_endgame)
 
 end
@@ -189,13 +206,6 @@ end
 --------------------------------------------------------------------------------
 --callins
 function widget:Initialize()
-    -- allows work with scened
-    local devMode = (tonumber(Spring.GetModOptions().play_mode) or 0) == 0
-    if devMode then
-        widgetHandler:RemoveWidget(widget)
-        return
-    end
-    
 	if (not WG.Chili) then
 		widgetHandler:RemoveWidget()
 		return
