@@ -3,9 +3,14 @@ local Bob = CassosRobot:New {
     objectName          = "big_robot.s3o",
     footprintX          = 3,
     footprintZ          = 3,
+    collisionVolumeScales   = '60 60 58',
+    collisionVolumeOffsets	= '0 2 4',
+    collisionVolumeTest	    = 1,
+    collisionVolumeType	    = 'CylZ',
     movementClass       = "BoB",
     customParams = {
-        invulnerable = true,
+        invulnerable = 1,
+        radius = 30,
     },
     weapons = {
         { name = "BobGun"}
@@ -17,7 +22,14 @@ local ComeToPapa = BaseRobot:New {
     name                = "ComeToPapa",
     footprintX          = 6,
     footprintZ          = 6,
+    collisionVolumeScales	= '105 104 172',
+    collisionVolumeOffsets	= '0 0 -17',
+    collisionVolumeTest	    = 1,
+    collisionVolumeType	    = 'CylZ',    
     movementClass       = "ComeToPapa",
+    customParams = {
+        radius = 70,
+    },
     weapons = {
         { name = "Kannon"},
         { name = "Kannon"},
@@ -37,7 +49,14 @@ local Wallier = CassosRobot:New {
     objectName          = "med_robot.s3o",
     footprintX          = 3,
     footprintZ          = 3,
+    collisionVolumeScales	= '52 53 52',
+    collisionVolumeOffsets	= '0 4 4',
+    collisionVolumeTest	    = 1,
+    collisionVolumeType	    = 'CylY',    
     movementClass       = "Wallier",
+    customParams = {
+        radius = 27,
+    },
     weapons = {
         { name = "WallesRevenge"},
     },
@@ -49,7 +68,14 @@ local Projector = CassosRobot:New {
     objectName          = "small_robot.s3o",
     footprintX          = 2,
     footprintZ          = 2,
+    collisionVolumeScales   = '30 29 39',
+    collisionVolumeOffsets	= '0 -5 3',
+    collisionVolumeTest	    = 1,
+    collisionVolumeType	    = 'CylZ',    
     movementClass       = "Projector",
+    customParams = {
+        radius = 15,
+    },
     weapons = {
         { name = "Kannon"},
     },

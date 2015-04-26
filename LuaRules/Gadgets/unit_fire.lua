@@ -45,7 +45,6 @@ function gadget:UnitCreated(unitID, unitDefID)
         end
         config[unitID] = Spring.GetUnitRulesParam(unitID,"fireSize")
         Spring.SetUnitNoDraw(unitID, true)
-        -- Spring.SetUnitNoSelect(unitID, true) --I'm guessing this isn't wanted while we are working
     end
 end
 
@@ -102,7 +101,7 @@ function UpdateFire(n, x,y,z, uID)
     local fireRadius = config[uID]
     local units = Spring.GetUnitsInCylinder(x,z,fireRadius * fireSpeed * 1.7)
     for _,unitID in pairs(units) do
-        if not UnitDefs[Spring.GetUnitDefID(unitID)].customParams.invulnerable then
+        if Spring.GetUnitRulesParam(unitID, "invulnerable") ~= 1 then -- omit invulnerable units, to save a little cpu
             watchedUnits[unitID] = watchedUnits[unitID] or {} 
             local p = ProximityInsideFire(unitID, x,y,z)
             local prev_p = watchedUnits[unitID] and watchedUnits[unitID].proximity or 0
