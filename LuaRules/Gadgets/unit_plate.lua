@@ -11,7 +11,7 @@ function gadget:GetInfo()
 end
 
 local LOG_SECTION = "plate-gate"
-local LOG_LEVEL = LOG.NOTICE
+local LOG_LEVEL = LOG.DEBUG
 
 if (gadgetHandler:IsSyncedCode()) then
 

@@ -13,6 +13,9 @@ end
 
 -- FlameRaw format: posx,posy,posz, dirx,diry,dirz, speedx,speedy,speedz, range
 
+local LOG_SECTION = "electrafi"
+local LOG_LEVEL = LOG.DEBUG
+
 -- SYNCED
 if gadgetHandler:IsSyncedCode() then
 
@@ -71,11 +74,30 @@ function ProximityInsideElec(unitID, fx,fy,fz, r)
     return 0
 end
 
-function UpdateElec(n, x,y,z, uID)
+function GetAllElectrafiUnits()
+    local units = {}
+    for unitID, _ in pairs(config) do
+        table.insert(units, unitID)
+    end
+    return units
+end
+
+function GetUnitsInProximity(uID)
+    local x,y,z = Spring.GetUnitPosition(uID)
+    if x == nil then
+        -- FIXME: should this ever happen really?
+        Spring.Log(LOG_SECTION, "error", "Electric field has no x value: " .. tostring(uID))
+        return {}
+    end
     -- kill/paralyse stuff
     local r = config[uID] or 0
-    local units = Spring.GetUnitsInSphere(x,y,z,r+250) -- +250 because its probably bigger than all unit radii
-    for _,unitID in pairs(units) do
+    return Spring.GetUnitsInSphere(x,y,z,r+250) -- +250 because its probably bigger than all unit radii
+end
+
+function UpdateElec(uID)
+    local x,y,z = Spring.GetUnitPosition(uID)
+    local r = config[uID] or 0
+    for _, unitID in pairs(GetUnitsInProximity(uID)) do
         local unitDef = UnitDefs[Spring.GetUnitDefID(unitID)]
         if unitDef.customParams.player then 
             watchedUnits[unitID] = watchedUnits[unitID] or {} 
@@ -112,10 +134,7 @@ function gadget:GameFrame(n)
     
     -- update
     for uID,_ in pairs(config) do
-        local x,y,z = Spring.GetUnitPosition(uID)
-        if x then
-            UpdateElec(n,x,y,z,uID)
-        end
+        UpdateElec(uID)
     end
     
     --kill
@@ -156,7 +175,10 @@ function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, w
     return damage,1.0
 end
 
-
+GG.Electrafi = {
+    GetUnitsInProximity   = GetUnitsInProximity,
+    GetAllElectrafiUnits  = GetAllElectrafiUnits,
+}
 
 -- UNSYNCED
 else
