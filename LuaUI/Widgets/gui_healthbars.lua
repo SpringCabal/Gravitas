@@ -44,14 +44,14 @@ local featureBarHeight          = 1.6
 local featureBarWidth           = 7
 local featureBarAlpha           = 0.6
 
-local drawBarTitles             = true          -- (I disabled the healthbar text, cause that one doesnt need an explanation)
+local drawBarTitles             = false        -- (I disabled the healthbar text, cause that one doesnt need an explanation) -- they draw in the wrong place anyway
 local titlesAlpha               = 0.3*barAlpha
 
 local drawBarPercentage         = 0		        -- wont draw heath percentage text above this percentage
 local alwaysDrawBarPercentageForComs = true     -- true:  commanders always will show health percentage number
 local drawFeatureBarPercentage  = 0	            
 local choppedCornerSize         = 0.44
-local outlineSize               = 0.63
+local outlineSize               = 0.7
 local drawFullHealthBars        = false
 
 local drawFeatureHealth         = true
@@ -60,9 +60,6 @@ local featureHpThreshold        = 0.85
 
 local featureResurrectVisibility= true      -- draw feature bars for resurrected features on same distance as normal unit bars
 local featureReclaimVisibility  = false      -- draw feature bars for reclaimed features on same distance as normal unit bars
-
-local addGlow                   = true      -- adds a small subtle glow to the bar´s value
-local glowSize					= outlineSize*7
 
 local minPercentageDistance     = 80000     -- always show health percentage text below this distance
 local infoDistance              = 800000
@@ -186,62 +183,6 @@ function drawBarGl()
   local heightAddition = 0
   if OPTIONS[currentOption].showOutline then
     heightAddition = outlineSize
-  end
-  -- add glow
-  if addGlow then
-	
-    gl.BeginEnd(GL.QUADS,function()
-      -- bottom mid piece
-      gl.Vertex(-barWidth,       (barHeight/2),  0,                   -2);
-      gl.Vertex(-barWidth+cs,    (barHeight/2),  (barWidth*2)-cs*2,   -2);
-      gl.Vertex(-barWidth+cs,    -glowSize,      (barWidth*2)-cs*2,   -4);
-      gl.Vertex(-barWidth,       -glowSize,      0,                   -4);        
-      
-      -- top mid piece
-      gl.Vertex(-barWidth,       (barHeight/2),      0,                   -2);
-      gl.Vertex(-barWidth+cs,    (barHeight/2),      (barWidth*2)-cs*2,   -2);
-      gl.Vertex(-barWidth+cs,    barHeight+glowSize, (barWidth*2)-cs*2,   -4);
-      gl.Vertex(-barWidth,       barHeight+glowSize, 0,                   -4);
-          
-      
-      -- top left
-      gl.Vertex(-barWidth-glowSize,    barHeight,             0, -4);
-      gl.Vertex(-barWidth,             barHeight,             0, -3);
-      gl.Vertex(-barWidth,             barHeight+glowSize,    0, -4);
-      gl.Vertex(-barWidth-glowSize,    barHeight+glowSize,    0, -4);
-      
-      -- bottom left
-      gl.Vertex(-barWidth-glowSize,    0,         0, -4);
-      gl.Vertex(-barWidth,             0,         0, -3);
-      gl.Vertex(-barWidth,             -glowSize, 0, -4);
-      gl.Vertex(-barWidth-glowSize,    -glowSize, 0, -4);
-      
-      -- mid left
-      gl.Vertex(-barWidth-glowSize,    0,         0, -4);
-      gl.Vertex(-barWidth,             0,         0, -3);
-      gl.Vertex(-barWidth,             barHeight, 0, -3);
-      gl.Vertex(-barWidth-glowSize,    barHeight, 0, -4);
-      
-      
-      -- top right
-      gl.Vertex(-barWidth+cs,          barHeight,          (barWidth*2)-cs*2, -3);
-      gl.Vertex(-barWidth+cs+glowSize, barHeight,          (barWidth*2)-cs*2, -4);
-      gl.Vertex(-barWidth+cs+glowSize, barHeight+glowSize, (barWidth*2)-cs*2, -4);
-      gl.Vertex(-barWidth+cs,          barHeight+glowSize, (barWidth*2)-cs*2, -4);
-      
-      -- bottom right
-      gl.Vertex(-barWidth+cs,          0,         (barWidth*2)-cs*2, -3);
-      gl.Vertex(-barWidth+cs+glowSize, 0,         (barWidth*2)-cs*2, -4);
-      gl.Vertex(-barWidth+cs+glowSize, -glowSize, (barWidth*2)-cs*2, -4);
-      gl.Vertex(-barWidth+cs,          -glowSize, (barWidth*2)-cs*2, -4);
-      
-      -- mid right
-      gl.Vertex(-barWidth+cs,          0,         (barWidth*2)-cs*2, -3);
-      gl.Vertex(-barWidth+cs+glowSize, 0,         (barWidth*2)-cs*2, -4);
-      gl.Vertex(-barWidth+cs+glowSize, barHeight, (barWidth*2)-cs*2, -4);
-      gl.Vertex(-barWidth+cs,          barHeight, (barWidth*2)-cs*2, -3);
-      
-    end)
   end
   
   if (OPTIONS[currentOption].choppedCorners) then 
@@ -432,7 +373,7 @@ function drawBarGl()
 end
 
 
--- is a copy of drawBarGl(),  without glow vertexcode  +  some vars changed (only at top: barHeight, barWidth, bkBottom, bkTop)
+-- is a copy of drawBarGl(), some vars changed (only at top: barHeight, barWidth, bkBottom, bkTop)
 function drawFeatureBarGl()
   local barHeight = featureBarHeight
   local barWidth = featureBarWidth
@@ -1007,7 +948,7 @@ do
   function DrawUnitInfos(unitID,unitDefID, ud)
     if (not customInfo[unitDefID]) then
       customInfo[unitDefID] = {
-        height        = ud.height+14,
+        height        = 1.8*Spring.GetUnitRadius(unitID), -- for Gravitas, because our model heights are not set correctly
         maxShield     = ud.shieldPower,
         canStockpile  = ud.canStockpile,
         reloadTime    = ud.reloadTime,
@@ -1451,44 +1392,3 @@ do
   end
 
 end --//end do
-
-
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-
-function widget:GetConfigData(data)
-    savedTable = {}
-    savedTable.drawBarPercentage				= drawBarPercentage
-    savedTable.alwaysDrawBarPercentageForComs	= alwaysDrawBarPercentageForComs
-    savedTable.currentOption					= currentOption
-    savedTable.addGlow							= addGlow
-    return savedTable
-end
-
-function widget:SetConfigData(data)
-    if data.drawBarPercentage ~= nil    			then  drawBarPercentage	= data.drawBarPercentage end
-    if data.alwaysDrawBarPercentageForComs ~= nil   then  alwaysDrawBarPercentageForComs = data.alwaysDrawBarPercentageForComs end
-    if data.currentOption ~= nil					then  currentOption = data.currentOption end
-    if data.addGlow ~= nil							then  addGlow = data.addGlow end
-end
-
-function widget:TextCommand(command)
-    if (string.find(command, "healthbars_percentage") == 1  and  string.len(command) == 21) then 
-		drawBarPercentage =  (drawBarPercentage < 100 and 100 or 0)
-	end
-    if (string.find(command, "healthbars_compercentage") == 1  and  string.len(command) == 24) then 
-		alwaysDrawBarPercentageForComs = not alwaysDrawBarPercentageForComs
-	end
-    if (string.find(command, "healthbars_style") == 1  and  string.len(command) == 16) then 
-		toggleOption()
-	end
-    if (string.find(command, "healthbars_glow") == 1  and  string.len(command) == 15) then 
-		addGlow = not addGlow
-		init()
-		if addGlow then
-			Spring.Echo("Healthbars:  Glow enabled")
-		else
-			Spring.Echo("Healthbars:  Glow disabled")
-		end
-	end
-end

@@ -3,7 +3,7 @@ local Gravit = BaseHuman:New {
     activateWhenBuilt   = true,
     customParams = {
         player = true,
-        radius = 40,
+        radius = 20,
     },
     
     idletime = 120, --in simframes

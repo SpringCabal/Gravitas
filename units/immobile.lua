@@ -3,6 +3,7 @@ local Barrel = BaseImmobile:New {
     customParams = {
         barrel = true,
         nonparalyzable = 1,
+        radius = 20,
     },
     maxDamage           = 150,
     mass                = 60,
@@ -15,6 +16,7 @@ local Canister = BaseImmobile:New {
     customParams = {
         barrel = true,
         nonparalyzable = 1,
+        radius = 10,
     },
     maxDamage               = 150,
     mass                    = 60,

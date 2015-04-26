@@ -28,7 +28,7 @@ local ComeToPapa = BaseRobot:New {
     collisionVolumeType	    = 'CylZ',    
     movementClass       = "ComeToPapa",
     customParams = {
-        radius = 70,
+        radius = 50,
     },
     weapons = {
         { name = "Kannon"},
