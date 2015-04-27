@@ -124,10 +124,10 @@ if (gadgetHandler:IsSyncedCode()) then
 					end
 				end
 				if not fa and frame>=Spring.GetUnitWeaponState(u,Game.gameName and 1 or 0,"reloadFrame") then
-					Spring.SetUnitWeaponState(u,Game.gameName and 1 or 0,"reloadFrame",frame+1)
+					Spring.SetUnitWeaponState(u,Game.gameName and 1 or 0,"reloadFrame",frame+2)
 				end
 				if not fb and frame>=Spring.GetUnitWeaponState(u,Game.gameName and 2 or 1,"reloadFrame") then
-					Spring.SetUnitWeaponState(u,Game.gameName and 2 or 1,"reloadFrame",frame+1)
+					Spring.SetUnitWeaponState(u,Game.gameName and 2 or 1,"reloadFrame",frame+2)
 				end
 				if sd and not usd[u] then
 					Spring.GiveOrderToUnit(u,CMD.SELFD,{},{})
