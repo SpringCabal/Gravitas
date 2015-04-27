@@ -19,7 +19,7 @@ function gadget:UnitCreated(unitID, unitDefID)
     if not devMode then
         --local unitDef = UnitDefs[unitDefID]
         --if unitDef.customParams.wall or unitDef.customParams.effect or unitDef.name == "plate" then
-        --    Spring.SetUnitNoSelect(unitID, true)
+            Spring.SetUnitNoSelect(unitID, true)
         --end
     end
 end
