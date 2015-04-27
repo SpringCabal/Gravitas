@@ -20,7 +20,7 @@ local white = "\255\255\255\255"
 
 function SetBindings()
     local binds = { --real keybinds
-        
+        "Any+esc quitforce", 
         "Any+pause  pause",
         -- space pause (widget)
         
@@ -60,6 +60,13 @@ function widget:Initialize()
         purple .. "Right mouse : " .. white .. "move / use gravity gun",
     }
 
+
+    bindText={
+        purple.."Arrow keys : "..white.." Move",
+        purple.."Left Mouse Button : "..white.." Push",
+        purple.."Right Mouse Button : "..white.." Pull",
+    }
+    mouseText = {}
 
     if (not WG.Chili) then
 		return
