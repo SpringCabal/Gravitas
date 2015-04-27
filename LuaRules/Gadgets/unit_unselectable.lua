@@ -17,10 +17,10 @@ local devMode = (tonumber(Spring.GetModOptions().play_mode) or 0) == 0
 
 function gadget:UnitCreated(unitID, unitDefID)
     if not devMode then
-        local unitDef = UnitDefs[unitDefID]
-        if unitDef.customParams.wall or unitDef.customParams.effect or unitDef.name == "plate" then
-            Spring.SetUnitNoSelect(unitID, true)
-        end
+        --local unitDef = UnitDefs[unitDefID]
+        --if unitDef.customParams.wall or unitDef.customParams.effect or unitDef.name == "plate" then
+        --    Spring.SetUnitNoSelect(unitID, true)
+        --end
     end
 end
 
