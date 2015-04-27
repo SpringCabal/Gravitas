@@ -98,14 +98,17 @@ if (gadgetHandler:IsSyncedCode()) then
 			local u=tonumber(string.match(msg,"U:(%d+)"))
 			local dx=tonumber(string.match(msg,"MX:(%-?%d+)"))
 			local dz=tonumber(string.match(msg,"MZ:(%-?%d+)"))
-			local tx=tonumber(string.match(msg,"TX:(%-?%d+%.?%d+)"))
-			local ty=tonumber(string.match(msg,"TY:(%-?%d+%.?%d+)"))
-			local tz=tonumber(string.match(msg,"TZ:(%-?%d+%.?%d+)"))
+			local tx=tonumber(string.match(msg,"TX:(%-?%d+%.?%d*)"))
+			local ty=tonumber(string.match(msg,"TY:(%-?%d+%.?%d*)"))
+			local tz=tonumber(string.match(msg,"TZ:(%-?%d+%.?%d*)"))
 			local tu=tonumber(string.match(msg,"TU:(%d+)"))
 			local fa=string.match(msg,"LMB")
 			local fb=string.match(msg,"RMB")
 			local fc=string.match(msg,"MMB")
 			local sd=string.match(msg,"SD")
+			local jx=tonumber(string.match(msg,"JX:(%-?%d+%.?%d*)"))
+			local jy=tonumber(string.match(msg,"JY:(%-?%d+%.?%d*)"))
+			local jz=tonumber(string.match(msg,"JZ:(%-?%d+%.?%d*)"))
 			--local speed=math.sqrt((dx or 0)^2+(dz or 0)^2)
 			dx=dx or 0
 			dz=dz or 0
@@ -142,6 +145,9 @@ if (gadgetHandler:IsSyncedCode()) then
 						Spring.GiveOrderToUnit(u,CMD.STOP,{},{})
 						MovedLast[u]=false
 					end
+				end
+				if jx and jy and jz then
+					Spring.GiveOrderToUnit(u,GG.CustomCommands.GetCmdID("CMD_JUMP"),{jx,jy,jz},{})
 				end
 			end
 		end
@@ -242,7 +248,7 @@ if (gadgetHandler:IsSyncedCode()) then
 	function gadget:RecvLuaMsg(msg,player)
 		if string.sub(msg,1,12)=="Shoot'n'Run:" then
 			local u=tonumber(string.match(msg,"U:(%d+)"))
-			RecMsg[u]=msg
+			RecMsg[1+#RecMsg]=msg
 		end
 	end
 
@@ -296,6 +302,7 @@ else
 			local FireB=false
 			local FireC=false
 			local SelfD=false
+			local JumpX,JumpY,JumpZ=false,false,false
 
 			-- Get mouse input
 			local mx,my,LeftButton,MiddleButton,RightButton = Spring.GetMouseState()
@@ -316,16 +323,16 @@ else
 			if #(Spring.GetActionHotKeys("hero_west") or {})+ #(Spring.GetActionHotKeys("hero_east") or {})
 				+#(Spring.GetActionHotKeys("hero_north") or {})+#(Spring.GetActionHotKeys("hero_south") or {})==0 then
 				Spring.Echo("No hero key set! Forcing arrows and wasd!")
-				Spring.SendCommands({"bind down hero_south"})
 				Spring.SendCommands({"bind up hero_north"})
 				Spring.SendCommands({"bind left hero_west"})
+				Spring.SendCommands({"bind down hero_south"})
 				Spring.SendCommands({"bind right hero_east"})
-				--Spring.SendCommands({"bind s hero_south"})
-				--Spring.SendCommands({"bind w hero_north"})
-				--Spring.SendCommands({"bind a hero_west"})
-				--Spring.SendCommands({"bind d hero_east"})
-				--Spring.SendCommands({"bind d hero_east"})
-				Spring.SendCommands({"bind Any+esc quitforce"})
+				Spring.SendCommands({"bind w hero_north"})
+				Spring.SendCommands({"bind a hero_west"})
+				Spring.SendCommands({"bind s hero_south"})
+				Spring.SendCommands({"bind d hero_east"})
+				Spring.SendCommands({"bind e hero_jump"})
+				Spring.SendCommands({"bind space hero_jump"})
 			end
 
 			-- Get keyboard input
@@ -349,6 +356,13 @@ else
 					MoveZ=MoveZ+1
 				end
 			end
+			for _,key in ipairs(Spring.GetActionHotKeys("hero_jump")) do
+				if Spring.GetKeyState(Spring.GetKeyCode(key)) then
+					if TargetX and TargetY and TargetZ then
+						JumpX,JumpY,JumpZ=pos[1],pos[2],pos[3]
+					end
+				end
+			end
 			if Spring.GetKeyState(Spring.GetKeyCode('d')) then
 				local alt,ctrl,meta,shift=Spring.GetModKeyState()
 				if ctrl then
@@ -367,6 +381,9 @@ else
 					msg=msg.." TU:"..TargetU
 				elseif TargetX and TargetY and TargetZ then
 					msg=msg.." TX:"..TargetX.." TY:"..TargetY.." TZ:"..TargetZ
+				end
+				if JumpX and JumpY and JumpZ then
+					msg=msg.." JX:"..JumpX.." JY:"..JumpY.." JZ:"..JumpZ
 				end
 				if LeftButton then
 					msg=msg.." LMB"
@@ -387,7 +404,18 @@ else
 	end
 
 	function gadget:MousePress(x,y,button)
-		if (button==1 or button==2) and GetTheOne() then
+		if GetTheOne() then
+			return true
+		end
+		return false
+	end
+
+	function gadget:MouseRelease(x,y,button)
+		local u=GetTheOne()
+		if u and button==2 then-- So, middle mouse button is 2 apparently
+			local mx,my = Spring.GetMouseState()
+			local _,pos = Spring.TraceScreenRay(mx,my,true,false)
+			Spring.SendLuaRulesMsg("Shoot'n'Run: U:"..u.." JX:"..pos[1].." JY:"..pos[2].." JZ:"..pos[3])
 			return true
 		end
 		return false
