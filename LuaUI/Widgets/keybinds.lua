@@ -20,19 +20,12 @@ local white = "\255\255\255\255"
 
 function SetBindings()
     local binds = { --real keybinds
-        "Any+esc quitforce", 
+        "Any+esc quitforce",
         "Any+pause  pause",
-        -- space pause (widget)
-        
+        "Any+p  pause",
         "Alt+b  debug",
         "Alt+v  debugcolvol",
-
-        "a canceltarget",
-        "s stop",
-        "w jump",
-        "q onoff",         
     }
-
     for _,binding in pairs(binds) do
         Spring.SendCommands("bind ".. binding)
     end
@@ -40,69 +33,62 @@ end
 
 function widget:Initialize()
     local devMode = (tonumber(Spring.GetModOptions().play_mode) or 0) == 0
-    if not devMode then 
+    if not devMode then
         Spring.SendCommands("unbindall") --muahahahaha
         Spring.SendCommands("unbindkeyset enter chat") --because because.
     else
         Spring.SendCommands("unbindkeyset w", "unbindkeyset p", "unbindkeyset q", "unbindkeyset a", "unbindkeyset s") --why p?
     end
     SetBindings()
-    
-    
-    bindText = { -- keybinds told to player
-        purple .. "Q : " .. white .. "swap pull / push",
-        purple .. "A : " .. white .. "stop shooting",
-        purple .. "W : " .. white .. "jump (+ left mouse)",
-        purple .. "S : " .. white .. "stop shooting & moving",
-    }
-    
+
+
     mouseText = {
-        purple .. "Right mouse : " .. white .. "move / use gravity gun",
-    }
-
-
-    bindText={
-        purple.."Arrow keys : "..white.." Move",
         purple.."Left Mouse Button : "..white.." Push",
         purple.."Right Mouse Button : "..white.." Pull",
+        purple.."Middle Mouse Button : "..white.." Jump",
     }
-    mouseText = {}
+
+    bindText={
+        purple.."WASD or arrow keys : "..white.." Move",
+        purple.."E or Space : "..white.." Jump",
+    }
+
 
     if (not WG.Chili) then
-		return
-	end
-	Chili = WG.Chili
-	screen0 = Chili.Screen0
-    
+        return
+    end
+    Chili = WG.Chili
+    screen0 = Chili.Screen0
+
     MakeBindingText()
 end
 
 
 function MakeBindingText()
     if (not WG.Chili) then
-		return
-	end
-    
+        return
+    end
+
     for _,child in pairs(children) do
         screen0:RemoveChild(child)
     end
-    
-    
+
+
     h = 20
     y = h*(#bindText + #mouseText)
     x = 10
-    
+
     for _,text in ipairs(mouseText) do
         AddLine(text,x,y)
         y = y - h
-    end    
+    end
     for _,text in ipairs(bindText) do
         AddLine(text,x,y)
         y = y - h
     end
 end
 
-function  AddLine(text,x,y,h)   
+function  AddLine(text,x,y,h)
     children[#children+1] = Chili.Label:New{
         x = x,
         bottom = y,
