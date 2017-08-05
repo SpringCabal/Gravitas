@@ -10,7 +10,7 @@ function gadget:GetInfo()
     date      = "2008-2012",
     license   = "GNU GPL, v2 or later",
     layer     = 0,
-    enabled   = not (Game.version:find('91.0') and (Game.version:find('91.0.1') == nil))
+    enabled   = not (Engine.version:find('91.0') and (Engine.version:find('91.0.1') == nil))
   }
 end
 
@@ -108,7 +108,7 @@ end
 
 
 local function CopyTable(outtable,intable)
-  for i,v in pairs(intable) do 
+  for i,v in pairs(intable) do
     if (type(v)=='table') then
       if (type(outtable[i])~='table') then outtable[i] = {} end
       CopyTable(outtable[i],v)
@@ -129,7 +129,7 @@ end
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --
---  «« some basic functions »»
+--  ï¿½ï¿½ some basic functions ï¿½ï¿½
 --
 
 local supportedFxs = {}
@@ -189,7 +189,7 @@ end
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --
---  «« NanoSpray handling »»
+--  ï¿½ï¿½ NanoSpray handling ï¿½ï¿½
 --
 
 local nanoParticles = {}
@@ -198,7 +198,7 @@ local maxEngineParticles = Spring.GetConfigInt("MaxNanoParticles", 10000)
 local function GetFaction(udid)
   --local udef_factions = UnitDefs[udid].factions or {}
   --return ((#udef_factions~=1) and 'unknown') or udef_factions[1]
-  return "default" -- default 
+  return "default" -- default
 end
 
 local factionsNanoFx = {
@@ -357,7 +357,7 @@ local builders = {}
 -------------------------------------------------------------------------------------
 
 function gadget:Update()
-  if (spGetGameFrame()<1) then 
+  if (spGetGameFrame()<1) then
     return
   end
 
@@ -379,7 +379,7 @@ function gadget:Update()
   --// init user custom nano fxs
   for faction,fx in pairs(Lups.Config or {}) do
     if (fx and (type(fx)=='table') and fx.fxtype) then
-      local fxType = fx.fxtype 
+      local fxType = fx.fxtype
       local fxSettings = fx
 
       if (fxType)and
