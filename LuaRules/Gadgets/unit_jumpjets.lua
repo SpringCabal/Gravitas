@@ -445,7 +445,7 @@ function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmd
 		return false  -- command was not used                     -- order
 	end
 	if (jumping[unitID]) then
-		return true, false -- command was used but don't remove it
+		return true, true -- command already used so remove it
 	end
 	if GG.turning[unitID] then
 		return true, false

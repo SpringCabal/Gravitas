@@ -1,5 +1,4 @@
-Remember to pull it with --recursive to pick up the submodules. 
-Example: 
-```
-git clone --recursive https://github.com/SpringCabal/Gravitas.git Gravitas.sdd
-```
+Fork implementing a more direct control scheme:
+- Move with arrows keys
+- Push with Left Mouse Button
+- Pull with Right Mouse Button

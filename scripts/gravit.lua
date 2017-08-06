@@ -180,7 +180,7 @@ end
 
 function script.AimWeapon1(heading, pitch)
     --aiming animation: instantly turn the gun towards the enemy
-    if(Spring.GetUnitStates(unitID).active) then
+    --if(Spring.GetUnitStates(unitID).active) then
     
 		if not jumping then
 			Signal( SIG_AIM )
@@ -200,14 +200,14 @@ function script.AimWeapon1(heading, pitch)
 		end
 		
 		return true
-    end
+    --end
     
-    return false;
+    --return false;
 end
 
 function script.AimWeapon2(heading, pitch)
     --aiming animation: instantly turn the gun towards the enemy
-    if( not Spring.GetUnitStates(unitID).active) then
+    --if( not Spring.GetUnitStates(unitID).active) then
 		if not jumping then
 			Signal( SIG_AIM )
 			Signal( SIG_IDLE)
@@ -225,9 +225,9 @@ function script.AimWeapon2(heading, pitch)
 			Turn(armleft, x_axis, -pitch, 5);
 		end
 		return true
-    end
+    --end
     
-    return false;
+    --return false;
 end
 function script.FireWeapon(n)
     return true
