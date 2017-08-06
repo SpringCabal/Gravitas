@@ -113,7 +113,7 @@ if (gadgetHandler:IsSyncedCode()) then
 			dx=dx or 0
 			dz=dz or 0
 			if u and Spring.ValidUnitID(u) then
-				if tu then
+				if tu ~= u then
 					Spring.SetUnitTarget(u,tu)
 				elseif tx and tz then
 					if ty then
