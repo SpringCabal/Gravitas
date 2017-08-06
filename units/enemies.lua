@@ -16,6 +16,8 @@ local Bob = CassosRobot:New {
         { name = "BobGun"}
     },
     strafeToAttack       = false,
+
+    buildPic = "",
 }
 
 local ComeToPapa = BaseRobot:New {
@@ -25,7 +27,7 @@ local ComeToPapa = BaseRobot:New {
     collisionVolumeScales	= '105 104 172',
     collisionVolumeOffsets	= '0 0 -17',
     collisionVolumeTest	    = 1,
-    collisionVolumeType	    = 'CylZ',    
+    collisionVolumeType	    = 'CylZ',
     movementClass       = "ComeToPapa",
     customParams = {
         radius = 50,
@@ -41,6 +43,8 @@ local ComeToPapa = BaseRobot:New {
     strafeToAttack      = false,
     script              = "projector_boss.lua",
 	objectName          = "ComeToPapa.s3o",
+
+    buildPic = "",
 }
 
 
@@ -52,7 +56,7 @@ local Wallier = CassosRobot:New {
     collisionVolumeScales	= '52 53 52',
     collisionVolumeOffsets	= '0 4 4',
     collisionVolumeTest	    = 1,
-    collisionVolumeType	    = 'CylY',    
+    collisionVolumeType	    = 'CylY',
     movementClass       = "Wallier",
     customParams = {
         radius = 27,
@@ -60,6 +64,8 @@ local Wallier = CassosRobot:New {
     weapons = {
         { name = "WallesRevenge"},
     },
+
+    buildPic = "",
 }
 
 
@@ -71,7 +77,7 @@ local Projector = CassosRobot:New {
     collisionVolumeScales   = '30 29 39',
     collisionVolumeOffsets	= '0 -5 3',
     collisionVolumeTest	    = 1,
-    collisionVolumeType	    = 'CylZ',    
+    collisionVolumeType	    = 'CylZ',
     movementClass       = "Projector",
     customParams = {
         radius = 15,
@@ -79,6 +85,8 @@ local Projector = CassosRobot:New {
     weapons = {
         { name = "Kannon"},
     },
+
+    buildPic = "",
 }
 
 return lowerkeys({

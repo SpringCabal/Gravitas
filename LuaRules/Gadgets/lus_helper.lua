@@ -10,6 +10,8 @@ function gadget:GetInfo()
 	}
 end
 
+VFS.Include("luarules/includes/utilities.lua")
+
 if (gadgetHandler:IsSyncedCode()) then
 --SYNCED
 
@@ -28,7 +30,7 @@ local GetUnitPosition		= Spring.GetUnitPosition
 local PlaySoundFile			= Spring.PlaySoundFile
 local SpawnCEG				= Spring.SpawnCEG
 -- LUS
-local CallAsUnit 			= Spring.UnitScript.CallAsUnit	
+local CallAsUnit 			= Spring.UnitScript.CallAsUnit
 
 -- Unsynced Ctrl
 -- Constants
@@ -142,7 +144,7 @@ end
 local function IsPieceAncestor(unitID, pieceName, ancestor)
 	local pieceMap = GetUnitPieceMap(unitID)
 	local parent = GetUnitPieceInfo(unitID, pieceMap[pieceName]).parent
-	if parent:find(ancestor) then 
+	if parent:find(ancestor) then
 		return true
 	elseif parent == "" or parent == nil then
 		return false
@@ -161,7 +163,7 @@ function gadget:UnitCreated(unitID, unitDefID, teamID, builderID)
 		info.arms = pieceMap["rupperarm"] ~= nil
 		local leftArmIDs = {}
 		local rightArmIDs = {}
-		
+
 		local launcherIDs = {}
 		local turretIDs = {}
 		local mantletIDs = {}
@@ -202,7 +204,7 @@ function gadget:UnitCreated(unitID, unitDefID, teamID, builderID)
 				turretIDs[weaponNum] = turretIDs[weaponNum] or IsPieceAncestor(unitID, pieceName, "turret")
 			end
 		end
-		
+
 		if cp.unittype == "mech" then
 			info.rightArmMasterID = GetArmMasterWeapon(rightArmIDs)
 			info.leftArmMasterID = GetArmMasterWeapon(leftArmIDs)
@@ -211,7 +213,7 @@ function gadget:UnitCreated(unitID, unitDefID, teamID, builderID)
 		elseif cp.unittype == "vehicle" then
 			info.turretIDs = turretIDs
 		end
-		
+
 		info.launcherIDs = launcherIDs
 		info.turretIDs = turretIDs
 		info.mantletIDs = mantletIDs
@@ -219,7 +221,7 @@ function gadget:UnitCreated(unitID, unitDefID, teamID, builderID)
 		info.numWheels = numWheels
 		info.jumpjets = numJets
 	end
-	
+
 	-- Remove aircraft land and repairlevel buttons
 	if UnitDefs[unitDefID].canFly then
 		Spring.GiveOrderToUnit(unitID, CMD.IDLEMODE, {0}, {})
@@ -244,13 +246,13 @@ function gadget:GamePreload()
 		local info = {}
 		local cp = unitDef.customParams
 		local weapons = unitDef.weapons
-		
+
 		-- Parse UnitDef Weapon Data
 		local missileWeaponIDs = {}
 		local jammableIDs = {}
 		local amsIDs = {}
 		local burstLengths = {}
-		local firingHeats = {}		
+		local firingHeats = {}
 		local reloadTimes = {}
 		local ammoTypes = {}
 		local minRanges = {}
@@ -285,7 +287,7 @@ function gadget:GamePreload()
 		info.spinSpeeds = spinSpeeds
 		info.jammableIDs = jammableIDs
 		info.amsIDs = amsIDs
-		
+
 		-- UnitDef Level Info
 		-- General
 		info.hasEcm = string.tobool(cp.hasecm)
@@ -315,7 +317,7 @@ function gadget:GamePreload()
 			-- coolant
 			info.maxAmmo["coolant"] = 100
 			info.ammoTypes[-1] = "coolant"
-			info.burstLengths[-1] = 20	
+			info.burstLengths[-1] = 20
 		elseif cp.unittype == "vehicle" then
 			info.limbHPs["turret"] = unitDef.health * 1.0
 			if unitDef.canFly then
@@ -338,7 +340,7 @@ function gadget:GamePreload()
 		-- And finally, stick it in GG for the script to access
 		GG.lusHelper[unitDefID] = info
 	end
-	
+
 end
 
 function gadget:Initialize()

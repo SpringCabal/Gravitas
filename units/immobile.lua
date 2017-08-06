@@ -8,6 +8,8 @@ local Barrel = BaseImmobile:New {
     maxDamage           = 150,
     mass                = 60,
     script             = "barrel.lua",
+
+    buildPic = "",
 }
 
 -- sci fi barrel
@@ -21,6 +23,8 @@ local Canister = BaseImmobile:New {
     maxDamage               = 150,
     mass                    = 60,
     script                  = "canister.lua",
+
+    buildPic = "",
 }
 
 local Crate = BaseImmobile:New {
@@ -38,7 +42,9 @@ local Crate = BaseImmobile:New {
         plate_toggler = true,
         invulnerable = 1,
         nonparalyzable = 1,
-    }
+    },
+
+    buildPic = "",
 }
 
 local Gate = BaseWall:New {
@@ -50,7 +56,7 @@ local Gate = BaseWall:New {
     collisionVolumeOffsets  = '0 56 0',
     collisionVolumeTest     = 1,
     collisionVolumeType     = 'box',
-    movementClass		    = "Wall5x17", 
+    movementClass		    = "Wall5x17",
     customParams = {
         radius = 260,
         invulnerable = 1,
@@ -58,6 +64,8 @@ local Gate = BaseWall:New {
         gate   = true,
     },
     onoffable               = true,
+
+    buildPic = "",
 }
 
 local Electrafi = BaseEffect:New {
@@ -67,6 +75,8 @@ local Electrafi = BaseEffect:New {
         electric_field = true,
         invulnerable = 1,
     },
+
+    buildPic = "",
 }
 
 local Fire = BaseEffect:New {
@@ -77,12 +87,14 @@ local Fire = BaseEffect:New {
         invulnerable = 1,
         nonparalyzable = 1,
     },
+
+    buildPic = "",
 }
 
 local Plate = Unit:New {
     customParams        = {
         -- invulnerable means that most instances are invulnerable through normal damage and effects (could still be manually destroyed)
-        invulnerable = true, 
+        invulnerable = true,
         radius = 50,
     },
     footprintX			    = 8,
@@ -110,7 +122,9 @@ local Plate = Unit:New {
     customParams = {
         invulnerable = 1,
         nonparalyzable = 1,
-    }
+    },
+
+    buildPic = "",
 }
 
 local Wall1 = BaseWall:New {
@@ -126,7 +140,8 @@ local Wall1 = BaseWall:New {
         radius = 490,
         invulnerable = 1,
         nonparalyzable = 1,
-    }
+    },
+    buildPic = "",
 }
 
 local Wall2 = BaseWall:New {
@@ -142,7 +157,9 @@ local Wall2 = BaseWall:New {
         radius = 260,
         invulnerable = 1,
         nonparalyzable = 1,
-    }
+    },
+
+    buildPic = "",
 }
 
 local Wall3 = BaseWall:New {
@@ -158,7 +175,9 @@ local Wall3 = BaseWall:New {
         radius = 160,
         invulnerable = 1,
         nonparalyzable = 1,
-    }
+    },
+
+    buildPic = "",
 }
 
 local Wall4 = BaseWall:New {
@@ -174,7 +193,9 @@ local Wall4 = BaseWall:New {
         radius = 160,
         invulnerable = 1,
         nonparalyzable = 1,
-    }
+    },
+    
+    buildPic = "",
 }
 
 
