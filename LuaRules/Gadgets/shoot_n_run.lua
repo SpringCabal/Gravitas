@@ -267,6 +267,9 @@ else
 
 	function gadget:Update()-- Is called more than once per frame
 		local u=GetTheOne()
+		if Spring.GetGameRulesParam("sb_gameMode") == "dev" then
+			return
+		end
 		if u then
 			Spring.SelectUnitArray({},false)
 			local x,_,z=Spring.GetUnitPosition(u)
