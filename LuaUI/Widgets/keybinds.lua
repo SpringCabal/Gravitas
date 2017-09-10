@@ -37,7 +37,7 @@ function widget:Initialize()
         Spring.SendCommands("unbindall") --muahahahaha
         Spring.SendCommands("unbindkeyset enter chat") --because because.
     else
-        Spring.SendCommands("unbindkeyset w", "unbindkeyset p", "unbindkeyset q", "unbindkeyset a", "unbindkeyset s") --why p?
+        --Spring.SendCommands("unbindkeyset w", "unbindkeyset p", "unbindkeyset q", "unbindkeyset a", "unbindkeyset s") --why p?
     end
     SetBindings()
 

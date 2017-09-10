@@ -38,7 +38,6 @@ if LUA_NAME == "LuaUI" then
 		LUA_DIRNAME .. 'Widgets/';
 		LUA_DIRNAME .. 'SystemAddons/';
 		LUA_DIRNAME .. 'SystemWidgets/';
-		LUA_DIRNAME .. 'chili/';
 	}
 
 	--// Create the "LuaUI/Config" directory
@@ -53,7 +52,6 @@ else
 		LUA_DIRNAME .. AddonNames;
 		LUA_DIRNAME .. 'SystemAddons/';
 		LUA_DIRNAME .. 'System' .. AddonNames;
-		LUA_DIRNAME .. 'chili/';
 	}
 end
 
