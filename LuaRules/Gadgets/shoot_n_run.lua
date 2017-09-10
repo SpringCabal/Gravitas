@@ -407,6 +407,9 @@ else
 	end
 
 	function gadget:MousePress(x,y,button)
+		if Spring.GetGameRulesParam("sb_gameMode") == "dev" then
+			return
+		end
 		if GetTheOne() then
 			return true
 		end
