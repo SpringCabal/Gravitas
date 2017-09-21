@@ -25,9 +25,9 @@ local PLATE_ACTIVATION_RANGE = 40
 function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
     if UnitDefs[unitDefID].name == "plate" then
         plates[unitID] = { pressed = false }
-        Spring.SetUnitCollisionVolumeData(unitID, 
-            0, 0, 0, 
-            0, 0, 0, 
+        Spring.SetUnitCollisionVolumeData(unitID,
+            0, 0, 0,
+            0, 0, 0,
             0, 0, 0);
         Spring.SetUnitBlocking(unitID, false, false, false, false, false, false, false)
     end
@@ -90,7 +90,7 @@ function DisableLinkChecks()
 end
 
 local function GetUnitState(unitID)
-    if plates[unitID] then 
+    if plates[unitID] then
         return plates[unitID].state
     end
     local _, _, _, _, active = Spring.GetUnitStates(unitID)
@@ -98,15 +98,26 @@ local function GetUnitState(unitID)
 end
 
 local function SetUnitState(unitID, state)
-    if plates[unitID] then 
+	local isGate == false
+    if plates[unitID] then
         plates[unitID].state = state
+	else
+		isGate = true
     end
     local _, _, _, _, active = GetUnitState(unitID)
     if active ~= state then
         if state then
             Spring.GiveOrderToUnit(unitID, CMD.ONOFF, { 1 }, {})
+			if isGate and GG.SB then
+				Spring.Echo("Open gate")
+				SB.ExecuteEvent("OPEN_GATE", {unit = unitID})
+			end
         else
             Spring.GiveOrderToUnit(unitID, CMD.ONOFF, { 0 }, {})
+			if isGate and GG.SB then
+				Spring.Echo("Close gate")
+				SB.ExecuteEvent("CLOSE_GATE", {unit = unitID})
+			end
         end
     end
 end
@@ -119,6 +130,7 @@ function gadget:GameFrame()
     if Spring.GetGameFrame() % UPDATE_RATE == 0 then
         -- check if plates are toggled or not
         for plateID, plate in pairs(plates) do
+			Spring.Echo("plateID", plateID, plate.gateID)
             if plate.gateID or plate.bitmaskLink then
                 local x, y, z = Spring.GetUnitPosition(plateID)
                 local units = Spring.GetUnitsInCylinder(x, z, PLATE_ACTIVATION_RANGE)
