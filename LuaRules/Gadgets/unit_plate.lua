@@ -93,30 +93,27 @@ local function GetUnitState(unitID)
     if plates[unitID] then
         return plates[unitID].state
     end
-    local _, _, _, _, active = Spring.GetUnitStates(unitID)
-    return active
+    return Spring.GetUnitStates(unitID).active
 end
 
 local function SetUnitState(unitID, state)
-	local isGate == false
+	local isGate = false
     if plates[unitID] then
         plates[unitID].state = state
 	else
 		isGate = true
     end
-    local _, _, _, _, active = GetUnitState(unitID)
+    local active = GetUnitState(unitID)
     if active ~= state then
         if state then
             Spring.GiveOrderToUnit(unitID, CMD.ONOFF, { 1 }, {})
 			if isGate and GG.SB then
-				Spring.Echo("Open gate")
-				SB.ExecuteEvent("OPEN_GATE", {unit = unitID})
+				GG.SB.ExecuteEvent("OPEN_GATE", {unit = unitID})
 			end
         else
             Spring.GiveOrderToUnit(unitID, CMD.ONOFF, { 0 }, {})
 			if isGate and GG.SB then
-				Spring.Echo("Close gate")
-				SB.ExecuteEvent("CLOSE_GATE", {unit = unitID})
+				GG.SB.ExecuteEvent("CLOSE_GATE", {unit = unitID})
 			end
         end
     end
@@ -127,24 +124,21 @@ function gadget:GameFrame()
         return
     end
 
+	-- maybe check plates that aren't linked to gates
+	-- Spring.Log(LOG_SECTION, LOG_LEVEL, "Plate has no gate: " .. tostring(plateID))
     if Spring.GetGameFrame() % UPDATE_RATE == 0 then
         -- check if plates are toggled or not
         for plateID, plate in pairs(plates) do
-			Spring.Echo("plateID", plateID, plate.gateID)
-            if plate.gateID or plate.bitmaskLink then
-                local x, y, z = Spring.GetUnitPosition(plateID)
-                local units = Spring.GetUnitsInCylinder(x, z, PLATE_ACTIVATION_RANGE)
-                local newState = false
-                for _, unitID in pairs(units) do
-                    if UnitDefs[Spring.GetUnitDefID(unitID)].customParams.plate_toggler then
-                        newState = true
-                        break
-                    end
+            local x, y, z = Spring.GetUnitPosition(plateID)
+            local units = Spring.GetUnitsInCylinder(x, z, PLATE_ACTIVATION_RANGE)
+            local newState = false
+            for _, unitID in pairs(units) do
+                if UnitDefs[Spring.GetUnitDefID(unitID)].customParams.plate_toggler then
+                    newState = true
+                    break
                 end
-                SetUnitState(plateID, newState)
-            elseif not reportedError then
-                Spring.Log(LOG_SECTION, LOG_LEVEL, "Plate has no gate: " .. tostring(plateID))
             end
+            SetUnitState(plateID, newState)
         end
         reportedError = true
 
