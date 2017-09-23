@@ -108,12 +108,13 @@ local function SetUnitState(unitID, state)
         if state then
             Spring.GiveOrderToUnit(unitID, CMD.ONOFF, { 1 }, {})
 			if isGate and GG.SB then
-				GG.SB.ExecuteEvent("OPEN_GATE", {unit = unitID})
+				Spring.Echo("OPEN GATE")
+				GG.SB.ExecuteEvent("GATE_OPENED", {unit = unitID})
 			end
         else
             Spring.GiveOrderToUnit(unitID, CMD.ONOFF, { 0 }, {})
 			if isGate and GG.SB then
-				GG.SB.ExecuteEvent("CLOSE_GATE", {unit = unitID})
+				GG.SB.ExecuteEvent("GATE_CLOSED", {unit = unitID})
 			end
         end
     end
