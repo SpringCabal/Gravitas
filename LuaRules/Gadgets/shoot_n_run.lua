@@ -87,6 +87,9 @@ if (gadgetHandler:IsSyncedCode()) then
 
 
 	function gadget:GameFrame(frame)
+		if Spring.GetGameRulesParam("sb_gameMode") == "dev" then
+			return
+		end
 
 		-- Make unsynced run that function once per frame
 		SendToUnsynced("Shoot_n_Run_Unsynced_GameFrame",frame)
