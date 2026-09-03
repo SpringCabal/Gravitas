@@ -5,11 +5,10 @@ local modinfo = {
 	shortgame = "GRR",
 	description = "Spring Cabals Ludum Dare entry: Gravitas",
 	url = "https://github.com/SpringCabal/Gravitas",
-	version = "$VERSION",	
+	version = "",
 	modtype = "1",
-
 	depend = {
-		"cursors.sdz",
+		"cursors.sdz"
 	}
 }
 

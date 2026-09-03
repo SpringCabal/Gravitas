@@ -29,7 +29,9 @@ function hasSetTarget(unitDefID)
 end
 
 function widget:DefaultCommand()
-	local targettype,data = TraceScreenRay(GetMouseState())
+	Spring.Echo(GetMouseState())
+	local mx, mz = GetMouseState()
+	local targettype,data = TraceScreenRay(mx, mz)
 	if targettype ~= "unit" or IsUnitAllied(data) then
 		return
 	end

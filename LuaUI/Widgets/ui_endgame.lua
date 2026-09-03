@@ -77,7 +77,7 @@ local function SetupControls()
 		height=40;
 		caption="Exit",
 		OnClick = {
-			function() Spring.SendCommands("quit","quitforce") end
+			function() Spring.SendCommands("reloadforce") end
 		};
 		parent = window_endgame;
 	}

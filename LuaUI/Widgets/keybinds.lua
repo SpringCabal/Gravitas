@@ -20,7 +20,7 @@ local white = "\255\255\255\255"
 
 function SetBindings()
     local binds = { --real keybinds
-        "Any+esc quitforce",
+        "Any+esc reloadforce",
         "Any+pause  pause",
         "Any+p  pause",
         "Alt+b  debug",

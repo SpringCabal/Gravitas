@@ -32,7 +32,7 @@ function widget:Initialize()
 		caption   = "Quit",
 		padding   = {0,0,0,0},
 		margin    = {0,0,0,0},
-		OnClick = {function() Spring.SendCommands("quitforce")end },
+		OnClick = {function() Spring.SendCommands("reloadforce")end },
         font = {
             size = 14,
         },

@@ -319,7 +319,7 @@ local function Jump(unitID, goal, cmdTag)
 	mcDisable(unitID)
 	
 		--mcSetPosition(unitID, start[1] + vector[1],start[2] + vector[2]-6,start[3] + vector[3])
-    local oldQueue = spGetCommandQueue(unitID)
+    local oldQueue = spGetCommandQueue(unitID, 1)
 	
     ReloadQueue(unitID, oldQueue, cmdTag)
 	
