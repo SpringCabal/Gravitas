@@ -13,19 +13,20 @@ end
 
 local function inherit (c, p, concatNames)
 	lowerkeys(c)
-	for k,v in pairs(p) do 
-		if type(k) == "string" and type(v) ~= "function" then
-			k = k:lower() -- can't use lowerkeys() on parent, as breaks e.g. New() -> new
-		end
-		if type(v) == "table" then
-			if c[k] == nil then c[k] = {} end
-			inherit(c[k], v)
-		else
-			if concatNames and k == "name" then 
-				c[k] = v .. " " .. (c[k] or "")
+	for k,v in pairs(p) do
+		if type(v) ~= "function" then
+			if type(k) == "string" then
+				k = k:lower()
+			end
+			if type(v) == "table" then
+				if c[k] == nil then c[k] = {} end
+				inherit(c[k], v)
 			else
-				if c[k] == nil then c[k] = v end
-				--Spring.Echo(c.name, k, v, c[k])
+				if concatNames and k == "name" then
+					c[k] = v .. " " .. (c[k] or "")
+				else
+					if c[k] == nil then c[k] = v end
+				end
 			end
 		end
 	end
@@ -59,24 +60,25 @@ function Def:New(newAttribs, concatName)
 	local newClass = {}
 	inherit(newClass, newAttribs)
 	inherit(newClass, self, concatName)
-	return newClass
+	return setmetatable(newClass, {__index = Def})
 end
 
 function Def:Clone(name) -- name is passed to <NAME> in _post, it is the unitname of the unit to copy from
 	local newClass = {}
 	inherit(newClass, self)
 	newClass.unitname = name:lower()
-	return newClass
+	return setmetatable(newClass, {__index = Def})
 end
 
 function Def:Append(newAttribs)
 	local newClass = {}
 	inherit(newClass, self)
 	append(newClass, newAttribs)
-	return newClass
+	return setmetatable(newClass, {__index = Def})
 end
 
 Unit = Def:New{
+	power					= 1,
 	showNanoFrame			= false,
 	showNanoSpray			= false,
 	objectName				= "<NAME>.dae",

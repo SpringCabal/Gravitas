@@ -1,0 +1,5 @@
+# The crates here are guest modules and only ever build for wasm32; pinning the
+# target keeps a bare `cargo check` (and rust-analyzer) from trying the host
+# triple, where the `spring` guest bindings do not exist.
+[build]
+target = "wasm32-unknown-unknown"

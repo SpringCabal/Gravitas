@@ -1,0 +1,185 @@
+use alloc::vec::Vec;
+
+use crate::level;
+use crate::state::World;
+use crate::units;
+
+pub struct Mission {
+    fired: Vec<i32>,
+    inside: Vec<i32>,
+}
+
+pub struct Assault {
+    pub units: Vec<i32>,
+    pub target_x: f32,
+    pub target_z: f32,
+}
+
+impl Mission {
+    pub fn new() -> Self {
+        Self {
+            fired: Vec::new(),
+            inside: Vec::new(),
+        }
+    }
+
+    pub fn update(&mut self, player_unit: Option<i32>, frame: i32) -> Vec<Assault> {
+        if frame % ENTER_AREA_INTERVAL != 0 {
+            return Vec::new();
+        }
+        let Some(player_unit) = player_unit else {
+            return Vec::new();
+        };
+        let Some(position) = units::position(player_unit) else {
+            return Vec::new();
+        };
+        let mut assaults = Vec::new();
+        for trigger in level::ENTER_AREA_TRIGGERS {
+            let Some(area) = area(trigger.area) else {
+                continue;
+            };
+            let inside = contains(area, position.x, position.z);
+            let was_inside = self.inside.contains(&trigger.area);
+            self.track(trigger.area, inside);
+            if !inside || was_inside || self.fired.contains(&trigger.area) {
+                continue;
+            }
+            self.fired.push(trigger.area);
+            if let Some(assault) = build_assault(trigger) {
+                assaults.push(assault);
+            }
+        }
+        assaults
+    }
+}
+
+pub fn stun_electrafi_proximity(world: &World) {
+    for unit_id in units_in_all_electrafi_proximity(world) {
+        stun(unit_id);
+    }
+}
+
+pub fn issue_assault(assault: &Assault) {
+    for unit_id in &assault.units {
+        let _ = spring::give_order_to_unit(
+            *unit_id,
+            CMD_FIGHT,
+            &[
+                assault.target_x,
+                units::ground_height(assault.target_x, assault.target_z),
+                assault.target_z,
+            ],
+            0,
+            0,
+        );
+    }
+}
+
+pub fn win(ally_teams: &[i32]) {
+    let victory = ally_teams.contains(&PLAYER_ALLY_TEAM);
+    OVER.with(|over| over.set(Some(victory)));
+    let _ = spring::send_to_unsynced(&alloc::format!("GRAVITAS_OVER|{}", i32::from(victory)));
+}
+
+#[cfg(feature = "e2e")]
+pub fn over() -> Option<bool> {
+    OVER.with(|over| over.get())
+}
+
+pub fn clear_over() {
+    OVER.with(|over| over.set(None));
+}
+
+thread_local! {
+    static OVER: core::cell::Cell<Option<bool>> = const { core::cell::Cell::new(None) };
+}
+
+const PLAYER_ALLY_TEAM: i32 = 0;
+
+const ENTER_AREA_INTERVAL: i32 = 5;
+const STUN_MULTIPLIER: f32 = 1.5;
+const CMD_FIGHT: i32 = 16;
+const ANY_ALLEGIANCE: i32 = -1;
+const MAX_AREA_UNITS: usize = 512;
+
+impl Mission {
+    fn track(&mut self, area_id: i32, inside: bool) {
+        let position = self.inside.iter().position(|value| *value == area_id);
+        match (inside, position) {
+            (true, None) => self.inside.push(area_id),
+            (false, Some(index)) => {
+                self.inside.swap_remove(index);
+            }
+            _ => {}
+        }
+    }
+}
+
+fn area(area_id: i32) -> Option<&'static level::Area> {
+    level::AREAS.iter().find(|area| area.id == area_id)
+}
+
+fn contains(area: &level::Area, x: f32, z: f32) -> bool {
+    let (x1, x2) = (area.x1.min(area.x2), area.x1.max(area.x2));
+    let (z1, z2) = (area.z1.min(area.z2), area.z1.max(area.z2));
+    x >= x1 && x <= x2 && z >= z1 && z <= z2
+}
+
+fn build_assault(trigger: &level::EnterAreaTrigger) -> Option<Assault> {
+    let source = area(trigger.units_area)?;
+    let target = area(trigger.target_area)?;
+    let units = units_in_area(source);
+    if units.is_empty() {
+        return None;
+    }
+    Some(Assault {
+        units,
+        target_x: (target.x1 + target.x2) / 2.0,
+        target_z: (target.z1 + target.z2) / 2.0,
+    })
+}
+
+fn units_in_area(area: &level::Area) -> Vec<i32> {
+    let mut output = alloc::vec![0i32; MAX_AREA_UNITS];
+    let found = match spring::get_units_in_rectangle_into(
+        area.x1.min(area.x2),
+        area.z1.min(area.z2),
+        area.x1.max(area.x2),
+        area.z1.max(area.z2),
+        ANY_ALLEGIANCE,
+        &mut output,
+    ) {
+        Ok(spring::BufferFill::Complete(count)) => count,
+        _ => return Vec::new(),
+    };
+    output.truncate(found);
+    output
+}
+
+fn stun(unit_id: i32) {
+    let Ok(health) = spring::units_info::get_unit_health(unit_id) else {
+        return;
+    };
+    let _ = spring::set_unit_health(
+        unit_id,
+        spring::types::UnitHealthValue {
+            health: health.health,
+            capture: health.capture_progress,
+            paralyze: health.max_health * STUN_MULTIPLIER,
+            build: health.build_progress,
+            use_amounts: true,
+        },
+    );
+}
+
+fn units_in_all_electrafi_proximity(world: &World) -> Vec<i32> {
+    let mut units = Vec::new();
+    for field_id in world.electrafi.all_fields() {
+        for unit_id in world.electrafi.units_in_proximity(field_id) {
+            if !units.contains(&unit_id) {
+                units.push(unit_id);
+            }
+        }
+    }
+    units
+}

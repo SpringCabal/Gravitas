@@ -46,6 +46,7 @@ local BobGun = CannonBase:New {
 local WallesRevenge = MissileBase:New {
     name                    = "WallesRevenge",
     areaOfEffect            = 75,
+    cegTag                  = [[missiletrailred]],
 
     damage                  = {
         default = 280,

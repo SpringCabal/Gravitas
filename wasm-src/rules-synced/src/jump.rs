@@ -1,0 +1,246 @@
+use alloc::vec::Vec;
+
+use spring::types::Float3;
+
+use crate::units;
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Outcome {
+    Started,
+    Busy,
+    OutOfRange,
+    TooHigh,
+    Blocked,
+    OutsideMap,
+    Invalid,
+}
+
+impl Outcome {
+    pub fn reason(self) -> &'static str {
+        match self {
+            Outcome::Started => "started",
+            Outcome::Busy => "already jumping",
+            Outcome::OutOfRange => "out of range, walking closer",
+            Outcome::TooHigh => "NOT SO HIGH GRAVIT!",
+            Outcome::Blocked => "a wall is in the way",
+            Outcome::OutsideMap => "the jump target is outside the map",
+            Outcome::Invalid => "not a jumping unit",
+        }
+    }
+}
+
+pub struct Jumps {
+    active: Vec<Jump>,
+}
+
+struct Jump {
+    unit_id: i32,
+    start: Float3,
+    vector: Float3,
+    height: f32,
+    step: f32,
+    progress: f32,
+    delay: i32,
+    half_done: bool,
+    heading: f32,
+    turn: f32,
+}
+
+impl Jumps {
+    pub fn new() -> Self {
+        Self { active: Vec::new() }
+    }
+
+    pub fn is_jumping(&self, unit_id: i32) -> bool {
+        self.active.iter().any(|jump| jump.unit_id == unit_id)
+    }
+
+    pub fn start(&mut self, unit_id: i32, goal_x: f32, goal_y: f32, goal_z: f32) -> Outcome {
+        if self.is_jumping(unit_id) {
+            return Outcome::Busy;
+        }
+        let Some(def_id) = units::def_of(unit_id) else {
+            return Outcome::Invalid;
+        };
+        if units::def_id(units::GRAVIT) != Some(def_id) {
+            return Outcome::Invalid;
+        }
+        let Some(start) = units::position(unit_id) else {
+            return Outcome::Invalid;
+        };
+        if !on_map(goal_x, goal_z) {
+            return Outcome::OutsideMap;
+        }
+        if (start.y - goal_y).abs() > CLIMB_LIMIT {
+            return Outcome::TooHigh;
+        }
+        let goal = Float3 {
+            x: goal_x,
+            y: units::ground_height(goal_x, goal_z),
+            z: goal_z,
+        };
+        let vector = Float3 {
+            x: goal.x - start.x,
+            y: goal.y - start.y,
+            z: goal.z - start.z,
+        };
+        let range = rules_param(unit_id, RANGE_PARAM).unwrap_or(RANGE);
+        let planar_distance = (vector.x * vector.x + vector.z * vector.z).sqrt();
+        if planar_distance > range {
+            let _ = spring::set_unit_move_goal(unit_id, goal, range, 0.0, false);
+            return Outcome::OutOfRange;
+        }
+        let line_distance = length(vector).max(MINIMUM_DISTANCE);
+        let vertex = Float3 {
+            x: start.x + vector.x * 0.5,
+            y: start.y + vector.y * 0.5 + HEIGHT,
+            z: start.z + vector.z * 0.5,
+        };
+        let flight_distance = distance(start, vertex) + distance(vertex, goal);
+        if flight_distance <= 0.0 {
+            return Outcome::Invalid;
+        }
+        let speed =
+            rules_param(unit_id, SPEED_PARAM).unwrap_or(SPEED) * line_distance / flight_distance;
+        let step = speed / line_distance;
+        if blocked(start, vector, step) {
+            return Outcome::Blocked;
+        }
+        let heading = spring::units_info::get_unit_heading(unit_id, true).unwrap_or(0.0);
+        let turn = shortest_turn(heading, atan2(vector.x, vector.z));
+        let _ = spring::move_ctrl::move_ctrl(unit_id, true);
+        call_script(unit_id, "PreJump");
+        self.active.push(Jump {
+            unit_id,
+            start,
+            vector,
+            height: HEIGHT,
+            step,
+            progress: 0.0,
+            delay: DELAY,
+            half_done: false,
+            heading,
+            turn,
+        });
+        Outcome::Started
+    }
+
+    pub fn update(&mut self) -> Vec<i32> {
+        let mut landed = Vec::new();
+        for jump in &mut self.active {
+            if jump.delay > 0 {
+                jump.delay -= 1;
+                if jump.delay == 0 {
+                    call_script(jump.unit_id, "StartJump");
+                }
+                continue;
+            }
+            let progress = jump.progress;
+            let arc = 1.0 - (2.0 * progress - 1.0) * (2.0 * progress - 1.0);
+            let position = Float3 {
+                x: jump.start.x + jump.vector.x * progress,
+                y: jump.start.y + jump.vector.y * progress + arc * jump.height,
+                z: jump.start.z + jump.vector.z * progress,
+            };
+            let _ = spring::set_unit_position(jump.unit_id, position);
+            units::face_radians(jump.unit_id, jump.heading + jump.turn * progress);
+            call_script(jump.unit_id, "Jumping");
+            if !jump.half_done && progress > 0.5 {
+                jump.half_done = true;
+                call_script(jump.unit_id, "HalfJump");
+            }
+            jump.progress += jump.step;
+            if jump.progress > 1.0 {
+                landed.push(jump.unit_id);
+            }
+        }
+        for unit_id in &landed {
+            call_script(*unit_id, "StopJump");
+            let _ = spring::move_ctrl::move_ctrl(*unit_id, false);
+        }
+        self.active.retain(|jump| !landed.contains(&jump.unit_id));
+        landed
+    }
+
+    pub fn forget(&mut self, unit_id: i32) {
+        self.active.retain(|jump| jump.unit_id != unit_id);
+    }
+}
+
+pub const RANGE: f32 = 400.0;
+pub const HEIGHT: f32 = 100.0;
+pub const SPEED: f32 = 12.0;
+pub const DELAY: i32 = 2;
+pub const LANDING_IMMUNITY_FRAMES: i32 = 30;
+
+const MINIMUM_DISTANCE: f32 = 0.00001;
+const CLIMB_LIMIT: f32 = 50.0;
+const WALL_CLEARANCE: f32 = 30.0;
+const MAP_MARGIN: f32 = 32.0;
+const RANGE_PARAM: &str = "jumpRange";
+const SPEED_PARAM: &str = "jumpSpeed";
+
+fn on_map(x: f32, z: f32) -> bool {
+    let Ok(map) = spring::game::get_game_map_info(0) else {
+        return true;
+    };
+    x >= MAP_MARGIN
+        && z >= MAP_MARGIN
+        && x <= map.map_size_x as f32 - MAP_MARGIN
+        && z <= map.map_size_z as f32 - MAP_MARGIN
+}
+
+fn rules_param(unit_id: i32, name: &str) -> Option<f32> {
+    spring::get_unit_rules_param_f32(unit_id, name).ok()
+}
+
+fn blocked(start: Float3, vector: Float3, step: f32) -> bool {
+    let mut progress = 0.0;
+    let mut x = start.x;
+    let mut z = start.z;
+    while progress <= 1.0 {
+        x += vector.x * step;
+        z += vector.z * step;
+        let arc = 1.0 - (2.0 * progress - 1.0) * (2.0 * progress - 1.0);
+        let arc_height = start.y + vector.y * progress + arc * HEIGHT;
+        if units::ground_height(x, z) - WALL_CLEARANCE > arc_height {
+            return true;
+        }
+        progress += step;
+    }
+    false
+}
+
+fn shortest_turn(from: f32, to: f32) -> f32 {
+    let mut turn = to - from;
+    while turn > core::f32::consts::PI {
+        turn -= core::f32::consts::TAU;
+    }
+    while turn < -core::f32::consts::PI {
+        turn += core::f32::consts::TAU;
+    }
+    turn
+}
+
+fn atan2(x: f32, z: f32) -> f32 {
+    if z == 0.0 && x == 0.0 {
+        return 0.0;
+    }
+    (x / z).atan() + if z < 0.0 { core::f32::consts::PI } else { 0.0 }
+}
+
+fn call_script(unit_id: i32, function_name: &str) {
+    let _ = spring::typed::call_unit_script(unit_id, function_name, &[], 0);
+}
+
+fn length(value: Float3) -> f32 {
+    (value.x * value.x + value.y * value.y + value.z * value.z).sqrt()
+}
+
+fn distance(from: Float3, to: Float3) -> f32 {
+    length(Float3 {
+        x: to.x - from.x,
+        y: to.y - from.y,
+        z: to.z - from.z,
+    })
+}

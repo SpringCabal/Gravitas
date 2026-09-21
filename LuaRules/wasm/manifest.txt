@@ -1,0 +1,1 @@
+module(gravitas-rules, LuaRules/wasm/gravitas-rules.wasm, rules-synced, 0, 1.0.0)

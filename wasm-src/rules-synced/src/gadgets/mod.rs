@@ -1,0 +1,21 @@
+pub mod electrafi;
+pub mod input;
+pub mod jump;
+pub mod lifecycle;
+pub mod mission;
+pub mod plates;
+pub mod robots;
+pub mod setup;
+pub mod status;
+pub mod tests;
+
+pub use electrafi::ElectrafiGadget;
+pub use input::InputGadget;
+pub use jump::JumpGadget;
+pub use lifecycle::LifecycleGadget;
+pub use mission::MissionGadget;
+pub use plates::PlatesGadget;
+pub use robots::RobotsGadget;
+pub use setup::setup;
+pub use status::StatusGadget;
+pub use tests::TestsGadget;

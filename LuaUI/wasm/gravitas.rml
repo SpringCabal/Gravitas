@@ -1,0 +1,42 @@
+<rml>
+  <head>
+    <link type="text/rcss" href="gravitas.rcss" />
+    <title>Gravitas</title>
+  </head>
+  <body data-model="gravitas">
+    <div id="health-panel">
+      <img id="health-icon" src="../Images/heart.png" />
+      <div id="health-bar">
+        <div id="health-fill" data-style-width="healthPercent" data-style-background-color="healthColor"></div>
+        <div id="health-caption">{{healthCaption}}</div>
+      </div>
+    </div>
+
+    <div id="gravity-state">
+      <div id="push-state" data-class-ready="pushReady">Push</div>
+      <div id="pull-state" data-class-ready="pullReady">Pull</div>
+    </div>
+
+    <div id="quit" class="button" data-event-click="endgameExit()">Quit</div>
+
+    <div id="bindings">
+      <div class="bind"><span class="key">Left Mouse Button :</span> Push</div>
+      <div class="bind"><span class="key">Right Mouse Button :</span> Pull</div>
+      <div class="bind"><span class="key">Middle Mouse Button :</span> Jump</div>
+      <div class="bind"><span class="key">WASD or arrow keys :</span> Move</div>
+      <div class="bind"><span class="key">E or Space :</span> Jump</div>
+    </div>
+
+    <div id="pause" data-if="paused">
+      <div id="pause-title">Paused</div>
+    </div>
+
+    <div id="endgame" data-if="endgameVisible">
+      <div id="endgame-window">
+        <div id="endgame-title" data-class-victory="endgameVictory">{{endgameTitle}}</div>
+        <div id="endgame-restart" class="button" data-event-click="endgameRestart()">Restart</div>
+        <div id="endgame-exit" class="button" data-event-click="endgameExit()">Exit</div>
+      </div>
+    </div>
+  </body>
+</rml>

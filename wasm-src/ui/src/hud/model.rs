@@ -1,0 +1,77 @@
+use crate::state::HudBindings;
+
+pub const HEALTH_FULL_COLOR: &str = "#00bf00";
+
+const RESTART_MESSAGE: &str = "gravitas_restart";
+
+pub fn create(context: u64) -> Option<HudBindings> {
+    let model = spring::context_create_data_model(context, "gravitas").ok()?;
+    if !model.success || model.data_model_handle == 0 {
+        return None;
+    }
+    let model = model.data_model_handle;
+    bind_event(model, "endgameRestart", |_| restart());
+    bind_event(model, "endgameExit", |_| quit());
+    Some(HudBindings {
+        health_percent: bind_percent(model, "healthPercent", 100.0)?,
+        health_caption: bind_string(model, "healthCaption", "")?,
+        health_color: bind_string(model, "healthColor", HEALTH_FULL_COLOR)?,
+        push_ready: bind_bool(model, "pushReady", true)?,
+        pull_ready: bind_bool(model, "pullReady", true)?,
+        paused: bind_bool(model, "paused", false)?,
+        endgame_visible: bind_bool(model, "endgameVisible", false)?,
+        endgame_victory: bind_bool(model, "endgameVictory", false)?,
+        endgame_title: bind_string(model, "endgameTitle", "")?,
+    })
+}
+
+pub fn set_percent(handle: u64, value: f32) {
+    if handle != 0 {
+        let _ = spring::data_model_set_percent(handle, value.clamp(0.0, 100.0));
+    }
+}
+
+pub fn set_bool(handle: u64, value: bool) {
+    if handle != 0 {
+        let _ = spring::data_model_set_bool(handle, value);
+    }
+}
+
+pub fn set_string(handle: u64, value: &str) {
+    if handle != 0 {
+        let _ = spring::data_model_set_string(handle, value);
+    }
+}
+
+fn bind_event(model: u64, name: &str, handler: impl FnMut(&crate::state::Global) + 'static) {
+    let callback = crate::register_callback(handler);
+    let bound = spring::data_model_bind_event(model, name, callback, &[])
+        .is_ok_and(|registration| registration.success);
+    if !bound {
+        crate::unregister_callback(callback);
+    }
+}
+
+fn bind_percent(model: u64, name: &str, initial: f32) -> Option<u64> {
+    let binding = spring::data_model_bind_percent(model, name, initial).ok()?;
+    binding.success.then_some(binding.variable_handle)
+}
+
+fn bind_bool(model: u64, name: &str, initial: bool) -> Option<u64> {
+    let binding = spring::data_model_bind_bool(model, name, initial).ok()?;
+    binding.success.then_some(binding.variable_handle)
+}
+
+fn bind_string(model: u64, name: &str, initial: &str) -> Option<u64> {
+    let binding = spring::data_model_bind_string(model, name, initial).ok()?;
+    binding.success.then_some(binding.variable_handle)
+}
+
+pub fn quit() {
+    let _ = spring::send_commands("reloadforce", "");
+}
+
+fn restart() {
+    let _ = spring::send_lua_rules_msg(RESTART_MESSAGE);
+    super::overlays::hide_game_over();
+}

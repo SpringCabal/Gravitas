@@ -74,7 +74,7 @@ jumpClassGroups = {
 	cl_nova = { cobscript = false},
 	cl_summoner = { cobscript = false},
 	cl_shadowcat = { cobscript = false},
- noruas = {
+ --[[noruas = {
     reload = 0,  },
 	
  core_slicer = {

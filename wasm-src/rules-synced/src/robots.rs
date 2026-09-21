@@ -1,0 +1,228 @@
+use alloc::vec::Vec;
+
+use spring::types::Float3;
+
+use crate::units;
+
+pub struct Robots {
+    moving_away: Vec<(i32, i32)>,
+}
+
+pub struct Avoidance {
+    pub unit_id: i32,
+    pub goal: Float3,
+    pub replace_order: bool,
+}
+
+impl Robots {
+    pub fn new() -> Self {
+        Self {
+            moving_away: Vec::new(),
+        }
+    }
+
+    pub fn is_friendly_fire(unit_def_id: i32, attacker_def_id: i32, same_team: bool) -> bool {
+        same_team && is_robot(unit_def_id) && is_robot(attacker_def_id)
+    }
+
+    pub fn flee(
+        &mut self,
+        unit_id: i32,
+        unit_def_id: i32,
+        attacker_id: i32,
+        attacker_def_id: i32,
+        frame: i32,
+    ) -> Option<Avoidance> {
+        if !is_robot(unit_def_id) || !is_inanimate(attacker_def_id) {
+            return None;
+        }
+        if is_paralyzed(unit_id) || self.is_busy(unit_id, frame) {
+            return None;
+        }
+        let (position, attacker) = (units::position(unit_id)?, units::position(attacker_id)?);
+        let attack_radius = inanimate_radius(attacker_id, attacker_def_id);
+        let dx = position.x - attacker.x;
+        let dy = position.y - attacker.y;
+        let dz = position.z - attacker.z;
+        let distance = (dx * dx + dy * dy + dz * dz).sqrt();
+        let search_radius = attack_radius.max(distance) * SEARCH_SCALE;
+        let hazards = hazards_near(position, search_radius);
+        let goal = safest_location(position, &hazards)?;
+        let replace_order = self.is_tracked(unit_id);
+        self.mark(unit_id, frame);
+        Some(Avoidance {
+            unit_id,
+            goal,
+            replace_order,
+        })
+    }
+
+    pub fn command_done(&mut self, unit_id: i32) {
+        self.moving_away.retain(|(id, _)| *id != unit_id);
+    }
+}
+
+pub struct Hazard {
+    position: Float3,
+    radius: f32,
+}
+
+const MOVE_AWAY_COOLDOWN: i32 = 30;
+const SEARCH_SCALE: f32 = 1.5;
+const MOVE_DISTANCE: f32 = 120.0;
+const CHECK_SCALE: f32 = 1.1;
+const CIRCLE_DIVISIONS: i32 = 12;
+const LINE_DIVISIONS: i32 = 6;
+const MAX_DELTA_HEIGHT: f32 = 10.0;
+const DEFAULT_ATTACK_RADIUS: f32 = 100.0;
+const SAFE_SCORE: f32 = 1.0;
+const UNSAFE_SCORE: f32 = -3.0;
+const REJECT_SCORE: f32 = -1.0e10;
+const ANY_ALLEGIANCE: i32 = -1;
+
+impl Robots {
+    fn is_busy(&self, unit_id: i32, frame: i32) -> bool {
+        self.moving_away
+            .iter()
+            .any(|(id, since)| *id == unit_id && since + MOVE_AWAY_COOLDOWN > frame)
+    }
+
+    fn is_tracked(&self, unit_id: i32) -> bool {
+        self.moving_away.iter().any(|(id, _)| *id == unit_id)
+    }
+
+    fn mark(&mut self, unit_id: i32, frame: i32) {
+        if let Some(entry) = self.moving_away.iter_mut().find(|(id, _)| *id == unit_id) {
+            entry.1 = frame;
+            return;
+        }
+        self.moving_away.push((unit_id, frame));
+    }
+}
+
+fn is_robot(unit_def_id: i32) -> bool {
+    units::custom_param(unit_def_id, "robot").is_some()
+}
+
+fn is_inanimate(unit_def_id: i32) -> bool {
+    units::custom_param(unit_def_id, "effect").is_some()
+}
+
+fn is_paralyzed(unit_id: i32) -> bool {
+    spring::units_info::get_unit_health(unit_id)
+        .map(|health| health.paralyze_damage >= health.max_health)
+        .unwrap_or(false)
+}
+
+fn inanimate_radius(unit_id: i32, unit_def_id: i32) -> f32 {
+    let key = if units::def_id("fire") == Some(unit_def_id) {
+        "fireSize"
+    } else if units::def_id(crate::electrafi::ELECTRAFI) == Some(unit_def_id) {
+        "elecSize"
+    } else {
+        return DEFAULT_ATTACK_RADIUS;
+    };
+    spring::get_unit_rules_param_f32(unit_id, key).unwrap_or(DEFAULT_ATTACK_RADIUS)
+}
+
+fn hazards_near(position: Float3, radius: f32) -> Vec<Hazard> {
+    let mut output = alloc::vec![0i32; 128];
+    let found =
+        match spring::get_units_in_sphere_into(position, radius, ANY_ALLEGIANCE, &mut output) {
+            Ok(spring::BufferFill::Complete(count)) => count,
+            _ => return Vec::new(),
+        };
+    output.truncate(found);
+    output
+        .into_iter()
+        .filter_map(|unit_id| {
+            let def_id = units::def_of(unit_id)?;
+            if !is_inanimate(def_id) {
+                return None;
+            }
+            Some(Hazard {
+                position: units::position(unit_id)?,
+                radius: inanimate_radius(unit_id, def_id),
+            })
+        })
+        .collect()
+}
+
+fn safest_location(position: Float3, hazards: &[Hazard]) -> Option<Float3> {
+    if hazards.is_empty() {
+        return None;
+    }
+    let mut theta = initial_theta(position, hazards);
+    let mut best: Option<(Float3, f32)> = None;
+    for _ in 0..CIRCLE_DIVISIONS {
+        let direction_x = theta.cos();
+        let direction_z = theta.sin();
+        let end_x = position.x + MOVE_DISTANCE * direction_x;
+        let end_z = position.z + MOVE_DISTANCE * direction_z;
+        let end_y = units::ground_height(end_x, end_z);
+        let mut score = 0.0;
+        if (position.y - end_y).abs() > MAX_DELTA_HEIGHT {
+            score += REJECT_SCORE;
+        }
+        if !in_map(end_x, end_z) {
+            score += REJECT_SCORE;
+        }
+        for step in 1..=LINE_DIVISIONS {
+            let fraction = step as f32 / LINE_DIVISIONS as f32;
+            let sample_x = position.x + MOVE_DISTANCE * CHECK_SCALE * direction_x * fraction;
+            let sample_z = position.z + MOVE_DISTANCE * CHECK_SCALE * direction_z * fraction;
+            score += location_score(sample_x, sample_z, hazards);
+        }
+        let candidate = Float3 {
+            x: end_x,
+            y: end_y,
+            z: end_z,
+        };
+        if best.as_ref().is_none_or(|(_, top)| score >= *top) {
+            best = Some((candidate, score));
+        }
+        theta += core::f32::consts::TAU / CIRCLE_DIVISIONS as f32;
+    }
+    best.filter(|(_, score)| *score > REJECT_SCORE)
+        .map(|(goal, _)| goal)
+}
+
+fn initial_theta(position: Float3, hazards: &[Hazard]) -> f32 {
+    let mut closest = f32::MAX;
+    let mut theta = 0.0;
+    for hazard in hazards {
+        let dx = position.x - hazard.position.x;
+        let dz = position.z - hazard.position.z;
+        let distance = (dx * dx + dz * dz).sqrt();
+        if distance > 0.0 && distance < closest {
+            closest = distance;
+            theta = (dx / distance).acos();
+            if hazard.position.z > position.z {
+                theta = -theta;
+            }
+        }
+    }
+    theta
+}
+
+fn location_score(x: f32, z: f32, hazards: &[Hazard]) -> f32 {
+    hazards
+        .iter()
+        .map(|hazard| {
+            let dx = x - hazard.position.x;
+            let dz = z - hazard.position.z;
+            if (dx * dx + dz * dz).sqrt() > hazard.radius {
+                SAFE_SCORE
+            } else {
+                UNSAFE_SCORE
+            }
+        })
+        .sum()
+}
+
+fn in_map(x: f32, z: f32) -> bool {
+    let Ok(map) = spring::game::get_game_map_info(0) else {
+        return false;
+    };
+    x >= 0.0 && x <= map.map_size_x as f32 && z >= 0.0 && z <= map.map_size_z as f32
+}

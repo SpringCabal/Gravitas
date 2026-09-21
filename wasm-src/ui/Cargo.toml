@@ -1,0 +1,19 @@
+[package]
+name = "gravitas-ui-wasm"
+version = "0.1.0"
+edition = "2024"
+publish = false
+build = "../build.rs"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+e2e = []
+
+[dependencies]
+spring = { workspace = true }
+spring-addons = { workspace = true }
+
+[lints]
+workspace = true

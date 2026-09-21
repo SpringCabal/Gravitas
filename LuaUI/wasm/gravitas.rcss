@@ -1,0 +1,238 @@
+body {
+  position: absolute;
+  left: 0dp;
+  right: 0dp;
+  top: 0dp;
+  bottom: 0dp;
+  width: auto;
+  height: auto;
+  font-family: FreeSans;
+  color: #ffffff;
+  font-size: 20dp;
+  pointer-events: none;
+}
+
+body * {
+  pointer-events: none;
+}
+
+#health-panel {
+  display: block;
+  position: absolute;
+  left: 35%;
+  bottom: 1%;
+  width: 17%;
+  height: 5%;
+}
+
+#health-icon {
+  display: block;
+  position: absolute;
+  left: 0dp;
+  top: 0dp;
+  bottom: 0dp;
+  width: 8%;
+}
+
+#health-bar {
+  display: block;
+  position: absolute;
+  left: 10%;
+  right: 0dp;
+  top: 0dp;
+  bottom: 0dp;
+  background-color: #0a0a12d0;
+  border: 2dp #4a4a5e;
+  padding: 3dp;
+}
+
+#health-fill {
+  display: block;
+  position: absolute;
+  left: 3dp;
+  top: 3dp;
+  bottom: 3dp;
+  width: 100%;
+  background-color: #00bf00;
+}
+
+#health-caption {
+  display: block;
+  position: absolute;
+  left: 0dp;
+  right: 0dp;
+  top: 0dp;
+  bottom: 0dp;
+  text-align: center;
+  line-height: 30dp;
+  font-size: 18dp;
+  color: #ffffff;
+}
+
+#gravity-state {
+  display: block;
+  position: absolute;
+  left: 28%;
+  bottom: 1%;
+  width: 7%;
+  height: 7%;
+}
+
+#push-state, #pull-state {
+  display: block;
+  position: absolute;
+  left: 0dp;
+  right: 0dp;
+  height: 50%;
+  text-align: center;
+  line-height: 32dp;
+  font-size: 20dp;
+  background-color: #0a0a12b0;
+  border: 2dp #3a3a4c;
+  color: #6a6a78;
+}
+
+#push-state {
+  top: 0dp;
+}
+
+#pull-state {
+  bottom: 0dp;
+}
+
+#push-state.ready {
+  border-color: #ff80ff;
+  color: #ff80ff;
+}
+
+#pull-state.ready {
+  border-color: #4d80ff;
+  color: #4d80ff;
+}
+
+#quit {
+  display: block;
+  position: absolute;
+  left: 52%;
+  bottom: 1%;
+  width: 5%;
+  height: 5%;
+  line-height: 30dp;
+  font-size: 14dp;
+}
+
+#bindings {
+  display: block;
+  position: absolute;
+  left: 10dp;
+  bottom: 10dp;
+  width: 420dp;
+}
+
+.bind {
+  display: block;
+  height: 20dp;
+  line-height: 20dp;
+  font-size: 16dp;
+  color: #ffffff;
+}
+
+.key {
+  display: inline-block;
+  vertical-align: top;
+  width: 205dp;
+  text-align: right;
+  padding-right: 8dp;
+  color: #ff0aff;
+}
+
+#pause {
+  position: absolute;
+  left: 0dp;
+  right: 0dp;
+  top: 0dp;
+  bottom: 0dp;
+  background-color: #00000070;
+}
+
+#pause-title {
+  display: block;
+  position: absolute;
+  left: 0dp;
+  right: 0dp;
+  top: 40%;
+  text-align: center;
+  font-size: 64dp;
+  color: #ffffff;
+}
+
+#endgame {
+  position: absolute;
+  left: 0dp;
+  right: 0dp;
+  top: 0dp;
+  bottom: 0dp;
+  background-color: #00000090;
+  pointer-events: auto;
+}
+
+#endgame-window {
+  display: block;
+  position: absolute;
+  left: 50%;
+  top: 25%;
+  width: 400dp;
+  height: 320dp;
+  margin-left: -200dp;
+  background-color: #101018e8;
+  border: 2dp #40404a;
+  padding: 8dp;
+  pointer-events: auto;
+}
+
+#endgame-title {
+  display: block;
+  position: absolute;
+  left: 10dp;
+  right: 10dp;
+  top: 40dp;
+  text-align: center;
+  font-size: 50dp;
+  color: #ff0000;
+}
+
+#endgame-title.victory {
+  color: #00ff00;
+}
+
+#endgame-restart {
+  display: block;
+  position: absolute;
+  left: 20dp;
+  bottom: 20dp;
+  width: 160dp;
+  height: 70dp;
+  font-size: 24dp;
+}
+
+#endgame-exit {
+  display: block;
+  position: absolute;
+  right: 20dp;
+  bottom: 20dp;
+  width: 160dp;
+  height: 70dp;
+  font-size: 24dp;
+}
+
+.button {
+  background-color: #2a2a38;
+  border: 2dp #5a5a6a;
+  text-align: center;
+  pointer-events: auto;
+}
+
+.button:hover {
+  background-color: #3a3a4c;
+  border-color: #8a8aa0;
+}

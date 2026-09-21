@@ -43,7 +43,7 @@ local GravityBase = Weapon:New {
       damage                  = {
         default = 0.001,
       },
-
+  
       beamTime                = 0.1,
       coreThickness           = 0.5,
       intensity               = 0.7,
@@ -52,7 +52,7 @@ local GravityBase = Weapon:New {
       rgbColor2               = [[1 0.5 1]],
       size                    = 2,
 
-      explosionGenerator      = [[]],
+      explosionGenerator      = [[custom:NONE]],
       soundTrigger            = true,
       thickness               = 4,
 }
