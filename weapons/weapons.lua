@@ -37,7 +37,6 @@ local BobGun = CannonBase:New {
     thickness               = 1,
     coreThickNess           = 1,
     impactOnly              = true,
-    maxDamage               = 15000,
     turret                  = false,
     damage                  = {
         default = 7.1,
@@ -47,7 +46,6 @@ local BobGun = CannonBase:New {
 local WallesRevenge = MissileBase:New {
     name                    = "WallesRevenge",
     areaOfEffect            = 75,
-    cegTag                  = [[missiletrailred]],
 
     damage                  = {
         default = 280,

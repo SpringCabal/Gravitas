@@ -5,7 +5,7 @@ function widget:GetInfo()
 	author	= "BD, Bluestone",
 	date	= "-",
 	license	= "WTFPL",
-	layer	= -math.huge,
+	layer	= -1000000,
 	enabled	= 0,
 	}
 end

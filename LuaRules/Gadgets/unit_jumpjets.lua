@@ -61,7 +61,6 @@ local spSetUnitNoSelect    = Spring.SetUnitNoSelect
 local spSetUnitBlocking    = Spring.SetUnitBlocking
 local spSetUnitMoveGoal    = Spring.SetUnitMoveGoal
 local spGetGroundHeight    = Spring.GetGroundHeight
-local spTestBuildOrder     = Spring.TestBuildOrder
 local spGetGameSeconds     = Spring.GetGameSeconds
 local spGetUnitHeading     = Spring.GetUnitHeading
 local spSetUnitNoDraw      = Spring.SetUnitNoDraw
@@ -101,6 +100,16 @@ for name, data in pairs(jumpDefNames) do
   jumpDefs[UnitDefNames[name].id] = data
 end
 GG.jumpDefs = jumpDefs
+
+local JUMP_MAP_MARGIN = 32
+
+local function IsJumpTargetOnMap(x, z)
+  return x and z
+    and x >= JUMP_MAP_MARGIN
+    and z >= JUMP_MAP_MARGIN
+    and x <= Game.mapSizeX - JUMP_MAP_MARGIN
+    and z <= Game.mapSizeZ - JUMP_MAP_MARGIN
+end
 
 local jumpCmdDesc = {
   id      = CMD_JUMP,
@@ -171,6 +180,9 @@ local function ReloadQueue(unitID, queue, cmdTag)
 end
 
 local function Jump(unitID, goal, cmdTag)
+  if not IsJumpTargetOnMap(goal[1], goal[3]) then
+    return false
+  end
   goal[2]             = spGetGroundHeight(goal[1],goal[3])
   local start         = {spGetUnitBasePosition(unitID)}
 
@@ -387,12 +399,13 @@ end
 
 function gadget:AllowCommand(unitID, unitDefID, teamID,
                              cmdID, cmdParams, cmdOptions)
-  if (cmdID == CMD_JUMP and
-      spTestBuildOrder(
-          unitDefID, cmdParams[1], cmdParams[2], cmdParams[3], 1) == 0) then
-      return true --false FIX ME!
-  end
   if cmdID == CMD_JUMP then
+      if not IsJumpTargetOnMap(cmdParams[1], cmdParams[3]) then
+          return false
+      end
+      if jumping[unitID] then
+          return false
+      end
       local jumpY = cmdParams[2]
       local x, y, z = Spring.GetUnitPosition(unitID)
       if math.abs(y - jumpY) > 50 then

@@ -90,7 +90,16 @@ function GetUnitsInProximity(uID)
     end
     -- kill/paralyse stuff
     local r = config[uID] or 0
-    return Spring.GetUnitsInSphere(x,y,z,r+250) -- +250 because its probably bigger than all unit radii
+    local rawUnits = Spring.GetUnitsInSphere(x,y,z,r+250) -- +250 because its probably bigger than all unit radii
+    local units = {}
+    for _, unitID in ipairs(rawUnits) do
+        local udID = Spring.GetUnitDefID(unitID)
+        local ud = udID and UnitDefs[udID]
+        if ud and ud.customParams and (ud.customParams.robot or ud.customParams.player) then
+            table.insert(units, unitID)
+        end
+    end
+    return units
 end
 
 function UpdateElec(uID)

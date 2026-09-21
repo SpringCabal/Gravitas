@@ -31,8 +31,10 @@ function widget:Initialize()
     quitButton = Chili.Button:New{
 		caption   = "Quit",
 		padding   = {0,0,0,0},
-		margin    = {0,0,0,0},
-		OnClick = {function() Spring.SendCommands("reloadforce")end },
+		OnClick = {function()
+			Spring.Echo("GRAVITAS_RETURN_TO_WASM_MENU")
+			Spring.SendCommands("reloadforce")
+		end },
         font = {
             size = 14,
         },

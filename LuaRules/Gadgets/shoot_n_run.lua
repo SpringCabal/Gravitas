@@ -19,6 +19,55 @@ local isHero= {
 
 local AllowOtherUnitsControl=false
 
+local DEFAULT_BEAM_RANGE = 420
+
+local function GetBeamRange(unitID, weaponNum)
+	local range = Spring.GetUnitWeaponState(unitID, weaponNum, "range")
+	if type(range) ~= "number" or range <= 0 then
+		return DEFAULT_BEAM_RANGE
+	end
+	return range
+end
+
+local function SetBeamTarget(unitID, targetUnit, x, y, z, weaponNum)
+	local unitX, _, unitZ = Spring.GetUnitPosition(unitID)
+	if not unitX then
+		return
+	end
+
+	if targetUnit and targetUnit ~= unitID and Spring.ValidUnitID(targetUnit) then
+		local targetX, targetY, targetZ = Spring.GetUnitPosition(targetUnit)
+		if targetX then
+			local dx, dz = targetX - unitX, targetZ - unitZ
+			local distance = math.sqrt(dx * dx + dz * dz)
+			if distance <= GetBeamRange(unitID, weaponNum) then
+				Spring.SetUnitTarget(unitID, targetUnit, false, true)
+				return
+			end
+			-- Keep firing at the furthest reachable point. This lets the
+			-- weapon hit units along the beam instead of refusing to fire at
+			-- a clicked unit that is beyond weapon range.
+			x, y, z = targetX, targetY, targetZ
+		end
+	end
+
+	if not x or not z then
+		return
+	end
+	local dx, dz = x - unitX, z - unitZ
+	local distance = math.sqrt(dx * dx + dz * dz)
+	local range = GetBeamRange(unitID, weaponNum)
+	if distance > range and distance > 0 then
+		local scale = range / distance
+		x = unitX + dx * scale
+		z = unitZ + dz * scale
+		y = Spring.GetGroundHeight(x, z)
+	else
+		y = y or Spring.GetGroundHeight(x, z)
+	end
+	Spring.SetUnitTarget(unitID, x, y, z, false, true)
+end
+
 
 if (gadgetHandler:IsSyncedCode()) then
 --SYNCED
@@ -85,13 +134,22 @@ if (gadgetHandler:IsSyncedCode()) then
 		end
 	end
 
+	local function GetTheOne()
+		for _, u in pairs(ptu) do
+			if u and Spring.ValidUnitID(u) then
+				return u
+			end
+		end
+		return nil
+	end
 
 	function gadget:GameFrame(frame)
-		if Spring.GetGameRulesParam("sb_gameMode") == "dev" then
-			return
-		end
 
-		-- Make unsynced run that function once per frame
+
+
+
+
+
 		SendToUnsynced("Shoot_n_Run_Unsynced_GameFrame",frame)
 		-- Share the table telling which unit are controllled
 		_G.Shoot_n_Run={utp=utp,ptu=ptu,ScoreBoard=ScoreBoard}
@@ -116,21 +174,16 @@ if (gadgetHandler:IsSyncedCode()) then
 			dx=dx or 0
 			dz=dz or 0
 			if u and Spring.ValidUnitID(u) then
-				if tu ~= u then
-					Spring.SetUnitTarget(u,tu)
-				elseif tx and tz then
-					if ty then
-						Spring.SetUnitTarget(u,tx,ty,tz)
-					else
-						local ty=Spring.GetGroundHeight(tx,tz)
-						Spring.SetUnitTarget(u,tx,ty,tz)
-					end
+				if fa or fb then
+					SetBeamTarget(u, tu, tx, ty, tz, fa and 1 or 2)
+				else
+					Spring.SetUnitTarget(u, nil)
 				end
-				if not fa and frame>=Spring.GetUnitWeaponState(u,Game.gameName and 1 or 0,"reloadFrame") then
-					Spring.SetUnitWeaponState(u,Game.gameName and 1 or 0,"reloadFrame",frame+2)
+				if not fa and frame>=Spring.GetUnitWeaponState(u,1,"reloadFrame") then
+					Spring.SetUnitWeaponState(u,1,"reloadFrame",frame+2)
 				end
-				if not fb and frame>=Spring.GetUnitWeaponState(u,Game.gameName and 2 or 1,"reloadFrame") then
-					Spring.SetUnitWeaponState(u,Game.gameName and 2 or 1,"reloadFrame",frame+2)
+				if not fb and frame>=Spring.GetUnitWeaponState(u,2,"reloadFrame") then
+					Spring.SetUnitWeaponState(u,2,"reloadFrame",frame+2)
 				end
 				if sd and not usd[u] then
 					Spring.GiveOrderToUnit(u,CMD.SELFD,{},{})
@@ -197,6 +250,12 @@ if (gadgetHandler:IsSyncedCode()) then
 	function gadget:UnitCreated(u,ud,team)
 		if isHero[ud] then
 			LastHeroesCheck=-8888
+		end
+	end
+
+	function gadget:GameRulesParamChanged(paramName, paramValue)
+		if paramName == "sb_gameMode" then
+			LastHeroesCheck = -8888
 		end
 	end
 
@@ -280,7 +339,9 @@ else
 			v = paused and 0 or v
 			local vx,_,vz=Spring.GetUnitVelocity(u)
 			local r=UnitDefs[Spring.GetUnitDefID(u)].maxWeaponRange
-			Spring.SetCameraState({name=ta,mode=1,px=x+9*v*vx,py=0,pz=z+9*v*vz,flipped=-1,dy=-0.9,zscale=0.5,height=2*r,dx=0,dz=-0.45},1)
+			smooth_vx=(smooth_vx or vx)*0.95+vx*0.05
+			smooth_vz=(smooth_vz or vz)*0.95+vz*0.05
+			Spring.SetCameraState({name="ta",mode=1,px=x+smooth_vx*v*30,py=0,pz=z+smooth_vz*v*30,flipped=-1,dy=-0.9,zscale=0.5,height=2*r,dx=0,dz=-0.45},1)
 		else
 			if Spring.GetModOptions()["homf"] and Spring.GetModOptions()["homf"]~="0" and not Spring.GetSpectatingState() then
 				Spring.SelectUnitArray({},false)
@@ -289,11 +350,12 @@ else
 					x,z=Game.mapSizeX/2,Game.mapSizeZ/2
 					y=Spring.GetGroundHeight(x,z)
 				end
-				Spring.SetCameraState({name=ta,mode=1,px=x,py=0,pz=z,flipped=-1,dy=-0.9,zscale=0.5,height=1200,dx=0,dz=-0.45},5)
+				Spring.SetCameraState({name="ta",mode=1,px=x,py=0,pz=z,flipped=-1,dy=-0.9,zscale=0.5,height=1200,dx=0,dz=-0.45},5)
 			end
 		end
 	end
 
+	local jumpKeyDown = false
 	local function Unsynced_GameFrame(caller,frame)
 		local u=GetTheOne()
 		if u then
@@ -362,13 +424,19 @@ else
 					MoveZ=MoveZ+1
 				end
 			end
+			local isJumpDown = false
 			for _,key in ipairs(Spring.GetActionHotKeys("hero_jump")) do
 				if Spring.GetKeyState(Spring.GetKeyCode(key)) then
-					if TargetX and TargetY and TargetZ then
-						JumpX,JumpY,JumpZ=pos[1],pos[2],pos[3]
-					end
+					isJumpDown = true
+					break
 				end
 			end
+			if isJumpDown and not jumpKeyDown then
+				if TargetX and TargetY and TargetZ then
+					JumpX,JumpY,JumpZ=pos[1],pos[2],pos[3]
+				end
+			end
+			jumpKeyDown = isJumpDown
 			if Spring.GetKeyState(Spring.GetKeyCode('d')) then
 				local alt,ctrl,meta,shift=Spring.GetModKeyState()
 				if ctrl then

@@ -421,14 +421,14 @@
 		--Turn(armup01, x_axis, -pitch,19)
 		Turn(turret, y_axis, Heading,19)
 		--Turn(armup02, x_axis, -pitch,19,true)
-		return boolMGType and boolMGLoaded
+		return boolMGType
 	end
 	 
 	 function FireWeapon3()	
-	boolMGLoaded=false
 	 boolAiming=false
 	 Signal(SIG_RESET); StartThread(resetTurret); 
-	 StartThread(ReloadMG)
+	 StopSpin(MG_B01,z_axis,0.15)
+	 StopSpin(MG_B02,z_axis,0.15)
 	 
 	 return true; 
 	 

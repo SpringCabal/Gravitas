@@ -198,8 +198,6 @@ local function SetupControls()
         }
     end
     
-	screen0:AddChild(window_endgame)
-
 end
 
 --------------------------------------------------------------------------------
@@ -243,5 +241,4 @@ function widget:GameOver(winningAllyTeams)
     SetupControls()
     ShowEndGameWindow()
 end
-
 

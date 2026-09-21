@@ -69,7 +69,7 @@ local maxUnitDistance           = 11000000  --max squared distance at which any 
 
 local minReloadTime             = 4 --// in seconds
 
-local drawStunnedOverlay = true
+local drawStunnedOverlay = false
 
 --// this table is used to shows the hp of perimeter defence, and filter it for default wreckages
 local walls = {dragonsteeth=true,dragonsteeth_core=true,fortification=true,fortification_core=true,floatingteeth=true,floatingteeth_core=true}

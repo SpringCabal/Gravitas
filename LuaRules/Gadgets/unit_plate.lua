@@ -24,7 +24,7 @@ local PLATE_ACTIVATION_RANGE = 40
 
 function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
     if UnitDefs[unitDefID].name == "plate" then
-        plates[unitID] = { pressed = false }
+        plates[unitID] = { state = false }
         Spring.SetUnitCollisionVolumeData(unitID,
             0, 0, 0,
             0, 0, 0,
@@ -93,17 +93,20 @@ local function GetUnitState(unitID)
     if plates[unitID] then
         return plates[unitID].state
     end
-    return Spring.GetUnitStates(unitID).active
+    local states = Spring.GetUnitStates(unitID)
+    return states and states.active or false
 end
 
 local function SetUnitState(unitID, state)
 	local isGate = false
+    local active = GetUnitState(unitID)
     if plates[unitID] then
-        plates[unitID].state = state
+		if active == state then
+			return
+		end
 	else
 		isGate = true
     end
-    local active = GetUnitState(unitID)
     if active ~= state then
         if state then
             Spring.GiveOrderToUnit(unitID, CMD.ONOFF, { 1 }, {})
@@ -117,6 +120,9 @@ local function SetUnitState(unitID, state)
 			end
         end
     end
+	if plates[unitID] then
+		plates[unitID].state = state
+	end
 end
 
 function gadget:GameFrame()

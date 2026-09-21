@@ -21,8 +21,7 @@ local white = "\255\255\255\255"
 function SetBindings()
     local binds = { --real keybinds
         "Any+esc reloadforce",
-        "Any+pause  pause",
-        "Any+p  pause",
+        "ctrl+q reloadforce",
         "Alt+b  debug",
         "Alt+v  debugcolvol",
     }
@@ -31,10 +30,21 @@ function SetBindings()
     end
 end
 
+function widget:KeyPress(key, mods, isRepeat)
+    if key == 292 or key == 293 then
+        Spring.SendCommands("screenshot")
+        return true
+    end
+    if (key == 113 or key == 81) and mods.ctrl then
+        Spring.Echo("GRAVITAS_RETURN_TO_WASM_MENU")
+        Spring.SendCommands("reloadforce")
+        return true
+    end
+end
+
 function widget:Initialize()
     local devMode = (tonumber(Spring.GetModOptions().play_mode) or 0) == 0
     if not devMode then
-        Spring.SendCommands("unbindall") --muahahahaha
         Spring.SendCommands("unbindkeyset enter chat") --because because.
     else
         --Spring.SendCommands("unbindkeyset w", "unbindkeyset p", "unbindkeyset q", "unbindkeyset a", "unbindkeyset s") --why p?
@@ -51,6 +61,7 @@ function widget:Initialize()
     bindText={
         purple.."WASD or arrow keys : "..white.." Move",
         purple.."E or Space : "..white.." Jump",
+        purple.."Ctrl+Q : "..white.."Quit",
     }
 
 
