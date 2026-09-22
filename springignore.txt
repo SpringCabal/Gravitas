@@ -1,0 +1,18 @@
+# Development checkouts and generated files are not game content.
+/.git
+/.svn
+/.vscode
+/.idea
+/.gitmodules
+/ModelSources
+/SourceFiles
+/Docs
+/doc
+/dist_cfg
+README*
+*.md
+*.rst
+*.swp
+*.orig
+*.bak
+*.log
