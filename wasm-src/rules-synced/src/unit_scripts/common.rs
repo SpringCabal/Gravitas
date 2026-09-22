@@ -6,6 +6,9 @@ use spring::cus::{Angle, AngularSpeed, Axis, Piece, PieceResolver, UnitCtx};
 pub(super) const SIG_ANIMATION: spring::cus::SignalMask = spring::cus::SignalMask::new(1);
 pub(super) const SIG_AIM: spring::cus::SignalMask = spring::cus::SignalMask::new(2);
 pub(super) const SIG_STOP: spring::cus::SignalMask = spring::cus::SignalMask::new(4);
+pub(super) const SIG_IDLE: spring::cus::SignalMask = spring::cus::SignalMask::new(8);
+pub(super) const SIG_JUMP: spring::cus::SignalMask = spring::cus::SignalMask::new(16);
+pub(super) const SIG_WALK: spring::cus::SignalMask = spring::cus::SignalMask::new(32);
 
 pub(super) struct EnginePieces {
     pub(super) map: Vec<spring::owned::units_pieces::PieceMapEntry>,

@@ -91,7 +91,7 @@ pub const TRAP_HEAT: Effect = Effect {
     rotation_spread: 0.0,
     rotation_exp: 1.0,
     distortion: true,
-    distortion_strength: 0.5,
+    distortion_strength: 0.35,
     distortion_scale: 1.5,
     distortion_heat: 1.0,
     emit_rotation_spread: 10.0,
@@ -243,7 +243,7 @@ pub const ELECTRIC_SPARK_HEAT: Effect = Effect {
     distortion_heat: 0.35,
     emit_rotation_spread: 20.0,
     emit_vector: [0.0, 0.2, 0.0],
-    start_radius: SPARK_DISC,
+    start_radius: 0.0,
     colormap: &[[0.0, 0.0, 0.0, 0.0]],
     texture: ELECTRIC_TEXTURE,
 };
@@ -259,7 +259,8 @@ pub const ELECTRIC_SPARK: Effect = Effect {
     speed_exp: 1.5,
     size: 2.0,
     size_spread: 0.0,
-    size_growth: 9.0,
+    // Lua starts at 7 and adds UnifRand(1) * 2 in the visible spark emitter.
+    size_growth: 7.0,
     size_exp: 1.3,
     rotation_speed: 1.0,
     rotation_speed_spread: 0.0,
@@ -293,7 +294,6 @@ pub const ON_FIRE_LIFT_SPREAD: f32 = 0.2;
 pub const SPARK_BASE_LIFE: f32 = 15.0;
 pub const SPARK_LIFE_SPREAD: f32 = 7.0;
 pub const SPARK_SIZE_GROWTH_SPREAD: f32 = 2.0;
-pub const SPARK_DISC: f32 = 10.0;
 
 const ELECTRIC_COLORS: &[[f32; 4]] = &[
     [0.5, 0.5, 1.0, 0.01],

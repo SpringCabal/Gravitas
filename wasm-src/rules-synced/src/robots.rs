@@ -47,7 +47,8 @@ impl Robots {
         let distance = (dx * dx + dy * dy + dz * dz).sqrt();
         let search_radius = attack_radius.max(distance) * SEARCH_SCALE;
         let hazards = hazards_near(position, search_radius);
-        let goal = safest_location(position, &hazards)?;
+        let velocity = spring::units_info::get_unit_velocity(unit_id).unwrap_or_default();
+        let goal = safest_location(position, &hazards, velocity)?;
         let replace_order = self.is_tracked(unit_id);
         self.mark(unit_id, frame);
         Some(Avoidance {
@@ -127,11 +128,18 @@ fn inanimate_radius(unit_id: i32, unit_def_id: i32) -> f32 {
 
 fn hazards_near(position: Float3, radius: f32) -> Vec<Hazard> {
     let mut output = alloc::vec![0i32; 128];
-    let found =
-        match spring::get_units_in_sphere_into(position, radius, ANY_ALLEGIANCE, &mut output) {
-            Ok(spring::BufferFill::Complete(count)) => count,
-            _ => return Vec::new(),
-        };
+    let found = 'query: {
+        for _ in 0..3 {
+            match spring::get_units_in_sphere_into(position, radius, ANY_ALLEGIANCE, &mut output) {
+                Ok(spring::BufferFill::Complete(count)) => break 'query count,
+                Ok(spring::BufferFill::Insufficient { required }) => {
+                    output.resize(required.max(output.len() + 1), 0);
+                }
+                Err(_) => return Vec::new(),
+            }
+        }
+        return Vec::new();
+    };
     output.truncate(found);
     output
         .into_iter()
@@ -148,12 +156,13 @@ fn hazards_near(position: Float3, radius: f32) -> Vec<Hazard> {
         .collect()
 }
 
-fn safest_location(position: Float3, hazards: &[Hazard]) -> Option<Float3> {
+fn safest_location(position: Float3, hazards: &[Hazard], velocity: Float3) -> Option<Float3> {
     if hazards.is_empty() {
         return None;
     }
     let mut theta = initial_theta(position, hazards);
-    let mut best: Option<(Float3, f32)> = None;
+    let mut best_score = f32::NEG_INFINITY;
+    let mut good_points = Vec::new();
     for _ in 0..CIRCLE_DIVISIONS {
         let direction_x = theta.cos();
         let direction_z = theta.sin();
@@ -178,13 +187,32 @@ fn safest_location(position: Float3, hazards: &[Hazard]) -> Option<Float3> {
             y: end_y,
             z: end_z,
         };
-        if best.as_ref().is_none_or(|(_, top)| score >= *top) {
-            best = Some((candidate, score));
+        if score >= best_score {
+            if score > best_score {
+                good_points.clear();
+                best_score = score;
+            }
+            good_points.push(candidate);
         }
         theta += core::f32::consts::TAU / CIRCLE_DIVISIONS as f32;
     }
-    best.filter(|(_, score)| *score > REJECT_SCORE)
-        .map(|(goal, _)| goal)
+    if best_score <= REJECT_SCORE {
+        return None;
+    }
+    let velocity_angle = velocity.x.atan2(velocity.z);
+    let mut best = None;
+    let mut best_angle = f32::MAX;
+    for candidate in good_points {
+        // This is the same unwrapped angular comparison as the Lua helper:
+        // prefer the safest point closest to the unit's current travel angle.
+        let angle = (candidate.x - position.x).atan2(candidate.z - position.z);
+        let difference = (angle - velocity_angle).abs();
+        if difference < best_angle {
+            best_angle = difference;
+            best = Some(candidate);
+        }
+    }
+    best
 }
 
 fn initial_theta(position: Float3, hazards: &[Hazard]) -> f32 {

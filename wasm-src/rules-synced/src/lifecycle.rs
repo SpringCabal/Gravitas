@@ -12,7 +12,7 @@ pub fn unit_created(unit_id: i32, unit_def_id: i32, unit_team: i32, _builder_id:
         return;
     }
     let _ = state::with_world(|world| {
-        world.player.adopt(unit_id, unit_def_id);
+        world.player.adopt(unit_id, unit_def_id, unit_team);
         world.plates.created(unit_id, unit_def_id);
         world.electrafi.created(unit_id, unit_def_id);
     });

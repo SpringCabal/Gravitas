@@ -40,8 +40,8 @@ impl Player {
         self.unit_id
     }
 
-    pub fn adopt(&mut self, unit_id: i32, unit_def_id: i32) {
-        if units::def_id(units::GRAVIT) == Some(unit_def_id) {
+    pub fn adopt(&mut self, unit_id: i32, unit_def_id: i32, unit_team: i32) {
+        if unit_team == 0 && units::def_id(units::GRAVIT) == Some(unit_def_id) {
             self.unit_id = Some(unit_id);
             disable_auto_fire(unit_id);
         }
@@ -197,6 +197,8 @@ fn hold_weapon(unit_id: i32, weapon: i32, firing: bool, frame: i32) {
     if firing {
         return;
     }
+    // The read mirrors Spring.GetUnitWeaponState and is one-based.  The
+    // native UnitControl setter takes the engine's zero-based weapon index.
     let Ok(state) = spring::units_weapons::get_unit_weapon_state(unit_id, weapon, "reloadFrame")
     else {
         return;
@@ -204,7 +206,7 @@ fn hold_weapon(unit_id: i32, weapon: i32, firing: bool, frame: i32) {
     if frame as f32 >= state.reload_frame {
         let _ = spring::set_unit_weapon_state(
             unit_id,
-            weapon,
+            weapon - 1,
             "reloadFrame",
             (frame + RELOAD_HOLD_FRAMES) as f32,
         );

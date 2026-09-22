@@ -26,7 +26,7 @@ struct DistortionState {
 
 struct SharedState(RefCell<DistortionState>);
 
-const MAX_DISTORTION_SIZE: f32 = 96.0;
+const MAX_DISTORTION_SIZE: f32 = 64.0;
 
 // The UI module is single-threaded in the engine, but the host callback API
 // requires callback state to be held in a static. This is the same pattern as
@@ -111,7 +111,12 @@ pub fn draw_screen_effects(width: i32, height: i32) {
         func: 0,
     });
     let _ = spring::gfx::depth_mask(false);
-    let _ = spring::gfx::blending(false);
+    // LUPS accumulates every JitterParticles2 layer into the distortion
+    // texture.  Overwriting here made whichever flame happened to be drawn
+    // last win, producing hard, repetitive-looking patches instead of the
+    // softer combined heat field from the Lua version.
+    let _ = spring::gfx::blending(true);
+    let _ = spring::gfx::blend_func(gl::ONE, gl::ONE);
     let _ = spring::gfx::matrix_mode(gl::TEXTURE);
     let _ = spring::gfx::load_identity(0);
     let _ = spring::gfx::matrix_mode(gl::PROJECTION);
@@ -126,6 +131,9 @@ pub fn draw_screen_effects(width: i32, height: i32) {
     let _ = spring::gfx::render_to_texture(&distortion_texture, render_distortion);
     let _ = spring::gfx::bind_texture(NOISE_TEXTURE, 0, false);
 
+    // The post pass replaces the screen with the sampled scene.  Only the
+    // intermediate distortion layers use additive blending.
+    let _ = spring::gfx::blending(false);
     let _ = spring::gfx::use_shader(post_shader);
     let _ = spring::gfx::bind_texture(&distortion_texture, 0, true);
     let _ = spring::gfx::bind_texture(&screen_texture, 1, true);
@@ -163,26 +171,28 @@ fn ensure_resources(width: i32, height: i32) {
                 target: gl::TEXTURE_2D,
                 min_filter: gl::LINEAR,
                 mag_filter: gl::LINEAR,
-                wrap_s: gl::CLAMP,
-                wrap_t: gl::CLAMP,
+                wrap_s: gl::CLAMP_TO_EDGE,
+                wrap_t: gl::CLAMP_TO_EDGE,
                 ..Default::default()
             },
         ) {
             state.screen_texture = texture;
         }
 
-        // The displacement is encoded around 0.5 in an ordinary RGBA target,
-        // so this works on the same hardware as the rest of the WASM effects.
+        // Lua's distortionFBO uses a floating-point, nearest-filtered target.
+        // Keeping the displacement unquantized avoids hard 8-bit steps in the
+        // post-process while nearest filtering preserves each jitter cell.
         if let Ok(texture) = spring::gfx::create_texture(
             width,
             height,
             0,
             spring::gfx::TextureCreateParams {
                 target: gl::TEXTURE_2D,
-                min_filter: gl::LINEAR,
-                mag_filter: gl::LINEAR,
-                wrap_s: gl::CLAMP,
-                wrap_t: gl::CLAMP,
+                format: gl::RGBA16F,
+                min_filter: gl::NEAREST,
+                mag_filter: gl::NEAREST,
+                wrap_s: gl::CLAMP_TO_EDGE,
+                wrap_t: gl::CLAMP_TO_EDGE,
                 fbo: true,
                 ..Default::default()
             },
@@ -239,7 +249,10 @@ fn render_distortion() {
     if time_location >= 0 {
         let _ = spring::gfx::uniform(time_location, &[time], 1);
     }
-    let _ = spring::gfx::clear(gl::COLOR_BUFFER_BIT, &[0.5, 0.5, 0.0, 0.0], 4);
+    // Distortion stores signed screen-space offsets directly, as the Lua
+    // distortionFBO does.  Zero is therefore the neutral value; the old
+    // 0.5-centred encoding prevented correct additive accumulation.
+    let _ = spring::gfx::clear(gl::COLOR_BUFFER_BIT, &[0.0, 0.0, 0.0, 0.0], 4);
     let _ = spring::gfx::matrix_mode(gl::PROJECTION);
     let _ = spring::gfx::load_matrix(&projection);
     let _ = spring::gfx::matrix_mode(gl::MODELVIEW);
@@ -297,12 +310,12 @@ fn distortion_corner(
     across: spring::types::Float3,
     along: spring::types::Float3,
 ) {
-    let _ = spring::gfx::tex_coord(u, v, 0.0, 0.0, 2);
+    let _ = spring::gfx::multi_tex_coord(0, u, v, particle.animation_x, particle.animation_y, 2);
     let _ = spring::gfx::multi_tex_coord(1, u * 2.0 - 1.0, v * 2.0 - 1.0, 0.0, 0.0, 2);
     let _ = spring::gfx::multi_tex_coord(
         2,
-        // JitterParticles2 passes strength * 0.01 to its shader.
-        particle.distortion_strength * 0.01,
+        // JitterParticles2 scales strength by 0.01 in the vertex shader.
+        particle.distortion_strength,
         particle.distortion_heat,
         particle.distortion_scale,
         0.0,

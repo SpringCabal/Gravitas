@@ -94,7 +94,9 @@ const RIG_RESPAWN: usize = 7;
 const RIG_JUMP: usize = 8;
 const RIG_INPUT: usize = 9;
 
-const RIG_SPACING: f32 = 260.0;
+// Keep independent cases apart even when a robot reacts to a hazard and
+// travels before another case's area-of-effect check runs.
+const RIG_SPACING: f32 = 400.0;
 const RIG_COLUMNS: usize = 4;
 const PARK_OFFSET: f32 = 90.0;
 const PUSH_SEPARATION: f32 = 120.0;

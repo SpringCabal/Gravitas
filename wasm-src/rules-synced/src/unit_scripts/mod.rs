@@ -151,15 +151,19 @@ impl UnitScript for GravitasUnitScript {
         Self {
             kind: None,
             gravit_state: Rc::new(RefCell::new(GravitAnimationState {
-                moving: false,
+                active: false,
                 jumping: false,
                 pieces: gravit_pieces,
             })),
             robot_state: Rc::new(RefCell::new(RobotAnimationState {
                 pieces: robot_pieces,
                 kind: RobotKind::Projector,
+                started: false,
                 moving: false,
                 aiming: false,
+                explicit_target: false,
+                last_heading: 0.0,
+                last_pitch: 0.0,
             })),
             gravit_pieces,
             robot_pieces,
@@ -199,7 +203,7 @@ impl UnitScript for GravitasUnitScript {
             Some(
                 ScriptKind::Bob | ScriptKind::Wallier | ScriptKind::Projector | ScriptKind::Boss,
             ) => {
-                robots::start_moving(ctx, Rc::clone(&self.robot_state));
+                robots::start_moving(Rc::clone(&self.robot_state));
             }
             _ => {}
         }
@@ -213,21 +217,25 @@ impl UnitScript for GravitasUnitScript {
             Some(
                 ScriptKind::Bob | ScriptKind::Wallier | ScriptKind::Projector | ScriptKind::Boss,
             ) => {
-                robots::stop_moving(ctx, Rc::clone(&self.robot_state));
+                robots::stop_moving(Rc::clone(&self.robot_state));
             }
             _ => {}
         }
     }
 
     fn activate(&mut self, ctx: &UnitCtx) {
-        if let Some(kind) = self.kind {
-            immobile::activate(ctx, kind);
+        match self.kind {
+            Some(ScriptKind::Gravit) => animations::activate(&self.gravit_state),
+            Some(kind) => immobile::activate(ctx, kind),
+            None => {}
         }
     }
 
     fn deactivate(&mut self, ctx: &UnitCtx) {
-        if let Some(kind) = self.kind {
-            immobile::deactivate(ctx, kind);
+        match self.kind {
+            Some(ScriptKind::Gravit) => animations::deactivate(&self.gravit_state),
+            Some(kind) => immobile::deactivate(ctx, kind),
+            None => {}
         }
     }
 
@@ -286,7 +294,7 @@ impl UnitScript for GravitasUnitScript {
     fn query_weapon(&mut self, _ctx: &UnitCtx, weapon: WeaponId) -> Piece {
         match self.kind {
             Some(ScriptKind::Gravit) => {
-                if weapon.0 == 0 {
+                if self.gravit_state.borrow().active {
                     self.gravit_pieces.muzzle_right
                 } else {
                     self.gravit_pieces.muzzle_left
@@ -308,7 +316,6 @@ impl UnitScript for GravitasUnitScript {
         match self.kind {
             Some(ScriptKind::Gravit) => match weapon.0 {
                 0 => self.gravit_pieces.arm_right,
-                1 => self.gravit_pieces.arm_left,
                 _ => self.gravit_pieces.head,
             },
             Some(
@@ -334,13 +341,7 @@ impl UnitScript for GravitasUnitScript {
             }
             Some(
                 ScriptKind::Bob | ScriptKind::Wallier | ScriptKind::Projector | ScriptKind::Boss,
-            ) => Some(robots::aim(
-                ctx,
-                Rc::clone(&self.robot_state),
-                weapon.0,
-                heading,
-                pitch,
-            )),
+            ) => robots::aim(ctx, Rc::clone(&self.robot_state), weapon.0, heading, pitch),
             _ => None,
         }
     }

@@ -7,8 +7,7 @@ void main(void) {
     if (info.a <= 0.001) {
         discard;
     }
-    vec2 offset = (info.rg - 0.5) * 2.0;
-    vec4 scene = texture2D(screenTex, texcoord + offset);
+    vec4 scene = texture2D(screenTex, texcoord + info.rg);
     scene.rgb += info.b;
     gl_FragColor = scene;
 }

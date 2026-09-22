@@ -30,13 +30,22 @@ pub fn burn(position: Float3, radius: f32, size_mult: f32, velocity: [f32; 2]) {
 }
 
 pub fn flame(position: Float3, radius: f32) {
+    let seed = seed_of(position);
+    // unit_fire.lua's SpawnFire keeps the gameplay radius authoritative but
+    // gives each visual emission its own small speed/radius variation.  The
+    // variation is unsynced in Lua, so keep it here rather than changing the
+    // synced fire cone or damage calculations.
+    let speed = effects::FIRE_SPEED + 0.1 * signed(seed);
+    let radius = radius * (1.0 + 0.1 * signed(next(seed)));
     let mut heat = effects::TRAP_HEAT;
     heat.life = radius / effects::TRAP_FLAME_LIFE_DIVISOR;
+    heat.emit_vector = [0.0, speed, 0.0];
     let mut fire = effects::TRAP_FLAME;
     fire.life = radius / effects::TRAP_FLAME_LIFE_DIVISOR;
+    fire.emit_vector = [0.0, speed, 0.0];
     let mut sparks = effects::TRAP_SPARK;
     sparks.life = radius / effects::TRAP_SPARK_LIFE_DIVISOR;
-    let seed = seed_of(position);
+    sparks.emit_vector = [0.0, speed, 0.0];
     emit_effect(&heat, position, seed);
     emit_effect(&fire, position, next(seed));
     emit_effect(&sparks, position, next(next(seed)));
@@ -72,7 +81,6 @@ pub fn electric_spark(position: Float3, intensity: f32, velocity: [f32; 2]) {
     effect.force = [velocity[0] * 0.65, 0.5, velocity[1] * 0.65];
     effect.life = life;
     effect.size_growth += effects::SPARK_SIZE_GROWTH_SPREAD * signed(next(seed));
-    effect.start_radius = effects::SPARK_DISC;
     emit_effect(&effect, position, next(seed));
 }
 
@@ -101,12 +109,12 @@ fn spawn(effect: &Effect, position: Float3, force: [f32; 3], seed: u64) {
     let size = effect.size + unit_float(seed.wrapping_add(11)) * effect.size_spread;
     let disc = unit_float(seed.wrapping_add(13)) * effect.start_radius;
     let disc_angle = unit_float(seed.wrapping_add(17)) * core::f32::consts::TAU;
-    let local = [
-        cone.sin() * azimuth.cos() * travel,
-        cone.cos() * travel,
-        cone.sin() * azimuth.sin() * travel,
-    ];
-    let direction = emit(effect.emit_vector, local);
+    // This is the two-stage transform used by LUPS' SimpleParticles2 and
+    // JitterParticles2: construct the cone around emitVector's basis, then
+    // apply CreateEmitMatrix3x3 to the resulting vector.  Applying only the
+    // second transform looks plausible for a unit-up emitter, but changes the
+    // spread and height of Gravitas' 0.5-speed trap fire.
+    let direction = emit_direction(effect.emit_vector, cone, azimuth, travel);
     let particle = Particle {
         x: position.x + disc * disc_angle.sin(),
         y: position.y,
@@ -129,6 +137,11 @@ fn spawn(effect: &Effect, position: Float3, force: [f32; 3], seed: u64) {
         speed_exp: effect.speed_exp,
         size_exp: effect.size_exp,
         rotation_exp: effect.rotation_exp,
+        // This is the Lua JitterParticles2 expression:
+        // floor((math.random() - .5) * 2).  With the engine's [0, 1)
+        // random range it produces -1 or 0, independently per particle.
+        animation_x: animation_direction(seed.wrapping_add(31)),
+        animation_y: animation_direction(seed.wrapping_add(37)),
         distortion: effect.distortion,
         distortion_strength: effect.distortion_strength,
         distortion_scale: effect.distortion_scale,
@@ -137,6 +150,10 @@ fn spawn(effect: &Effect, position: Float3, force: [f32; 3], seed: u64) {
         texture: effect.texture,
     };
     let _ = state::with_state(|ui| ui.fire.spawn(particle));
+}
+
+fn animation_direction(seed: u64) -> f32 {
+    ((unit_float(seed) - 0.5) * 2.0).floor()
 }
 
 const MINIMUM_LIFE: f32 = 1.0;
@@ -158,6 +175,32 @@ fn emit(vector: [f32; 3], local: [f32; 3]) -> [f32; 3] {
         matrix[0] * local[0] + matrix[1] * local[1] + matrix[2] * local[2],
         matrix[3] * local[0] + matrix[4] * local[1] + matrix[5] * local[2],
         matrix[6] * local[0] + matrix[7] * local[1] + matrix[8] * local[2],
+    ]
+}
+
+fn emit_direction(vector: [f32; 3], cone: f32, azimuth: f32, distance: f32) -> [f32; 3] {
+    let up = vector;
+    let right = [up[1], up[2], -up[0]];
+    let right = cross(up, right);
+    let forward = cross(up, right);
+    let (sin_cone, cos_cone) = cone.sin_cos();
+    let (sin_azimuth, cos_azimuth) = azimuth.sin_cos();
+    let a = cos_cone;
+    let b = cos_azimuth * sin_cone;
+    let c = sin_azimuth * sin_cone;
+    let local = [
+        (up[0] * a - right[0] * b + forward[0] * c) * distance,
+        (up[1] * a - right[1] * b + forward[1] * c) * distance,
+        (up[2] * a - right[2] * b + forward[2] * c) * distance,
+    ];
+    emit(vector, local)
+}
+
+fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
+    [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
     ]
 }
 

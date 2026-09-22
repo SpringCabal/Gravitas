@@ -49,6 +49,12 @@ pub struct Particle {
     pub speed_exp: f32,
     pub size_exp: f32,
     pub rotation_exp: f32,
+    // JitterParticles2 gives every particle its own integer noise direction.
+    // Keeping this on the particle is important: a shared screen-space scroll
+    // makes the whole fire field pulse in lockstep and looks much harsher than
+    // the Lua effect.
+    pub animation_x: f32,
+    pub animation_y: f32,
     pub distortion: bool,
     pub distortion_strength: f32,
     pub distortion_scale: f32,
@@ -63,6 +69,8 @@ pub struct Sample {
     pub z: f32,
     pub size: f32,
     pub rotation: f32,
+    pub animation_x: f32,
+    pub animation_y: f32,
     pub color: [f32; 4],
     pub distortion_strength: f32,
     pub distortion_scale: f32,
@@ -169,6 +177,8 @@ fn sample(particle: &Particle) -> Sample {
         z: particle.z + particle.direction_z * travel + particle.force_z * fraction,
         size: particle.size + particle.size_end * growth,
         rotation: particle.rotation + particle.rotation_end * spin,
+        animation_x: particle.animation_x,
+        animation_y: particle.animation_y,
         color: color_at(particle.colormap, fraction),
         distortion_strength: particle.distortion_strength * (1.0 - fraction),
         distortion_scale: particle.distortion_scale,
