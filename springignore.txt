@@ -1,0 +1,22 @@
+# Development checkouts and generated files are not game content.
+/.git
+/.svn
+/.vscode
+/.idea
+/.gitmodules
+/ModelSources
+/SourceFiles
+/Docs
+/doc
+/verification
+/port-reference
+/wasm-src
+/wasm-test
+/dist_cfg
+README*
+*.md
+*.rst
+*.swp
+*.orig
+*.bak
+*.log
