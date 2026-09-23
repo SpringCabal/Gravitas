@@ -1,18 +1,18 @@
 use alloc::format;
+use alloc::string::String;
 
 use crate::state::Global;
 use crate::units;
 
-/// Send the HUD what it shows: player health and which gun is loaded.
-pub fn publish(global: &Global, frame: i32) {
+/// What the HUD shows: the player unit, its health and which gun is loaded.
+pub fn message(global: &Global, frame: i32) -> String {
     let player = global.player_unit.get().unwrap_or(-1);
     let (health, max_health) = health(player);
-    let message = format!(
-        "GRAVITAS_STATUS|frame={frame}|playerUnit={player}|health={health}|maxHealth={max_health}|push={}|pull={}",
+    format!(
+        "GRAVITAS_STATUS|playerUnit={player}|health={health}|maxHealth={max_health}|push={}|pull={}",
         reload_ready(player, units::WEAPON_PUSH, frame),
         reload_ready(player, units::WEAPON_PULL, frame),
-    );
-    let _ = spring::send_to_unsynced(&message);
+    )
 }
 
 fn health(unit_id: i32) -> (i32, i32) {

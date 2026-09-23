@@ -8,16 +8,18 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
     register_widgets!(
         handler,
         [
-            ApiSyncWidget::new(),
-            GuiHudWidget::new(),
-            GuiCameraWidget::new(),
-            GuiInputWidget::new(),
+            // First: the others read the frame it records in Update.
+            GameClockWidget::default(),
+            ApiSyncWidget,
+            // Before the camera: it records the player unit from the status.
+            GuiHudWidget,
+            GuiCameraWidget::default(),
+            GuiInputWidget::default(),
             GuiUnselectableWidget::new(),
             GfxFireWidget::new(),
-            GuiHudPauseWidget::new(),
-            SndMusicWidget::new(),
+            SndMusicWidget::default(),
             GfxHealthbarsWidget::new(),
-            GfxMapEdgeWidget::new(),
+            GfxMapEdgeWidget::default(),
         ]
     );
 }

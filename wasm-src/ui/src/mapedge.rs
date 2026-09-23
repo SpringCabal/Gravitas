@@ -1,53 +1,60 @@
 use spring::gl;
 
-use crate::state;
+use core::cell::Cell;
 
 const GRID_TEXTURE: &str = "LuaUI/Images/vr_grid.png";
 const GRID_RESOLUTION: f32 = 128.0;
 const GRID_RANGE: f32 = 512.0;
 
-pub fn draw() {
-    let Some(list_id) = resources() else {
-        return;
-    };
-    let _ = state::with_state(|ui| {
-        if !ui.edge_border_hidden {
-            let _ = spring::send_commands("mapborder", "0");
-            ui.edge_border_hidden = true;
-        }
-    });
-    let _ = spring::gfx::push_attrib(gl::ALL_ATTRIB_BITS);
-    let _ = spring::gfx::depth_test(spring::gfx::GfxDepthTestOptions {
-        enable: true,
-        set_func: true,
-        func: gl::LEQUAL,
-    });
-    let _ = spring::gfx::depth_mask(true);
-    let _ = spring::gfx::bind_texture(GRID_TEXTURE, 0, true);
-    let _ = spring::gfx::call_list(list_id);
-    let _ = spring::gfx::bind_texture(GRID_TEXTURE, 0, false);
-    let _ = spring::gfx::color(1.0, 1.0, 1.0, 1.0);
-    let _ = spring::gfx::pop_attrib(0);
+/// The grid drawn beyond the map edge, mirroring the terrain and fading out.
+#[derive(Default)]
+pub struct MapEdge {
+    list: Cell<u32>,
+    setup_failed: Cell<bool>,
+    border_hidden: Cell<bool>,
 }
 
-fn resources() -> Option<u32> {
-    let existing = state::with_state(|ui| ui.edge_list).unwrap_or(0);
-    if existing != 0 {
-        return Some(existing);
+impl MapEdge {
+    pub fn draw(&self) {
+        let Some(list_id) = self.list() else {
+            return;
+        };
+        if !self.border_hidden.replace(true) {
+            let _ = spring::send_commands("mapborder", "0");
+        }
+        let _ = spring::gfx::push_attrib(gl::ALL_ATTRIB_BITS);
+        let _ = spring::gfx::depth_test(spring::gfx::GfxDepthTestOptions {
+            enable: true,
+            set_func: true,
+            func: gl::LEQUAL,
+        });
+        let _ = spring::gfx::depth_mask(true);
+        let _ = spring::gfx::bind_texture(GRID_TEXTURE, 0, true);
+        let _ = spring::gfx::call_list(list_id);
+        let _ = spring::gfx::bind_texture(GRID_TEXTURE, 0, false);
+        let _ = spring::gfx::color(1.0, 1.0, 1.0, 1.0);
+        let _ = spring::gfx::pop_attrib(0);
     }
-    if state::with_state(|ui| ui.edge_setup_failed).unwrap_or(true) {
-        return None;
+
+    /// The display list of the grid, built on first use.
+    fn list(&self) -> Option<u32> {
+        if self.list.get() != 0 {
+            return Some(self.list.get());
+        }
+        if self.setup_failed.get() {
+            return None;
+        }
+        let (width, height) = map_size();
+        if width <= 0.0 || height <= 0.0 {
+            return None;
+        }
+        let Ok(list_id) = spring::gfx::create_list(emit_tiles) else {
+            self.setup_failed.set(true);
+            return None;
+        };
+        self.list.set(list_id);
+        Some(list_id)
     }
-    let (width, height) = map_size();
-    if width <= 0.0 || height <= 0.0 {
-        return None;
-    }
-    let Ok(list_id) = spring::gfx::create_list(emit_tiles) else {
-        let _ = state::with_state(|ui| ui.edge_setup_failed = true);
-        return None;
-    };
-    let _ = state::with_state(|ui| ui.edge_list = list_id);
-    Some(list_id)
 }
 
 fn emit_tiles() {

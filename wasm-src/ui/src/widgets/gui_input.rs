@@ -1,18 +1,14 @@
 use spring_addons::event::{EventResult, KeyEvent};
 use spring_addons::ui::Widget;
 
-use crate::input;
+use crate::input::{self, Input};
 use crate::state::{self, Global};
 
-const MAX_CATCH_UP_FRAMES: i32 = 30;
-
+/// Keyboard and mouse: movement, aiming, shooting and jumping go to the rules
+/// module; F11/F12 take screenshots; Ctrl+Q leaves.
 #[derive(Default)]
-pub struct GuiInputWidget;
-
-impl GuiInputWidget {
-    pub fn new() -> Self {
-        Self
-    }
+pub struct GuiInputWidget {
+    input: Input,
 }
 
 impl Widget<Global> for GuiInputWidget {
@@ -20,11 +16,10 @@ impl Widget<Global> for GuiInputWidget {
         "GuiInput"
     }
 
-    fn update(&self, _ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
-        let frames = elapsed_frames();
-        let _ = state::with_state(|ui| ui.frames_this_update = frames);
+    fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
+        let frames = state::with_state(|ui| ui.frames_this_update).unwrap_or(0);
         if frames > 0 {
-            input::poll();
+            self.input.poll(ctx.global());
         }
     }
 
@@ -78,7 +73,7 @@ impl Widget<Global> for GuiInputWidget {
             crate::hud::reload();
             return EventResult::Handled;
         }
-        input::key_press(event.key_code).into()
+        self.input.key_press(event.key_code).into()
     }
 
     fn key_release(
@@ -86,7 +81,7 @@ impl Widget<Global> for GuiInputWidget {
         _ctx: &spring_addons::AddonContext<'_, Global>,
         event: &KeyEvent<'_>,
     ) -> EventResult {
-        input::key_release(event.key_code).into()
+        self.input.key_release(event.key_code).into()
     }
 }
 
@@ -96,13 +91,3 @@ const KEY_F12: i32 = 293;
 const KEY_CTRL_Q: i32 = 17;
 const KEY_Q: i32 = b'q' as i32;
 const KEY_Q_UPPER: i32 = b'Q' as i32;
-
-fn elapsed_frames() -> i32 {
-    let frame = spring::game::frame().map_or(0, |frame| frame as i32);
-    state::with_state(|ui| {
-        let elapsed = frame - ui.last_game_frame;
-        ui.last_game_frame = frame;
-        elapsed.clamp(0, MAX_CATCH_UP_FRAMES)
-    })
-    .unwrap_or(0)
-}

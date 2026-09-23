@@ -1,49 +1,87 @@
 use alloc::format;
+use alloc::string::String;
+use core::cell::{Cell, RefCell};
 
-use crate::state;
+use crate::state::Global;
 
-pub fn poll() {
-    if player_unit().is_none() {
-        return;
-    }
-    let (move_x, move_z) = state::with_state(|ui| ui.move_vector()).unwrap_or((0.0, 0.0));
-    let jump = state::with_state(|ui| ui.jump).unwrap_or(false);
-    let Ok(mouse) = spring::input::get_mouse_state(0) else {
-        return;
-    };
-    let (target, target_unit) = match scripted_target() {
-        Some(target) => (target, NO_UNIT),
-        None => trace(mouse.x, mouse.y),
-    };
-    send(
-        move_x,
-        move_z,
-        target,
-        target_unit,
-        mouse.left,
-        mouse.right,
-        jump || mouse.middle,
-    );
+/// The keys held and what was last sent to the rules module.
+#[derive(Default)]
+pub struct Input {
+    north: Cell<bool>,
+    south: Cell<bool>,
+    west: Cell<bool>,
+    east: Cell<bool>,
+    jump: Cell<bool>,
+    last_sent: RefCell<String>,
 }
 
-fn send(
-    move_x: f32,
-    move_z: f32,
-    target: spring::types::Float3,
-    target_unit: i32,
-    push: bool,
-    pull: bool,
-    jump: bool,
-) {
-    let _ = spring::send_lua_rules_msg(&format!(
-        "gravitas|{move_x}|{move_z}|{}|{}|{}|{target_unit}|{}|{}|{}",
-        target.x,
-        target.y,
-        target.z,
-        i32::from(push),
-        i32::from(pull),
-        i32::from(jump),
-    ));
+impl Input {
+    /// Send the player's input to the rules module when it changed. A held
+    /// jump is re-sent every frame: the rules retry it after each landing.
+    pub fn poll(&self, global: &Global) {
+        let Some(player_unit) = global.player_unit.get() else {
+            return;
+        };
+        let move_x = f32::from(self.east.get()) - f32::from(self.west.get());
+        let move_z = f32::from(self.south.get()) - f32::from(self.north.get());
+        let Ok(mouse) = spring::input::get_mouse_state(0) else {
+            return;
+        };
+        let (scripted_target, scripted_jump) = {
+            let scripted = global.scripted.access();
+            (scripted.target, scripted.jump)
+        };
+        let (target, target_unit) = match scripted_target {
+            Some((x, z)) => (
+                spring::types::Float3 {
+                    x,
+                    y: spring::get_ground_height(x, z).unwrap_or(0.0),
+                    z,
+                },
+                NO_UNIT,
+            ),
+            None => trace(mouse.x, mouse.y),
+        };
+        let jump = self.jump.get() || scripted_jump || mouse.middle;
+        let message = format!(
+            "gravitas|{move_x}|{move_z}|{}|{}|{}|{target_unit}|{}|{}|{}",
+            target.x,
+            target.y,
+            target.z,
+            i32::from(mouse.left),
+            i32::from(mouse.right),
+            i32::from(jump),
+        );
+        let mut last_sent = self.last_sent.borrow_mut();
+        // The player unit is part of the key: a new unit needs the input again.
+        let key = format!("{player_unit}|{message}");
+        if !jump && *last_sent == key {
+            return;
+        }
+        *last_sent = key;
+        let _ = spring::send_lua_rules_msg(&message);
+    }
+
+    pub fn key_press(&self, key_code: i32) -> bool {
+        self.set_key(key_code, true)
+    }
+
+    pub fn key_release(&self, key_code: i32) -> bool {
+        self.set_key(key_code, false)
+    }
+
+    fn set_key(&self, key_code: i32, pressed: bool) -> bool {
+        let key = match key_code {
+            KEY_W | KEY_UP => &self.north,
+            KEY_S | KEY_DOWN => &self.south,
+            KEY_A | KEY_LEFT => &self.west,
+            KEY_D | KEY_RIGHT => &self.east,
+            KEY_E | KEY_SPACE => &self.jump,
+            _ => return false,
+        };
+        key.set(pressed);
+        true
+    }
 }
 
 pub fn mouse_press(_x: i32, _y: i32, button: i32) -> bool {
@@ -51,14 +89,6 @@ pub fn mouse_press(_x: i32, _y: i32, button: i32) -> bool {
 }
 
 pub fn mouse_release(_x: i32, _y: i32, _button: i32) {}
-
-pub fn key_press(key_code: i32) -> bool {
-    set_key(key_code, true)
-}
-
-pub fn key_release(key_code: i32) -> bool {
-    set_key(key_code, false)
-}
 
 const KEY_W: i32 = 119;
 const KEY_A: i32 = 97;
@@ -74,46 +104,6 @@ const HIT_UNIT: i32 = 1;
 const NO_UNIT: i32 = -1;
 const MOUSE_LEFT: i32 = 1;
 const MOUSE_RIGHT: i32 = 3;
-
-fn set_key(key_code: i32, pressed: bool) -> bool {
-    state::with_state(|ui| match key_code {
-        KEY_W | KEY_UP => {
-            ui.move_north = pressed;
-            true
-        }
-        KEY_S | KEY_DOWN => {
-            ui.move_south = pressed;
-            true
-        }
-        KEY_A | KEY_LEFT => {
-            ui.move_west = pressed;
-            true
-        }
-        KEY_D | KEY_RIGHT => {
-            ui.move_east = pressed;
-            true
-        }
-        KEY_E | KEY_SPACE => {
-            ui.jump = pressed;
-            true
-        }
-        _ => false,
-    })
-    .unwrap_or(false)
-}
-
-fn scripted_target() -> Option<spring::types::Float3> {
-    let (x, z) = state::with_state(|ui| ui.scripted_target).flatten()?;
-    Some(spring::types::Float3 {
-        x,
-        y: spring::get_ground_height(x, z).unwrap_or(0.0),
-        z,
-    })
-}
-
-fn player_unit() -> Option<i32> {
-    state::with_state(|ui| ui.player_unit).filter(|unit_id| *unit_id >= 0)
-}
 
 fn trace(x: f32, y: f32) -> (spring::types::Float3, i32) {
     let ground = spring::camera::trace_screen_ray(

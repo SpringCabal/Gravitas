@@ -1,4 +1,17 @@
-use crate::state::HudBindings;
+use crate::state::Global;
+
+#[derive(Clone, Copy, Default)]
+pub struct HudBindings {
+    pub health_percent: u64,
+    pub health_caption: u64,
+    pub health_color: u64,
+    pub push_ready: u64,
+    pub pull_ready: u64,
+    pub paused: u64,
+    pub endgame_visible: u64,
+    pub endgame_victory: u64,
+    pub endgame_title: u64,
+}
 
 pub const HEALTH_FULL_COLOR: &str = "#00bf00";
 
@@ -10,7 +23,7 @@ pub fn create(context: u64) -> Option<HudBindings> {
         return None;
     }
     let model = model.data_model_handle;
-    bind_event(model, "endgameRestart", |_| restart());
+    bind_event(model, "endgameRestart", restart);
     bind_event(model, "endgameExit", |_| reload());
     Some(HudBindings {
         health_percent: bind_percent(model, "healthPercent", 100.0)?,
@@ -43,7 +56,7 @@ pub fn set_string(handle: u64, value: &str) {
     }
 }
 
-fn bind_event(model: u64, name: &str, handler: impl FnMut(&crate::state::Global) + 'static) {
+fn bind_event(model: u64, name: &str, handler: impl FnMut(&Global) + 'static) {
     let callback = crate::register_callback(handler);
     let bound = spring::data_model_bind_event(model, name, callback, &[])
         .is_ok_and(|registration| registration.success);
@@ -72,7 +85,7 @@ pub fn reload() {
     let _ = spring::send_commands("reloadforce", "");
 }
 
-fn restart() {
+fn restart(global: &Global) {
     let _ = spring::send_lua_rules_msg(RESTART_MESSAGE);
-    super::overlays::hide_game_over();
+    super::overlays::hide_game_over(&mut global.hud.access_mut());
 }

@@ -1,15 +1,12 @@
+use spring_addons::AddonContext;
 use spring_addons::ui::Widget;
 
-use crate::mapedge;
+use crate::mapedge::MapEdge;
 use crate::state::Global;
 
 #[derive(Default)]
-pub struct GfxMapEdgeWidget;
-
-impl GfxMapEdgeWidget {
-    pub fn new() -> Self {
-        Self
-    }
+pub struct GfxMapEdgeWidget {
+    edge: MapEdge,
 }
 
 impl Widget<Global> for GfxMapEdgeWidget {
@@ -17,7 +14,7 @@ impl Widget<Global> for GfxMapEdgeWidget {
         "GfxMapEdge"
     }
 
-    fn draw_world_pre_unit(&self, _ctx: &spring_addons::AddonContext<'_, Global>) {
-        mapedge::draw();
+    fn draw_world_pre_unit(&self, _ctx: &AddonContext<'_, Global>) {
+        self.edge.draw();
     }
 }

@@ -1,14 +1,13 @@
 use alloc::format;
 
 use crate::diagnostics;
-use crate::state;
 
-use super::model;
+use super::{Hud, model};
 
 const FOCUS_NONE: i32 = 0;
 
-pub fn initialize() {
-    if state::with_state(|ui| ui.context != 0).unwrap_or(true) {
+pub fn initialize(hud: &mut Hud) {
+    if hud.context != 0 {
         return;
     }
     match spring::is_ready(0) {
@@ -25,22 +24,23 @@ pub fn initialize() {
     let Some(context) = create_context() else {
         return;
     };
-    let Some(hud) = model::create(context) else {
+    let Some(bindings) = model::create(context) else {
         diagnostics::warning("RmlUi data-model creation failed");
         return;
     };
     if !load_document(context) {
         return;
     }
-    let _ = state::with_state(|ui| {
-        ui.context = context;
-        ui.hud = Some(hud);
-    });
+    hud.context = context;
+    hud.bindings = Some(bindings);
+    let status = core::mem::take(&mut hud.status);
+    super::status::show(hud, &status);
+    hud.status = status;
     diagnostics::info("Gravitas RmlUi HUD initialized");
 }
 
-pub fn hide_default_layout() {
-    if state::with_state(|ui| ui.default_layout_hidden).unwrap_or(true) {
+pub fn hide_default_layout(hud: &mut Hud) {
+    if hud.default_layout_hidden {
         return;
     }
     let commands = [
@@ -60,12 +60,13 @@ pub fn hide_default_layout() {
     let minimap_hidden =
         spring::slave_mini_map(true).is_ok() && spring::config_mini_map(-1, -1, -1, -1).is_ok();
     if commands_hidden && minimap_hidden {
-        let _ = state::with_state(|ui| ui.default_layout_hidden = true);
+        hud.default_layout_hidden = true;
     }
 }
 
-pub fn apply_bindings() {
-    if state::with_state(|ui| ui.bindings_applied).unwrap_or(true) {
+/// Replace the engine's key bindings with the few the game keeps.
+pub fn apply_bindings(hud: &mut Hud) {
+    if hud.keys_bound {
         return;
     }
     let _ = spring::send_commands("unbindall", "");
@@ -82,15 +83,13 @@ pub fn apply_bindings() {
     let _ = spring::send_commands("unbindkeyset", "enter chat");
     let _ = spring::send_commands("unbind", "enter");
     let _ = spring::send_commands("unbindaction", "chat");
-    let _ = state::with_state(|ui| ui.bindings_applied = true);
+    hud.keys_bound = true;
 }
 
-pub fn render(width: i32, height: i32) {
-    let context = state::with_state(|ui| ui.context).unwrap_or(0);
-    if context == 0 {
-        return;
+pub fn render(hud: &Hud, width: i32, height: i32) {
+    if hud.context != 0 {
+        let _ = spring::context_set_dimensions(hud.context, width, height);
     }
-    let _ = spring::context_set_dimensions(context, width, height);
 }
 
 fn create_context() -> Option<u64> {

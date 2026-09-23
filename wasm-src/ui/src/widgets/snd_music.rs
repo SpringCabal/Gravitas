@@ -1,15 +1,12 @@
+use spring_addons::AddonContext;
 use spring_addons::ui::Widget;
 
-use crate::music;
+use crate::music::Music;
 use crate::state::Global;
 
 #[derive(Default)]
-pub struct SndMusicWidget;
-
-impl SndMusicWidget {
-    pub fn new() -> Self {
-        Self
-    }
+pub struct SndMusicWidget {
+    music: Music,
 }
 
 impl Widget<Global> for SndMusicWidget {
@@ -17,7 +14,7 @@ impl Widget<Global> for SndMusicWidget {
         "SndMusic"
     }
 
-    fn update(&self, _ctx: &spring_addons::AddonContext<'_, Global>, dt: f32) {
-        music::update(dt.max(0.0));
+    fn update(&self, _ctx: &AddonContext<'_, Global>, dt: f32) {
+        self.music.update(dt.max(0.0));
     }
 }
