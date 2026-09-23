@@ -229,8 +229,8 @@ fn atan2(x: f32, z: f32) -> f32 {
     (x / z).atan() + if z < 0.0 { core::f32::consts::PI } else { 0.0 }
 }
 
-fn call_script(unit_id: i32, function_name: &str) {
-    let _ = spring::typed::call_unit_script(unit_id, function_name, &[], 0);
+fn call_script(unit_id: i32, function_name: &'static str) {
+    crate::unit_scripts::queue_call(unit_id, function_name);
 }
 
 fn length(value: Float3) -> f32 {

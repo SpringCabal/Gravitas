@@ -427,10 +427,23 @@ fn immobile_explode(ctx: &UnitCtx, piece: &str, flags: SfxFlags) {
 
 thread_local! {
     static PENDING_UNITS: RefCell<Vec<(i32, i32)>> = const { RefCell::new(Vec::new()) };
+    static PENDING_CALLS: RefCell<Vec<(i32, &'static str)>> = const { RefCell::new(Vec::new()) };
 }
 
 /// Queue map-authored and newly created units.  Attachment is deferred until
 /// the Core-CUS tick so a gadget callback never recursively attaches a script.
+/// Queue a named unit-script call for the next Core-CUS tick.
+///
+/// The rules run inside this same module, so `call_unit_script` goes through
+/// the engine and back into a module that is still inside a gadget callin; the
+/// engine rejects that nested call (ApiError 1), so the animation never ran.
+/// Calls are applied in order on the tick, like unit attach.
+pub fn queue_call(unit: i32, function_name: &'static str) {
+    if unit >= 0 {
+        PENDING_CALLS.with(|pending| pending.borrow_mut().push((unit, function_name)));
+    }
+}
+
 pub fn queue_unit_created(unit: i32, def: i32) {
     if unit >= 0 {
         PENDING_UNITS.with(|pending| pending.borrow_mut().push((unit, def)));
@@ -483,6 +496,20 @@ impl GravitasCusModule {
         spring::game::get_game_frame(0)
             .map(|value| (value.low16 | (value.high16 << 16)) as u64)
             .unwrap_or(0)
+    }
+
+    fn apply_pending_calls(&mut self) {
+        let pending = PENDING_CALLS.with(|calls| core::mem::take(&mut *calls.borrow_mut()));
+        for (unit_id, function_name) in pending {
+            let Some(handle) = self.handles.get(&instance_id(UnitId(unit_id))).copied() else {
+                continue;
+            };
+            self.sync_instance_frame(handle);
+            let _ = self.registry.with(handle, |instance| {
+                let ctx = instance.context();
+                instance.with_state(|script| script.named_call(&ctx, function_name))
+            });
+        }
     }
 
     fn sync_instance_frame(&mut self, handle: CusHandle) {
@@ -559,6 +586,7 @@ impl CoreCusModule for GravitasCusModule {
 
     fn cus_tick(&mut self, frame: u32) {
         self.attach_pending();
+        self.apply_pending_calls();
         self.registry.tick(frame as u64);
     }
 
