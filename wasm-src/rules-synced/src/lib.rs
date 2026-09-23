@@ -1,6 +1,5 @@
 extern crate alloc;
 
-mod cmd;
 mod diagnostics;
 mod effects;
 mod electrafi;

@@ -146,5 +146,5 @@ pub fn moved(from: Option<Float3>, to: Option<Float3>, minimum: f32) -> bool {
 }
 
 pub fn halt(unit_id: i32) {
-    let _ = spring::give_order_to_unit(unit_id, crate::cmd::STOP, &[], 0, 0);
+    let _ = spring::give_order_to_unit(unit_id, spring::cmd::STOP, &[], 0, 0);
 }

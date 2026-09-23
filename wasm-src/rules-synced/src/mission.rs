@@ -63,7 +63,7 @@ pub fn issue_assault(assault: &Assault) {
     for unit_id in &assault.units {
         let _ = spring::give_order_to_unit(
             *unit_id,
-            crate::cmd::FIGHT,
+            spring::cmd::FIGHT,
             &[
                 assault.target_x,
                 units::ground_height(assault.target_x, assault.target_z),

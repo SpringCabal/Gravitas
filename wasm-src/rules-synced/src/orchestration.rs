@@ -77,11 +77,11 @@ pub fn apply_electrafi(frame: i32) {
 
 pub fn move_away(avoidance: Avoidance) {
     if avoidance.replace_order {
-        let _ = spring::give_order_to_unit(avoidance.unit_id, crate::cmd::STOP, &[], 0, 0);
+        let _ = spring::give_order_to_unit(avoidance.unit_id, spring::cmd::STOP, &[], 0, 0);
     }
     let _ = spring::give_order_to_unit(
         avoidance.unit_id,
-        crate::cmd::MOVE,
+        spring::cmd::MOVE,
         &[avoidance.goal.x, avoidance.goal.y, avoidance.goal.z],
         0,
         0,

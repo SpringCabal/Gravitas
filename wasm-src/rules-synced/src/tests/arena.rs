@@ -1,6 +1,6 @@
 use spring::types::Float3;
 
-use crate::{cmd, units};
+use crate::units;
 
 pub struct Arena {
     pub centre: Float3,
@@ -116,6 +116,8 @@ const ELECTRAFI: &str = "electrafi";
 const GRAVIT: &str = "gravit";
 
 const GATE_OFFSET: f32 = 110.0;
+const FIRE_STATE_HOLD: f32 = 0.0;
+const MOVE_STATE_HOLD: f32 = 0.0;
 const RESPAWNABLE_PARAM: &str = "respawnable";
 const BARREL_REACH: f32 = 60.0;
 const FIRE_SIZE: f32 = 150.0;
@@ -142,8 +144,8 @@ fn spawn(name: &str, centre: Float3, rig: usize, offset_x: f32, offset_z: f32) -
     let Some(unit_id) = units::create(name, position, team) else {
         return -1;
     };
-    let _ = spring::give_order_to_unit(unit_id, cmd::FIRE_STATE, &[cmd::FIRE_STATE_HOLD], 0, 0);
-    let _ = spring::give_order_to_unit(unit_id, cmd::MOVE_STATE, &[cmd::MOVE_STATE_HOLD], 0, 0);
+    let _ = spring::give_order_to_unit(unit_id, spring::cmd::FIRE_STATE, &[FIRE_STATE_HOLD], 0, 0);
+    let _ = spring::give_order_to_unit(unit_id, spring::cmd::MOVE_STATE, &[MOVE_STATE_HOLD], 0, 0);
     unit_id
 }
 

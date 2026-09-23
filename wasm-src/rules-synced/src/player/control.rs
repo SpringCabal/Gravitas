@@ -98,6 +98,7 @@ impl Player {
 }
 
 const MOVE_INTERVAL: i32 = 3;
+const FIRE_STATE_HOLD: f32 = 0.0;
 const MOVE_REACH: f32 = 32.0;
 const RELOAD_HOLD_FRAMES: i32 = 2;
 const NO_TARGET: i32 = -1;
@@ -155,7 +156,7 @@ impl Player {
     fn drive(&mut self, unit_id: i32, command: &PlayerCommand) {
         if command.move_x == 0.0 && command.move_z == 0.0 {
             if self.moved_last {
-                let _ = spring::give_order_to_unit(unit_id, crate::cmd::STOP, &[], 0, 0);
+                let _ = spring::give_order_to_unit(unit_id, spring::cmd::STOP, &[], 0, 0);
                 self.moved_last = false;
             }
             return;
@@ -186,13 +187,7 @@ fn clamp_target(origin: spring::types::Float3, x: f32, y: f32, z: f32) -> (f32, 
 }
 
 fn disable_auto_fire(unit_id: i32) {
-    let _ = spring::give_order_to_unit(
-        unit_id,
-        crate::cmd::FIRE_STATE,
-        &[crate::cmd::FIRE_STATE_HOLD],
-        0,
-        0,
-    );
+    let _ = spring::give_order_to_unit(unit_id, spring::cmd::FIRE_STATE, &[FIRE_STATE_HOLD], 0, 0);
 }
 
 fn hold_weapon(unit_id: i32, weapon: i32, firing: bool, frame: i32) {

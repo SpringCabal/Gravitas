@@ -98,7 +98,7 @@ const KEY_Q: i32 = b'q' as i32;
 const KEY_Q_UPPER: i32 = b'Q' as i32;
 
 fn elapsed_frames() -> i32 {
-    let frame = crate::frame::current();
+    let frame = spring::game::frame().map_or(0, |frame| frame as i32);
     state::with_state(|ui| {
         let elapsed = frame - ui.last_game_frame;
         ui.last_game_frame = frame;

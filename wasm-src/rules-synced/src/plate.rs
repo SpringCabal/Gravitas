@@ -120,7 +120,7 @@ impl Plates {
 }
 
 pub fn set_state(unit_id: i32, active: bool) {
-    let _ = spring::give_order_to_unit(unit_id, crate::cmd::ONOFF, &[f32::from(active)], 0, 0);
+    let _ = spring::give_order_to_unit(unit_id, spring::cmd::ONOFF, &[f32::from(active)], 0, 0);
 }
 
 const UPDATE_RATE: i32 = 5;

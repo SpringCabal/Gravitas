@@ -19,8 +19,6 @@ pub const WEAPON_PULL: i32 = 2;
 const DEFAULT_FACING: i32 = 0;
 const DEGREES_TO_RADIANS: f32 = core::f32::consts::PI / 180.0;
 const ANY_ALLEGIANCE: i32 = -1;
-const QUERY_CAPACITY: usize = 128;
-const QUERY_ATTEMPTS: usize = 2;
 
 thread_local! {
     static CUSTOM_PARAM_KEYS: RefCell<Vec<(i32, Vec<String>)>> = const { RefCell::new(Vec::new()) };
@@ -62,14 +60,14 @@ pub fn spawn(spawn: &Spawn) -> Option<i32> {
     }
     let _ = spring::give_order_to_unit(
         unit_id,
-        crate::cmd::FIRE_STATE,
+        spring::cmd::FIRE_STATE,
         &[spawn.fire_state as f32],
         0,
         0,
     );
     let _ = spring::give_order_to_unit(
         unit_id,
-        crate::cmd::MOVE_STATE,
+        spring::cmd::MOVE_STATE,
         &[spawn.move_state as f32],
         0,
         0,
@@ -123,32 +121,15 @@ pub fn units_in_cylinder(x: f32, z: f32, radius: f32) -> Vec<i32> {
 }
 
 pub fn units_in_rectangle(x1: f32, z1: f32, x2: f32, z2: f32) -> Vec<i32> {
-    query(|output| spring::get_units_in_rectangle_into(x1, z1, x2, z2, ANY_ALLEGIANCE, output))
+    spring::get_units_in_rectangle(x1, z1, x2, z2, ANY_ALLEGIANCE).unwrap_or_default()
 }
 
 pub fn units_in_sphere(centre: Float3, radius: f32) -> Vec<i32> {
-    query(|output| spring::get_units_in_sphere_into(centre, radius, ANY_ALLEGIANCE, output))
+    spring::get_units_in_sphere(centre, radius, ANY_ALLEGIANCE).unwrap_or_default()
 }
 
 pub fn units_in_box(low: Float3, high: Float3) -> Vec<i32> {
-    query(|output| spring::get_units_in_box_into(low, high, ANY_ALLEGIANCE, output))
-}
-
-/// Runs a unit query into a buffer, growing it once if the engine reports
-/// more units than fit.
-fn query<E>(mut fill: impl FnMut(&mut [i32]) -> Result<spring::BufferFill, E>) -> Vec<i32> {
-    let mut output = alloc::vec![0i32; QUERY_CAPACITY];
-    for _ in 0..QUERY_ATTEMPTS {
-        match fill(&mut output) {
-            Ok(spring::BufferFill::Complete(count)) => {
-                output.truncate(count);
-                return output;
-            }
-            Ok(spring::BufferFill::Insufficient { required }) => output.resize(required, 0),
-            Err(_) => return Vec::new(),
-        }
-    }
-    Vec::new()
+    spring::get_units_in_box(low, high, ANY_ALLEGIANCE).unwrap_or_default()
 }
 
 pub fn def_of(unit_id: i32) -> Option<i32> {
@@ -177,9 +158,7 @@ pub fn custom_param_is_one(def_id: i32, key: &str) -> bool {
 }
 
 pub fn game_frame() -> i32 {
-    spring::game::get_game_frame(0)
-        .map(|value| (value.low16 | (value.high16 << 16)) as i32)
-        .unwrap_or(0)
+    spring::game::frame().map_or(0, |frame| frame as i32)
 }
 
 pub fn valid(unit_id: i32) -> bool {

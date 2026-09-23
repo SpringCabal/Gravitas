@@ -3,7 +3,6 @@ extern crate alloc;
 mod camera;
 mod diagnostics;
 mod fire;
-mod frame;
 mod fx;
 mod health;
 mod healthbars;
