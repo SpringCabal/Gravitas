@@ -4,7 +4,7 @@ use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 use crate::state::{Global, Phase};
 use crate::{diagnostics, level, mission, restart, setup};
 
-/// Spawns the level, links it on the next frame, restarts it on request, and
+/// Spawns the level at the end of a frame, links it at the start of the next, restarts it on request, and
 /// ends the game when the player or the boss dies.
 pub struct LevelGadget;
 
@@ -22,7 +22,9 @@ impl Gadget<Global> for LevelGadget {
         }
         let phase = global.level.access().phase;
         match phase {
-            Phase::Spawn => setup::spawn(global),
+            // After every gadget has run this frame, so they all see the new
+            // level from the next frame on.
+            Phase::Spawn => ctx.delay(setup::spawn),
             Phase::Link => setup::link(global),
             Phase::Running => {}
         }
