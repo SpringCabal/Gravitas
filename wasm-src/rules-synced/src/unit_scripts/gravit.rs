@@ -4,13 +4,18 @@ mod data;
 use alloc::rc::Rc;
 use core::cell::RefCell;
 
-use spring::cus::{Axis, Duration, InitCtx, Piece, TaskDefinition, UnitCtx};
+use spring::cus::{
+    Axis, Duration, InitCtx, Piece, SfxFlags, TaskDefinition, UnitCtx, WeaponId, WreckLevel,
+};
 
-use super::common::{SIG_AIM, SIG_IDLE, SIG_JUMP, SIG_STOP, SIG_WALK, move_piece, turn};
+use super::common::{
+    SIG_AIM, SIG_ANIMATION, SIG_IDLE, SIG_JUMP, SIG_STOP, SIG_WALK, explode, move_piece,
+    play_unit_sound, turn,
+};
 use data::{AnimAxis, Command, CommandKind, Keyframe, PieceName};
 
 #[derive(Clone, Copy)]
-pub(super) struct GravitPieces {
+struct GravitPieces {
     pub arm_right: Piece,
     pub arm_left: Piece,
     pub foot_left: Piece,
@@ -31,7 +36,7 @@ pub(super) struct GravitPieces {
 }
 
 impl GravitPieces {
-    pub(super) fn from_init(ctx: &InitCtx<'_>) -> Self {
+    fn from_init(ctx: &InitCtx<'_>) -> Self {
         Self {
             arm_right: ctx.piece("armright"),
             arm_left: ctx.piece("armleft"),
@@ -76,56 +81,132 @@ impl GravitPieces {
     }
 }
 
-pub(super) struct GravitAnimationState {
-    pub active: bool,
-    pub jumping: bool,
-    pub pieces: GravitPieces,
+struct GravitAnimationState {
+    active: bool,
+    jumping: bool,
+    pieces: GravitPieces,
 }
 
-pub(super) fn activate(state: &Rc<RefCell<GravitAnimationState>>) {
-    state.borrow_mut().active = true;
-}
-
-pub(super) fn deactivate(state: &Rc<RefCell<GravitAnimationState>>) {
-    state.borrow_mut().active = false;
-}
-
-pub(super) fn create(
-    ctx: &UnitCtx,
+pub(super) struct GravitScript {
     pieces: GravitPieces,
     state: Rc<RefCell<GravitAnimationState>>,
-) {
-    let _ = state;
-    apply_keyframe(ctx, pieces, data::STOP[0], false);
 }
 
-pub(super) fn start_moving(
-    ctx: &UnitCtx,
-    _pieces: GravitPieces,
-    state: Rc<RefCell<GravitAnimationState>>,
-) {
-    ctx.signal(SIG_IDLE);
-    ctx.spawn(TaskDefinition::with_state(
-        "gravitas-gravit-walk",
-        state,
-        walk,
-    ));
+impl GravitScript {
+    pub(super) fn new(ctx: &InitCtx<'_>) -> Self {
+        let pieces = GravitPieces::from_init(ctx);
+        Self {
+            pieces,
+            state: Rc::new(RefCell::new(GravitAnimationState {
+                active: false,
+                jumping: false,
+                pieces,
+            })),
+        }
+    }
+
+    pub(super) fn create(&self, ctx: &UnitCtx) {
+        apply_keyframe(ctx, self.pieces, data::STOP[0], false);
+    }
+
+    pub(super) fn start_moving(&self, ctx: &UnitCtx) {
+        ctx.signal(SIG_IDLE);
+        ctx.spawn(TaskDefinition::with_state(
+            "gravitas-gravit-walk",
+            Rc::clone(&self.state),
+            walk,
+        ));
+    }
+
+    pub(super) fn stop_moving(&self, ctx: &UnitCtx) {
+        ctx.signal(SIG_WALK);
+        ctx.spawn(TaskDefinition::with_state(
+            "gravitas-gravit-idle",
+            Rc::clone(&self.state),
+            idle,
+        ));
+    }
+
+    pub(super) fn activate(&self) {
+        self.state.borrow_mut().active = true;
+    }
+
+    pub(super) fn deactivate(&self) {
+        self.state.borrow_mut().active = false;
+    }
+
+    pub(super) fn killed(&self, ctx: &UnitCtx) -> WreckLevel {
+        ctx.signal(SIG_ANIMATION);
+        ctx.signal(SIG_AIM);
+        ctx.signal(SIG_STOP);
+        play_unit_sound("sounds/death.ogg", 1.0, ctx.unit());
+        let p = self.pieces;
+        for piece in [
+            p.thigh_left,
+            p.thigh_right,
+            p.head,
+            p.pelvis,
+            p.arm_left,
+            p.arm_right,
+        ] {
+            explode(ctx, piece, SfxFlags::EXPLODE);
+        }
+        WreckLevel::One
+    }
+
+    pub(super) fn query_weapon(&self) -> Piece {
+        if self.state.borrow().active {
+            self.pieces.muzzle_right
+        } else {
+            self.pieces.muzzle_left
+        }
+    }
+
+    pub(super) fn aim_from_weapon(&self, weapon: WeaponId) -> Piece {
+        match weapon.0 {
+            0 => self.pieces.arm_right,
+            _ => self.pieces.head,
+        }
+    }
+
+    pub(super) fn aim_weapon(&self, ctx: &UnitCtx, weapon: WeaponId, heading: f32, pitch: f32) {
+        if !self.state.borrow().jumping {
+            aim(ctx, self.pieces, weapon.0 != 0, heading, pitch);
+        }
+    }
+
+    pub(super) fn build_piece(&self) -> Piece {
+        self.pieces.head
+    }
+
+    /// The jump gadget's calls. Returns whether `name` is one of them.
+    pub(super) fn named_call(&self, ctx: &UnitCtx, name: &str) -> bool {
+        let state = Rc::clone(&self.state);
+        let task = match name {
+            "PreJump" => TaskDefinition::with_state("gravitas-gravit-prejump", state, prejump),
+            "StartJump" => {
+                self.state.borrow_mut().jumping = true;
+                TaskDefinition::with_state("gravitas-gravit-startjump", state, startjump)
+            }
+            "HalfJump" => TaskDefinition::with_state("gravitas-gravit-midjump", state, midjump),
+            "StopJump" => {
+                self.state.borrow_mut().jumping = false;
+                TaskDefinition::with_state("gravitas-gravit-stopjump", state, stopjump)
+            }
+            "Jumping" => return true,
+            _ => return false,
+        };
+        ctx.signal(SIG_IDLE);
+        ctx.signal(SIG_WALK);
+        ctx.signal(SIG_STOP);
+        ctx.signal(SIG_AIM);
+        ctx.signal(SIG_JUMP);
+        ctx.spawn(task);
+        true
+    }
 }
 
-pub(super) fn stop_moving(
-    ctx: &UnitCtx,
-    _pieces: GravitPieces,
-    state: Rc<RefCell<GravitAnimationState>>,
-) {
-    ctx.signal(SIG_WALK);
-    ctx.spawn(TaskDefinition::with_state(
-        "gravitas-gravit-idle",
-        state,
-        idle,
-    ));
-}
-
-pub(super) fn aim(ctx: &UnitCtx, pieces: GravitPieces, left: bool, heading: f32, pitch: f32) {
+fn aim(ctx: &UnitCtx, pieces: GravitPieces, left: bool, heading: f32, pitch: f32) {
     ctx.signal(SIG_AIM);
     ctx.signal(SIG_IDLE);
     ctx.signal(SIG_STOP);
@@ -152,26 +233,6 @@ pub(super) fn aim(ctx: &UnitCtx, pieces: GravitPieces, left: bool, heading: f32,
         0.0,
     );
     turn(ctx, arm, Axis::X, -pitch, 5.0);
-}
-
-pub(super) fn jump_task(
-    ctx: &UnitCtx,
-    state: Rc<RefCell<GravitAnimationState>>,
-    name: &'static str,
-) {
-    ctx.signal(SIG_IDLE);
-    ctx.signal(SIG_WALK);
-    ctx.signal(SIG_STOP);
-    ctx.signal(SIG_AIM);
-    ctx.signal(SIG_JUMP);
-    let task = match name {
-        "PreJump" => TaskDefinition::with_state("gravitas-gravit-prejump", state, prejump),
-        "StartJump" => TaskDefinition::with_state("gravitas-gravit-startjump", state, startjump),
-        "HalfJump" => TaskDefinition::with_state("gravitas-gravit-midjump", state, midjump),
-        "StopJump" => TaskDefinition::with_state("gravitas-gravit-stopjump", state, stopjump),
-        _ => return,
-    };
-    ctx.spawn(task);
 }
 
 async fn idle(state: Rc<RefCell<GravitAnimationState>>, ctx: UnitCtx) {
