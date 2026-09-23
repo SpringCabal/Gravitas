@@ -29,6 +29,14 @@ pub fn handle(message: &str) {
         "spark" => {
             let velocity_x = number(&mut fields).unwrap_or(0.0);
             let velocity_z = number(&mut fields).unwrap_or(0.0);
+            let spread = number(&mut fields).unwrap_or(0.0);
+            // Like the Lua effect, every spark starts at its own point inside
+            // a cube around the unit.
+            let position = spring::types::Float3 {
+                x: position.x + spread * signed_random(),
+                y: position.y + spread * signed_random(),
+                z: position.z + spread * signed_random(),
+            };
             crate::fire::electric_spark(position, magnitude, [velocity_x, velocity_z]);
         }
         _ => {}
@@ -47,4 +55,21 @@ fn number<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<f32> {
         .next()
         .and_then(|value| value.parse::<f32>().ok())
         .filter(|value| value.is_finite())
+}
+
+thread_local! {
+    static SEED: core::cell::Cell<u32> = const { core::cell::Cell::new(0x9E37_79B9) };
+}
+
+/// A value in [-1, 1) from a local xorshift: the scatter is only drawn, never
+/// part of the game state.
+fn signed_random() -> f32 {
+    SEED.with(|seed| {
+        let mut x = seed.get();
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+        seed.set(x);
+        (x >> 8) as f32 / (1u32 << 23) as f32 - 1.0
+    })
 }

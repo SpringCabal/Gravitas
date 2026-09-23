@@ -50,7 +50,7 @@ impl Gadget<Global> for ElectrafiGadget {
                 shock.attacker_id,
                 spring::types::Float3::default(),
             );
-            emit_spark(shock.unit_id, shock.intensity, frame);
+            emit_spark(shock.unit_id, shock.intensity);
         }
         for arc in arcs {
             let _ = spring::send_to_unsynced(&format!(
@@ -63,31 +63,15 @@ impl Gadget<Global> for ElectrafiGadget {
 
 const PARALYZING: f32 = 1.0;
 
-fn emit_spark(unit_id: i32, intensity: f32, frame: i32) {
-    let Some(mut position) = units::position(unit_id) else {
+/// The ui module scatters the sparks over a cube of half the unit's radius.
+fn emit_spark(unit_id: i32, intensity: f32) {
+    let Some(position) = units::position(unit_id) else {
         return;
     };
-    // Like the Lua gadget, start every spark at an independent point inside a
-    // radius/2 cube around the unit.
-    let radius = spring::units_info::get_unit_radius(unit_id).unwrap_or(0.0);
-    let spread = radius * 0.5;
-    let seed = (unit_id as u64)
-        .wrapping_mul(2_862_933_555_777_941_757)
-        .wrapping_add(frame as u64);
-    position.x += spread * signed_random(seed);
-    position.y += spread * signed_random(seed.wrapping_add(1));
-    position.z += spread * signed_random(seed.wrapping_add(2));
+    let spread = spring::units_info::get_unit_radius(unit_id).unwrap_or(0.0) * 0.5;
     let velocity = spring::units_info::get_unit_velocity(unit_id).unwrap_or_default();
     let _ = spring::send_to_unsynced(&format!(
-        "GRAVITAS_FX|spark|{}|{}|{}|{intensity}|{}|{}",
+        "GRAVITAS_FX|spark|{}|{}|{}|{intensity}|{}|{}|{spread}",
         position.x, position.y, position.z, velocity.x, velocity.z
     ));
-}
-
-fn signed_random(seed: u64) -> f32 {
-    let mixed = seed
-        .wrapping_mul(6_364_136_223_846_793_005)
-        .wrapping_add(1_442_695_040_888_963_407);
-    let unit = ((mixed >> 40) as u32) as f32 / 16_777_216.0;
-    unit * 2.0 - 1.0
 }

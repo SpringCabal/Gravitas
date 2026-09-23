@@ -7,6 +7,7 @@ use spring::cus::{
 };
 
 mod gait;
+mod stun;
 
 use super::common::{SIG_AIM, SIG_ANIMATION, explode, turn};
 use gait::{animate, wait_for_turn};
@@ -16,6 +17,9 @@ pub(super) const DEGREES: f32 = PI / 180.0;
 #[derive(Clone, Copy)]
 struct RobotPieces {
     pub center: Piece,
+    pub body: Piece,
+    pub blade_up_01: Piece,
+    pub blade_up_02: Piece,
     pub leg_front_01: Piece,
     pub leg_front_02: Piece,
     pub leg_rear_01: Piece,
@@ -48,6 +52,9 @@ impl RobotPieces {
         let p = |name: &str| ctx.piece(name);
         Self {
             center: p("center"),
+            body: p("Body"),
+            blade_up_01: p("bladeup01"),
+            blade_up_02: p("bladeup02"),
             leg_front_01: p("legfront01"),
             leg_front_02: p("legfront02"),
             leg_rear_01: p("legrear01"),
@@ -90,6 +97,8 @@ struct RobotAnimationState {
     pub kind: RobotKind,
     pub started: bool,
     pub moving: bool,
+    /// Paralyzed: the walk and idle cycles give way to the stun spasm.
+    pub stunned: bool,
     pub aiming: bool,
     pub explicit_target: bool,
     pub last_heading: f32,
@@ -110,6 +119,7 @@ impl RobotScript {
                 kind,
                 started: false,
                 moving: false,
+                stunned: false,
                 aiming: false,
                 explicit_target: false,
                 last_heading: 0.0,
@@ -226,6 +236,11 @@ fn create(
         "gravitas-robot-animation",
         Rc::clone(&state),
         animate,
+    ));
+    ctx.spawn(TaskDefinition::with_state(
+        "gravitas-robot-stun-detect",
+        Rc::clone(&state),
+        stun::detect,
     ));
     ctx.spawn(TaskDefinition::with_state(
         "gravitas-robot-target-watch",

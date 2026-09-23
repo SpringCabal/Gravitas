@@ -6,7 +6,7 @@ use core::cell::RefCell;
 use spring::cus::{Axis, Duration, Piece, UnitCtx};
 
 use super::super::common::{SIG_ANIMATION, move_piece, turn};
-use super::{DEGREES, RobotAnimationState, RobotKind};
+use super::{DEGREES, RobotAnimationState, RobotKind, stun};
 
 pub(super) async fn animate(state: Rc<RefCell<RobotAnimationState>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_ANIMATION);
@@ -34,6 +34,9 @@ async fn animate_projector(state: Rc<RefCell<RobotAnimationState>>, ctx: UnitCtx
             };
             let pause_ms = if walk_phase == 0 { 100 } else { 66 };
             projector_walk_phase(&state, &ctx, second, wait_frames, pause_ms).await;
+            if second {
+                stun::while_stunned(&state, &ctx).await;
+            }
             walk_phase += 1;
             if !state.borrow().moving {
                 break;
@@ -46,6 +49,7 @@ async fn animate_projector(state: Rc<RefCell<RobotAnimationState>>, ctx: UnitCtx
                 break;
             }
             projector_idle_phase(&state, &ctx, true).await;
+            stun::while_stunned(&state, &ctx).await;
         }
 
         ctx.sleep(Duration::from_millis(100)).await;
@@ -68,6 +72,9 @@ async fn animate_boss(state: Rc<RefCell<RobotAnimationState>>, ctx: UnitCtx) {
             };
             let pause_ms = if walk_phase == 0 { 100 } else { 66 };
             boss_walk_phase(&state, &ctx, second, wait_frames, pause_ms).await;
+            if second {
+                stun::while_stunned(&state, &ctx).await;
+            }
             walk_phase += 1;
             if !state.borrow().moving {
                 // projector_boss.lua has no boolMove check between its A and
@@ -81,6 +88,7 @@ async fn animate_boss(state: Rc<RefCell<RobotAnimationState>>, ctx: UnitCtx) {
                     };
                     ctx.sleep_frames(2).await;
                     boss_walk_phase(&state, &ctx, true, wait_frames, 0).await;
+                    stun::while_stunned(&state, &ctx).await;
                     walk_phase += 1;
                 }
                 break;
@@ -94,6 +102,7 @@ async fn animate_boss(state: Rc<RefCell<RobotAnimationState>>, ctx: UnitCtx) {
             // points as Lua.
             boss_idle_phase(&state, &ctx, false).await;
             boss_idle_phase(&state, &ctx, true).await;
+            stun::while_stunned(&state, &ctx).await;
         }
 
         ctx.sleep(Duration::from_millis(100)).await;
