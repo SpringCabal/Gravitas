@@ -34,14 +34,11 @@ pub fn look(position: Float3, height: f32) {
     ));
 }
 
-// Input simulation stays on the synced side. It used to bounce through the ui
-// module (synced -> GRAVITAS_SHOT -> ui -> "gravitas|..." -> synced), which no
-// longer works: a headless build has no ui world, so nothing was driving the
-// player. Feeding the same PlayerCommand the ui module would have produced keeps
-// the exercised path identical without the round trip.
+// Input is simulated on the synced side, because a headless run has no ui
+// module. The PlayerCommand is the one the ui module's message would produce.
 pub fn hold_jump(x: f32, z: f32) {
     // The height matters: a jump is refused as TooHigh unless the goal sits at
-    // the terrain, which is what the ui module's cursor trace used to supply.
+    // the terrain, which is what the ui module's cursor trace supplies.
     let command = PlayerCommand {
         target_x: x,
         target_y: units::ground_height(x, z),
@@ -58,8 +55,8 @@ pub fn release_jump() {
     player_command(PlayerCommand::default());
 }
 
-/// Re-issues a held command every frame, the way the ui module's per-frame poll
-/// used to. `Player::update` consumes `pending` each frame, so a single accept
+/// Re-issues a held command every frame, like the ui module's per-frame poll.
+/// `Player::update` consumes `pending` each frame, so a single accept
 /// would only ever be one frame of input.
 pub fn pump_held_input() {
     let Some(command) = HELD.with(|held| held.get()) else {
@@ -149,7 +146,5 @@ pub fn moved(from: Option<Float3>, to: Option<Float3>, minimum: f32) -> bool {
 }
 
 pub fn halt(unit_id: i32) {
-    let _ = spring::give_order_to_unit(unit_id, CMD_STOP, &[], 0, 0);
+    let _ = spring::give_order_to_unit(unit_id, crate::cmd::STOP, &[], 0, 0);
 }
-
-const CMD_STOP: i32 = 0;

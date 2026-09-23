@@ -528,14 +528,14 @@ async fn projector_idle_phase(
         (p.r_blade_01, -4.0),
         (p.r_blade_02, -4.0),
     ] {
-        t_p(ctx, piece, degrees * sign, 0.25);
+        turn_x(ctx, piece, degrees * sign, 0.25);
     }
     // tP(..., true) on rblade02 is a real Lua WaitForTurn.  Preserve that
     // yield instead of replacing it with a guessed timer.
     wait_for_turn(ctx, p.r_blade_02).await;
     if !state.borrow().aiming {
-        t_p(ctx, p.arm_up_01, if second { 10.0 } else { 5.0 }, 0.05);
-        t_p(ctx, p.arm_up_02, if second { 10.0 } else { 5.0 }, 0.05);
+        turn_x(ctx, p.arm_up_01, if second { 10.0 } else { 5.0 }, 0.05);
+        turn_x(ctx, p.arm_up_02, if second { 10.0 } else { 5.0 }, 0.05);
     }
     move_piece(
         ctx,
@@ -609,11 +609,11 @@ async fn boss_idle_phase(state: &Rc<RefCell<RobotAnimationState>>, ctx: &UnitCtx
             (p.r_blade_04, -4.0),
             (p.r_blade_01, -4.0),
         ] {
-            t_p(ctx, piece, value, 0.25);
+            turn_x(ctx, piece, value, 0.25);
         }
-        t_p(ctx, p.r_blade_03, -4.0, 0.25);
+        turn_x(ctx, p.r_blade_03, -4.0, 0.25);
         wait_for_turn(ctx, p.r_blade_03).await;
-        t_p(ctx, p.r_blade_02, -4.0, 0.25);
+        turn_x(ctx, p.r_blade_02, -4.0, 0.25);
         wait_for_turn(ctx, p.r_blade_02).await;
     } else {
         for (piece, value) in [
@@ -629,14 +629,14 @@ async fn boss_idle_phase(state: &Rc<RefCell<RobotAnimationState>>, ctx: &UnitCtx
             (p.r_blade_04, 4.0),
             (p.r_blade_01, 4.0),
         ] {
-            t_p(ctx, piece, value, 0.25);
+            turn_x(ctx, piece, value, 0.25);
         }
-        t_p(ctx, p.r_blade_02, 4.0, 0.25);
+        turn_x(ctx, p.r_blade_02, 4.0, 0.25);
         wait_for_turn(ctx, p.r_blade_02).await;
     }
     if !state.borrow().aiming {
-        t_p(ctx, p.arm_up_01, if second { 10.0 } else { 5.0 }, 0.05);
-        t_p(ctx, p.arm_up_02, if second { 10.0 } else { 5.0 }, 0.05);
+        turn_x(ctx, p.arm_up_01, if second { 10.0 } else { 5.0 }, 0.05);
+        turn_x(ctx, p.arm_up_02, if second { 10.0 } else { 5.0 }, 0.05);
     }
     move_piece(
         ctx,
@@ -659,7 +659,8 @@ fn turn_degrees(ctx: &UnitCtx, piece: Piece, axis: Axis, degrees: f32, speed: f3
     turn(ctx, piece, axis, degrees * DEGREES, speed);
 }
 
-fn t_p(ctx: &UnitCtx, piece: Piece, x_degrees: f32, speed: f32) {
+/// The Lua toolkit's `tP(piece, x, 0, 0, speed)`: turn about X, zero Y and Z.
+fn turn_x(ctx: &UnitCtx, piece: Piece, x_degrees: f32, speed: f32) {
     turn_degrees(ctx, piece, Axis::X, x_degrees, speed);
     turn(ctx, piece, Axis::Y, 0.0, speed);
     turn(ctx, piece, Axis::Z, 0.0, speed);

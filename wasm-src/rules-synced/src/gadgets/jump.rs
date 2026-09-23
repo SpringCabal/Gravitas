@@ -23,7 +23,7 @@ impl Gadget<Global> for JumpGadget {
         if frame_consumed() {
             return;
         }
-        let _ = state::with_world(|world| probe::report_late(world, frame));
+        probe::report_levelled(frame);
         let _ = state::with_world(|world| world.player.update(frame));
         orchestration::start_jump();
         orchestration::land_jumps(frame);

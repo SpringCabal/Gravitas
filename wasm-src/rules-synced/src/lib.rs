@@ -1,5 +1,6 @@
 extern crate alloc;
 
+mod cmd;
 mod defs;
 mod diagnostics;
 mod effects;
@@ -7,6 +8,7 @@ mod electrafi;
 mod falldamage;
 mod fire;
 mod gadgets;
+mod hazard;
 mod impulse;
 mod jump;
 mod level;
@@ -28,7 +30,6 @@ mod tests;
 mod unit_scripts;
 mod units;
 mod walls;
-mod weapons;
 
 spring_addons::export_rules_gadgets! {
     state: state::Global,

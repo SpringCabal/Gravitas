@@ -125,16 +125,9 @@ impl Impulses {
 }
 
 fn weapon_impulse(weapon_def_id: i32) -> Option<f32> {
-    if let Some(value) = spring::weapon_defs::get_weapon_def_custom_param(weapon_def_id, "impulse")
+    spring::weapon_defs::get_weapon_def_custom_param(weapon_def_id, "impulse")
         .ok()
         .and_then(|value| value.parse().ok())
-    {
-        return Some(value);
-    }
-    crate::weapons::IMPULSE_WEAPONS
-        .iter()
-        .find(|weapon| spring::weapon_defs::get_weapon_def_id(weapon.name) == Ok(weapon_def_id))
-        .map(|weapon| weapon.impulse)
 }
 
 fn unit_mass(unit_def_id: i32) -> f32 {

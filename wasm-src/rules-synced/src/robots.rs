@@ -79,7 +79,6 @@ const DEFAULT_ATTACK_RADIUS: f32 = 100.0;
 const SAFE_SCORE: f32 = 1.0;
 const UNSAFE_SCORE: f32 = -3.0;
 const REJECT_SCORE: f32 = -1.0e10;
-const ANY_ALLEGIANCE: i32 = -1;
 
 impl Robots {
     fn is_busy(&self, unit_id: i32, frame: i32) -> bool {
@@ -116,10 +115,10 @@ fn is_paralyzed(unit_id: i32) -> bool {
 }
 
 fn inanimate_radius(unit_id: i32, unit_def_id: i32) -> f32 {
-    let key = if units::def_id("fire") == Some(unit_def_id) {
-        "fireSize"
+    let key = if units::def_id(crate::fire::FIRE) == Some(unit_def_id) {
+        crate::fire::SIZE_PARAM
     } else if units::def_id(crate::electrafi::ELECTRAFI) == Some(unit_def_id) {
-        "elecSize"
+        crate::electrafi::SIZE_PARAM
     } else {
         return DEFAULT_ATTACK_RADIUS;
     };
@@ -127,21 +126,7 @@ fn inanimate_radius(unit_id: i32, unit_def_id: i32) -> f32 {
 }
 
 fn hazards_near(position: Float3, radius: f32) -> Vec<Hazard> {
-    let mut output = alloc::vec![0i32; 128];
-    let found = 'query: {
-        for _ in 0..3 {
-            match spring::get_units_in_sphere_into(position, radius, ANY_ALLEGIANCE, &mut output) {
-                Ok(spring::BufferFill::Complete(count)) => break 'query count,
-                Ok(spring::BufferFill::Insufficient { required }) => {
-                    output.resize(required.max(output.len() + 1), 0);
-                }
-                Err(_) => return Vec::new(),
-            }
-        }
-        return Vec::new();
-    };
-    output.truncate(found);
-    output
+    units::units_in_sphere(position, radius)
         .into_iter()
         .filter_map(|unit_id| {
             let def_id = units::def_of(unit_id)?;

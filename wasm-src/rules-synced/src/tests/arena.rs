@@ -1,6 +1,6 @@
 use spring::types::Float3;
 
-use crate::units;
+use crate::{cmd, units};
 
 pub struct Arena {
     pub centre: Float3,
@@ -50,8 +50,12 @@ pub fn build() -> Option<Arena> {
     if arena.missing() {
         return None;
     }
-    size_field(arena.fire, FIRE_SIZE_PARAM, FIRE_SIZE);
-    size_field(arena.electrafi, ELECTRAFI_SIZE_PARAM, ELECTRAFI_SIZE);
+    size_field(arena.fire, crate::fire::SIZE_PARAM, FIRE_SIZE);
+    size_field(
+        arena.electrafi,
+        crate::electrafi::SIZE_PARAM,
+        ELECTRAFI_SIZE,
+    );
     size_field(arena.revivable, RESPAWNABLE_PARAM, 1.0);
     protect(arena.protected);
     protect(arena.pusher);
@@ -112,8 +116,6 @@ const ELECTRAFI: &str = "electrafi";
 const GRAVIT: &str = "gravit";
 
 const GATE_OFFSET: f32 = 110.0;
-const FIRE_SIZE_PARAM: &str = "fireSize";
-const ELECTRAFI_SIZE_PARAM: &str = "elecSize";
 const RESPAWNABLE_PARAM: &str = "respawnable";
 const BARREL_REACH: f32 = 60.0;
 const FIRE_SIZE: f32 = 150.0;
@@ -140,15 +142,10 @@ fn spawn(name: &str, centre: Float3, rig: usize, offset_x: f32, offset_z: f32) -
     let Some(unit_id) = units::create(name, position, team) else {
         return -1;
     };
-    let _ = spring::give_order_to_unit(unit_id, CMD_FIRE_STATE, &[HOLD_FIRE], 0, 0);
-    let _ = spring::give_order_to_unit(unit_id, CMD_MOVE_STATE, &[HOLD_POSITION], 0, 0);
+    let _ = spring::give_order_to_unit(unit_id, cmd::FIRE_STATE, &[cmd::FIRE_STATE_HOLD], 0, 0);
+    let _ = spring::give_order_to_unit(unit_id, cmd::MOVE_STATE, &[cmd::MOVE_STATE_HOLD], 0, 0);
     unit_id
 }
-
-const CMD_FIRE_STATE: i32 = 45;
-const CMD_MOVE_STATE: i32 = 50;
-const HOLD_FIRE: f32 = 0.0;
-const HOLD_POSITION: f32 = 0.0;
 
 fn rig_position(centre: Float3, rig: usize, offset_x: f32, offset_z: f32) -> Float3 {
     let column = (rig % RIG_COLUMNS) as f32 - 1.5;

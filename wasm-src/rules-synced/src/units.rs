@@ -17,11 +17,9 @@ pub const WEAPON_PUSH: i32 = 1;
 pub const WEAPON_PULL: i32 = 2;
 
 const DEFAULT_FACING: i32 = 0;
-const CMD_FIRE_STATE: i32 = 45;
-const CMD_MOVE_STATE: i32 = 50;
 const DEGREES_TO_RADIANS: f32 = core::f32::consts::PI / 180.0;
 const ANY_ALLEGIANCE: i32 = -1;
-const CYLINDER_CAPACITY: usize = 128;
+const QUERY_CAPACITY: usize = 128;
 const QUERY_ATTEMPTS: usize = 2;
 
 thread_local! {
@@ -62,8 +60,20 @@ pub fn spawn(spawn: &Spawn) -> Option<i32> {
     for (name, value) in spawn.rules {
         let _ = spring::set_unit_rules_param_f32(unit_id, name, *value, RULES_PARAM_PRIVATE);
     }
-    let _ = spring::give_order_to_unit(unit_id, CMD_FIRE_STATE, &[spawn.fire_state as f32], 0, 0);
-    let _ = spring::give_order_to_unit(unit_id, CMD_MOVE_STATE, &[spawn.move_state as f32], 0, 0);
+    let _ = spring::give_order_to_unit(
+        unit_id,
+        crate::cmd::FIRE_STATE,
+        &[spawn.fire_state as f32],
+        0,
+        0,
+    );
+    let _ = spring::give_order_to_unit(
+        unit_id,
+        crate::cmd::MOVE_STATE,
+        &[spawn.move_state as f32],
+        0,
+        0,
+    );
     Some(unit_id)
 }
 
@@ -107,19 +117,31 @@ pub fn mid_position(unit_id: i32) -> Option<Float3> {
 }
 
 pub fn units_in_cylinder(x: f32, z: f32, radius: f32) -> Vec<i32> {
-    let mut output = alloc::vec![0i32; CYLINDER_CAPACITY];
+    let mut units = units_in_rectangle(x - radius, z - radius, x + radius, z + radius);
+    units.retain(|unit_id| within_radius(*unit_id, x, z, radius));
+    units
+}
+
+pub fn units_in_rectangle(x1: f32, z1: f32, x2: f32, z2: f32) -> Vec<i32> {
+    query(|output| spring::get_units_in_rectangle_into(x1, z1, x2, z2, ANY_ALLEGIANCE, output))
+}
+
+pub fn units_in_sphere(centre: Float3, radius: f32) -> Vec<i32> {
+    query(|output| spring::get_units_in_sphere_into(centre, radius, ANY_ALLEGIANCE, output))
+}
+
+pub fn units_in_box(low: Float3, high: Float3) -> Vec<i32> {
+    query(|output| spring::get_units_in_box_into(low, high, ANY_ALLEGIANCE, output))
+}
+
+/// Runs a unit query into a buffer, growing it once if the engine reports
+/// more units than fit.
+fn query<E>(mut fill: impl FnMut(&mut [i32]) -> Result<spring::BufferFill, E>) -> Vec<i32> {
+    let mut output = alloc::vec![0i32; QUERY_CAPACITY];
     for _ in 0..QUERY_ATTEMPTS {
-        match spring::get_units_in_rectangle_into(
-            x - radius,
-            z - radius,
-            x + radius,
-            z + radius,
-            ANY_ALLEGIANCE,
-            &mut output,
-        ) {
+        match fill(&mut output) {
             Ok(spring::BufferFill::Complete(count)) => {
                 output.truncate(count);
-                output.retain(|unit_id| within_radius(*unit_id, x, z, radius));
                 return output;
             }
             Ok(spring::BufferFill::Insufficient { required }) => output.resize(required, 0),
@@ -168,6 +190,12 @@ fn generated_param(def_id: i32, key: &str) -> Option<&'static str> {
                 .find(|(candidate, _)| *candidate == key)
                 .map(|(_, value)| *value)
         })
+}
+
+pub fn game_frame() -> i32 {
+    spring::game::get_game_frame(0)
+        .map(|value| (value.low16 | (value.high16 << 16)) as i32)
+        .unwrap_or(0)
 }
 
 pub fn valid(unit_id: i32) -> bool {

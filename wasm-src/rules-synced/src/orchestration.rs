@@ -1,6 +1,4 @@
-//! The per-frame steps the gadgets drive, and the unit call-in bodies.
-//!
-//! These were the private helpers of the original `callins` module.
+//! The per-frame steps the gadgets drive.
 
 use alloc::format;
 
@@ -79,19 +77,17 @@ pub fn apply_electrafi(frame: i32) {
 
 pub fn move_away(avoidance: Avoidance) {
     if avoidance.replace_order {
-        let _ = spring::give_order_to_unit(avoidance.unit_id, CMD_STOP, &[], 0, 0);
+        let _ = spring::give_order_to_unit(avoidance.unit_id, crate::cmd::STOP, &[], 0, 0);
     }
     let _ = spring::give_order_to_unit(
         avoidance.unit_id,
-        CMD_MOVE,
+        crate::cmd::MOVE,
         &[avoidance.goal.x, avoidance.goal.y, avoidance.goal.z],
         0,
         0,
     );
 }
 
-const CMD_STOP: i32 = 0;
-const CMD_MOVE: i32 = 10;
 const PARALYZING: f32 = 1.0;
 
 pub fn apply_mission(frame: i32) {
@@ -119,9 +115,8 @@ fn emit_spark(unit_id: i32, intensity: f32, frame: i32) {
     let Some(mut position) = crate::units::position(unit_id) else {
         return;
     };
-    // The Lua gadget starts every spark at an independent point inside a
-    // radius/2 cube around the unit.  Sending the unit centre made the Rust
-    // effect collapse into a bright, repetitive disc.
+    // Like the Lua gadget, start every spark at an independent point inside a
+    // radius/2 cube around the unit.
     let radius = spring::units_info::get_unit_radius(unit_id).unwrap_or(0.0);
     let spread = radius * 0.5;
     let seed = (unit_id as u64)
@@ -162,7 +157,6 @@ pub fn apply_fire(frame: i32) {
         );
         emit_burn(burn.unit_id, burn.size_mult);
     }
-    let _ = state::with_world(|world| world.fires.take_extinguished());
     let flames = state::with_world(|world| world.fires.flames(frame)).unwrap_or_default();
     for flame in flames {
         let _ = spring::send_to_unsynced(&alloc::format!(

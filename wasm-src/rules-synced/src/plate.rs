@@ -120,12 +120,11 @@ impl Plates {
 }
 
 pub fn set_state(unit_id: i32, active: bool) {
-    let _ = spring::give_order_to_unit(unit_id, CMD_ONOFF, &[f32::from(active)], 0, 0);
+    let _ = spring::give_order_to_unit(unit_id, crate::cmd::ONOFF, &[f32::from(active)], 0, 0);
 }
 
 const UPDATE_RATE: i32 = 5;
 const PLATE_ACTIVATION_RANGE: f32 = 40.0;
-const CMD_ONOFF: i32 = 85;
 const GATE: &str = "gate";
 
 impl Plates {

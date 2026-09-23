@@ -66,26 +66,17 @@ pub fn kill_fallen(frame: i32) {
     let Ok(map) = spring::game::get_game_map_info(0) else {
         return;
     };
-    let mut output = alloc::vec![0i32; 256];
-    let found = match spring::get_units_in_box_into(
-        spring::types::Float3 {
-            x: 0.0,
-            y: FALL_FLOOR,
-            z: 0.0,
-        },
-        spring::types::Float3 {
-            x: map.map_size_x as f32,
-            y: FALL_CEILING,
-            z: map.map_size_z as f32,
-        },
-        ANY_ALLEGIANCE,
-        &mut output,
-    ) {
-        Ok(spring::BufferFill::Complete(count)) => count,
-        _ => return,
+    let low = spring::types::Float3 {
+        x: 0.0,
+        y: FALL_FLOOR,
+        z: 0.0,
     };
-    output.truncate(found);
-    for unit_id in output {
+    let high = spring::types::Float3 {
+        x: map.map_size_x as f32,
+        y: FALL_CEILING,
+        z: map.map_size_z as f32,
+    };
+    for unit_id in units::units_in_box(low, high) {
         let _ = spring::destroy_unit(
             unit_id,
             spring::generated::owned::unit_control::DestroyUnitOptions {
@@ -106,7 +97,6 @@ const EXPLOSION_CEG: &str = "flashnuke";
 const FALL_CHECK_RATE: i32 = 31;
 const FALL_FLOOR: f32 = -500.0;
 const FALL_CEILING: f32 = 50.0;
-const ANY_ALLEGIANCE: i32 = -1;
 
 fn set_flag(unit_id: i32, unit_def_id: i32, key: &str) {
     if units::custom_param_is_one(unit_def_id, key) {

@@ -54,7 +54,7 @@ impl Mission {
 }
 
 pub fn stun_electrafi_proximity(world: &World) {
-    for unit_id in units_in_all_electrafi_proximity(world) {
+    for unit_id in world.electrafi.units_in_proximity() {
         stun(unit_id);
     }
 }
@@ -63,7 +63,7 @@ pub fn issue_assault(assault: &Assault) {
     for unit_id in &assault.units {
         let _ = spring::give_order_to_unit(
             *unit_id,
-            CMD_FIGHT,
+            crate::cmd::FIGHT,
             &[
                 assault.target_x,
                 units::ground_height(assault.target_x, assault.target_z),
@@ -98,9 +98,6 @@ const PLAYER_ALLY_TEAM: i32 = 0;
 
 const ENTER_AREA_INTERVAL: i32 = 5;
 const STUN_MULTIPLIER: f32 = 1.5;
-const CMD_FIGHT: i32 = 16;
-const ANY_ALLEGIANCE: i32 = -1;
-const MAX_AREA_UNITS: usize = 512;
 
 impl Mission {
     fn track(&mut self, area_id: i32, inside: bool) {
@@ -140,20 +137,12 @@ fn build_assault(trigger: &level::EnterAreaTrigger) -> Option<Assault> {
 }
 
 fn units_in_area(area: &level::Area) -> Vec<i32> {
-    let mut output = alloc::vec![0i32; MAX_AREA_UNITS];
-    let found = match spring::get_units_in_rectangle_into(
+    units::units_in_rectangle(
         area.x1.min(area.x2),
         area.z1.min(area.z2),
         area.x1.max(area.x2),
         area.z1.max(area.z2),
-        ANY_ALLEGIANCE,
-        &mut output,
-    ) {
-        Ok(spring::BufferFill::Complete(count)) => count,
-        _ => return Vec::new(),
-    };
-    output.truncate(found);
-    output
+    )
 }
 
 fn stun(unit_id: i32) {
@@ -170,16 +159,4 @@ fn stun(unit_id: i32) {
             use_amounts: true,
         },
     );
-}
-
-fn units_in_all_electrafi_proximity(world: &World) -> Vec<i32> {
-    let mut units = Vec::new();
-    for field_id in world.electrafi.all_fields() {
-        for unit_id in world.electrafi.units_in_proximity(field_id) {
-            if !units.contains(&unit_id) {
-                units.push(unit_id);
-            }
-        }
-    }
-    units
 }

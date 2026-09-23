@@ -2,7 +2,7 @@
 
 use alloc::format;
 
-use crate::{diagnostics, level, mission, probe, state, tests, units};
+use crate::{diagnostics, level, mission, state, tests, units};
 
 pub fn take_setup_flag() -> bool {
     state::with_world(|world| {
@@ -92,8 +92,7 @@ fn reveal_map() {
     }
 }
 
-/// Link plates to gates once the deferred `UnitCreated` call-ins have
-/// registered everything the level spawned.
+/// Link plates to gates on the frame after the level spawned.
 pub fn link() {
     let _ = state::with_world(|world| {
         if !world.pending_link {
@@ -102,6 +101,5 @@ pub fn link() {
         world.pending_link = false;
         link_gates(world);
         mission::stun_electrafi_proximity(world);
-        probe::report(world);
     });
 }

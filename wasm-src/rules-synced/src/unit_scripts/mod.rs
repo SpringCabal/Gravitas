@@ -131,8 +131,11 @@ fn capabilities(kind: ScriptKind) -> ScriptCapabilities {
     ScriptCapabilities::new(bits)
 }
 
+/// Core-CUS instance ids are the unit id offset by a per-module tag ("GR").
+const INSTANCE_ID_BASE: u32 = 0x4752_0000;
+
 fn instance_id(unit: UnitId) -> u32 {
-    0x4752_0000u32.wrapping_add(unit.0 as u32)
+    INSTANCE_ID_BASE.wrapping_add(unit.0 as u32)
 }
 
 pub struct GravitasUnitScript {
@@ -248,20 +251,7 @@ impl UnitScript for GravitasUnitScript {
                 immobile_explode(ctx, "Cube", SfxFlags::EXPLODE);
             }
             Some(ScriptKind::Wall2) => {
-                for index in 1..=11 {
-                    let name = match index {
-                        1 => "frag1",
-                        2 => "frag2",
-                        3 => "frag3",
-                        4 => "frag4",
-                        5 => "frag5",
-                        6 => "frag6",
-                        7 => "frag7",
-                        8 => "frag8",
-                        9 => "frag9",
-                        10 => "frag10",
-                        _ => "frag11",
-                    };
+                for name in WALL2_FRAGMENTS {
                     immobile_explode(ctx, name, SfxFlags(SfxFlags::FALL.0 | SfxFlags::EXPLODE.0));
                 }
             }
@@ -420,6 +410,11 @@ fn robot_kind(kind: ScriptKind) -> Option<RobotKind> {
     }
 }
 
+const WALL2_FRAGMENTS: [&str; 11] = [
+    "frag1", "frag2", "frag3", "frag4", "frag5", "frag6", "frag7", "frag8", "frag9", "frag10",
+    "frag11",
+];
+
 fn immobile_explode(ctx: &UnitCtx, piece: &str, flags: SfxFlags) {
     let piece = common::unit_piece(ctx.unit(), piece);
     explode(ctx, piece, flags);
@@ -430,8 +425,6 @@ thread_local! {
     static PENDING_CALLS: RefCell<Vec<(i32, &'static str)>> = const { RefCell::new(Vec::new()) };
 }
 
-/// Queue map-authored and newly created units.  Attachment is deferred until
-/// the Core-CUS tick so a gadget callback never recursively attaches a script.
 /// Queue a named unit-script call for the next Core-CUS tick.
 ///
 /// The rules run inside this same module, so `call_unit_script` goes through
@@ -444,6 +437,8 @@ pub fn queue_call(unit: i32, function_name: &'static str) {
     }
 }
 
+/// Queue a unit for script attachment on the next Core-CUS tick, so a gadget
+/// callin never attaches a script from inside the module.
 pub fn queue_unit_created(unit: i32, def: i32) {
     if unit >= 0 {
         PENDING_UNITS.with(|pending| pending.borrow_mut().push((unit, def)));
@@ -492,12 +487,6 @@ impl GravitasCusModule {
         }
     }
 
-    fn current_game_frame() -> u64 {
-        spring::game::get_game_frame(0)
-            .map(|value| (value.low16 | (value.high16 << 16)) as u64)
-            .unwrap_or(0)
-    }
-
     fn apply_pending_calls(&mut self) {
         let pending = PENDING_CALLS.with(|calls| core::mem::take(&mut *calls.borrow_mut()));
         for (unit_id, function_name) in pending {
@@ -513,9 +502,9 @@ impl GravitasCusModule {
     }
 
     fn sync_instance_frame(&mut self, handle: CusHandle) {
-        let _ = self
-            .registry
-            .with(handle, |instance| instance.tick(Self::current_game_frame()));
+        let _ = self.registry.with(handle, |instance| {
+            instance.tick(crate::units::game_frame() as u64)
+        });
     }
 }
 
