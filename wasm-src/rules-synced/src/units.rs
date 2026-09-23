@@ -156,10 +156,7 @@ pub fn def_of(unit_id: i32) -> Option<i32> {
 }
 
 pub fn custom_param(def_id: i32, key: &str) -> Option<String> {
-    if let Ok(value) = spring::unit_defs::get_unit_def_custom_param(def_id, key) {
-        return Some(value);
-    }
-    generated_param(def_id, key).map(String::from)
+    spring::unit_defs::get_unit_def_custom_param(def_id, key).ok()
 }
 
 pub fn has_custom_param(def_id: i32, key: &str) -> bool {
@@ -177,19 +174,6 @@ pub fn has_custom_param(def_id: i32, key: &str) -> bool {
 
 pub fn custom_param_is_one(def_id: i32, key: &str) -> bool {
     custom_param(def_id, key).is_some_and(|value| value.parse::<f32>() == Ok(1.0))
-}
-
-fn generated_param(def_id: i32, key: &str) -> Option<&'static str> {
-    let name = def_name(def_id)?;
-    crate::defs::DEF_PARAMS
-        .iter()
-        .find(|def| def.name == name)
-        .and_then(|def| {
-            def.params
-                .iter()
-                .find(|(candidate, _)| *candidate == key)
-                .map(|(_, value)| *value)
-        })
 }
 
 pub fn game_frame() -> i32 {
