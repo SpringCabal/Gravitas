@@ -12,6 +12,7 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
             GuiHudWidget::new(),
             GuiCameraWidget::new(),
             GuiInputWidget::new(),
+            GuiUnselectableWidget::new(),
             GfxFireWidget::new(),
             GuiHudPauseWidget::new(),
             SndMusicWidget::new(),

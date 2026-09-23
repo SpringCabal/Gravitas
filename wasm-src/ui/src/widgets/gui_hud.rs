@@ -42,7 +42,6 @@ impl Widget<Global> for GuiHudPauseWidget {
     }
 
     fn update(&self, _ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
-        crate::selection::suppress();
         hud::update_pause();
     }
 }

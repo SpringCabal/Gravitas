@@ -5,6 +5,7 @@ pub mod gfx_mapedge;
 pub mod gui_camera;
 pub mod gui_hud;
 pub mod gui_input;
+pub mod gui_unselectable;
 pub mod setup;
 pub mod snd_music;
 
@@ -15,5 +16,6 @@ pub use gfx_mapedge::GfxMapEdgeWidget;
 pub use gui_camera::GuiCameraWidget;
 pub use gui_hud::{GuiHudPauseWidget, GuiHudWidget};
 pub use gui_input::GuiInputWidget;
+pub use gui_unselectable::GuiUnselectableWidget;
 pub use setup::setup;
 pub use snd_music::SndMusicWidget;
