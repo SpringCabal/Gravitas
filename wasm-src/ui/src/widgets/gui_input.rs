@@ -68,14 +68,14 @@ impl Widget<Global> for GuiInputWidget {
             return EventResult::Handled;
         }
 
-        if event.key_code == 17
+        if event.key_code == KEY_CTRL_Q
             || (event.ctrl
                 && (event.matches("q")
                     || event.matches("Q")
-                    || event.key_code == 113
-                    || event.key_code == 81))
+                    || event.key_code == KEY_Q
+                    || event.key_code == KEY_Q_UPPER))
         {
-            crate::hud::quit();
+            crate::hud::reload();
             return EventResult::Handled;
         }
         input::key_press(event.key_code).into()
@@ -92,12 +92,13 @@ impl Widget<Global> for GuiInputWidget {
 
 const KEY_F11: i32 = 292;
 const KEY_F12: i32 = 293;
+/// Ctrl+Q as some platforms report it: the ASCII control character DC1.
+const KEY_CTRL_Q: i32 = 17;
+const KEY_Q: i32 = b'q' as i32;
+const KEY_Q_UPPER: i32 = b'Q' as i32;
 
 fn elapsed_frames() -> i32 {
-    let Ok(counter) = spring::game::get_game_frame(0) else {
-        return 0;
-    };
-    let frame = (counter.low16 | (counter.high16 << 16)) as i32;
+    let frame = crate::frame::current();
     state::with_state(|ui| {
         let elapsed = frame - ui.last_game_frame;
         ui.last_game_frame = frame;

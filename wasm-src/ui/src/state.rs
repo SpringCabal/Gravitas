@@ -17,10 +17,7 @@ pub struct HudBindings {
 
 pub struct UiState {
     pub context: u64,
-    pub document: u64,
     pub hud: Option<HudBindings>,
-    pub view_width: i32,
-    pub view_height: i32,
     pub default_layout_hidden: bool,
     pub bindings_applied: bool,
     pub player_unit: i32,
@@ -63,10 +60,7 @@ impl UiState {
     fn new() -> Self {
         Self {
             context: 0,
-            document: 0,
             hud: None,
-            view_width: 0,
-            view_height: 0,
             default_layout_hidden: false,
             bindings_applied: false,
             player_unit: -1,

@@ -60,19 +60,7 @@ fn apply_health(health: i32, max_health: i32) {
     });
 }
 
-const HEALTH_RAMP: [(f32, f32, f32); 3] = [(1.0, 0.0, 0.0), (0.8, 0.6, 0.0), (0.0, 0.75, 0.0)];
-
 fn health_color(ratio: f32) -> String {
-    let position = (HEALTH_RAMP.len() - 1) as f32 * ratio;
-    let index = (position as usize).min(HEALTH_RAMP.len() - 2);
-    let blend = position - index as f32;
-    let low = HEALTH_RAMP[index];
-    let high = HEALTH_RAMP[index + 1];
-    let channel = |low: f32, high: f32| (255.0 * (low * (1.0 - blend) + high * blend)) as i32;
-    format!(
-        "#{:02x}{:02x}{:02x}",
-        channel(low.0, high.0),
-        channel(low.1, high.1),
-        channel(low.2, high.2)
-    )
+    let [r, g, b] = crate::health::color(ratio).map(|channel| (255.0 * channel) as i32);
+    format!("#{r:02x}{g:02x}{b:02x}")
 }

@@ -53,10 +53,6 @@ pub fn mouse_press(_x: i32, _y: i32, button: i32) -> bool {
 pub fn mouse_release(_x: i32, _y: i32, _button: i32) {}
 
 pub fn key_press(key_code: i32) -> bool {
-    if key_code == KEY_F11 || key_code == KEY_F12 {
-        let _ = spring::send_commands("screenshot", "");
-        return true;
-    }
     set_key(key_code, true)
 }
 
@@ -70,8 +66,6 @@ const KEY_S: i32 = 115;
 const KEY_D: i32 = 100;
 const KEY_E: i32 = 101;
 const KEY_SPACE: i32 = 32;
-const KEY_F11: i32 = 292;
-const KEY_F12: i32 = 293;
 const KEY_UP: i32 = 273;
 const KEY_DOWN: i32 = 274;
 const KEY_RIGHT: i32 = 275;

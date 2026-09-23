@@ -11,7 +11,7 @@ pub fn create(context: u64) -> Option<HudBindings> {
     }
     let model = model.data_model_handle;
     bind_event(model, "endgameRestart", |_| restart());
-    bind_event(model, "endgameExit", |_| quit());
+    bind_event(model, "endgameExit", |_| reload());
     Some(HudBindings {
         health_percent: bind_percent(model, "healthPercent", 100.0)?,
         health_caption: bind_string(model, "healthCaption", "")?,
@@ -67,7 +67,8 @@ fn bind_string(model: u64, name: &str, initial: &str) -> Option<u64> {
     binding.success.then_some(binding.variable_handle)
 }
 
-pub fn quit() {
+/// Reload the game: the engine goes back to whatever started it.
+pub fn reload() {
     let _ = spring::send_commands("reloadforce", "");
 }
 
