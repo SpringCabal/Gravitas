@@ -2,6 +2,7 @@ use alloc::vec::Vec;
 
 use crate::units;
 
+#[derive(Default)]
 pub struct Plates {
     plates: Vec<Plate>,
     bitmask_links: Vec<BitmaskLink>,
@@ -26,29 +27,23 @@ struct Gate {
 }
 
 impl Plates {
-    pub fn new() -> Self {
-        Self {
-            plates: Vec::new(),
-            bitmask_links: Vec::new(),
-            gates: Vec::new(),
-            checks_enabled: false,
-        }
-    }
-
-    pub fn created(&mut self, unit_id: i32, unit_def_id: i32) {
+    /// Track a new plate or gate. Returns true for a plate.
+    pub fn created(&mut self, unit_id: i32, unit_def_id: i32) -> bool {
         if crate::defs::get().plate == Some(unit_def_id) {
             self.plates.push(Plate {
                 unit_id,
                 gate_id: None,
                 state: false,
             });
-            disable_collision(unit_id);
-        } else if is_gate(unit_id) {
+            return true;
+        }
+        if is_gate(unit_id) {
             self.gates.push(Gate {
                 unit_id,
                 state: false,
             });
         }
+        false
     }
 
     pub fn destroyed(&mut self, unit_id: i32) {
@@ -159,7 +154,8 @@ fn is_gate(unit_id: i32) -> bool {
     units::def_of(unit_id).is_some_and(|def_id| crate::defs::get().unit(def_id).gate)
 }
 
-fn disable_collision(unit_id: i32) {
+/// Plates are walked over: no collision, no blocking.
+pub fn disable_collision(unit_id: i32) {
     let _ = spring::set_unit_collision_volume_data(
         unit_id,
         spring::types::Float3::default(),

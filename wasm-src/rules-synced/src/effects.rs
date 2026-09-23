@@ -24,13 +24,8 @@ pub fn blocks_damage(unit_id: i32, paralyzer: bool) -> bool {
     paralyzer && rules_flag(unit_id, "nonparalyzable")
 }
 
-pub fn explode_barrel(unit_id: i32, unit_def_id: i32) {
-    if !crate::defs::get().unit(unit_def_id).barrel {
-        return;
-    }
-    let Some(position) = units::position(unit_id) else {
-        return;
-    };
+/// The blast of a barrel that was destroyed at `position`.
+pub fn explode_barrel(barrel: i32, position: spring::types::Float3) {
     let _ = spring::sound::play_sound_file(
         EXPLOSION_SOUND,
         EXPLOSION_VOLUME,
@@ -58,7 +53,7 @@ pub fn explode_barrel(unit_id: i32, unit_def_id: i32) {
             EXPLOSION_DAMAGE,
             0.0,
             -1,
-            unit_id,
+            barrel,
             spring::types::Float3::default(),
         );
     }

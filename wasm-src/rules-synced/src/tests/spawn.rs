@@ -1,3 +1,4 @@
+use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
 use crate::tests::record;
 use crate::units;
@@ -15,7 +16,7 @@ impl Case for Spawned {
         "spawn"
     }
 
-    fn step(&mut self, frame: i32) -> Step {
+    fn step(&mut self, _global: &Global, frame: i32) -> Step {
         if frame < VERDICT_FRAME {
             return Step::Wait;
         }

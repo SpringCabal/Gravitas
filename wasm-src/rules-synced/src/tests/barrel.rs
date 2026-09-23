@@ -1,3 +1,4 @@
+use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
 
 pub struct Barrel {
@@ -19,7 +20,7 @@ impl Case for Barrel {
         "barrel"
     }
 
-    fn step(&mut self, frame: i32) -> Step {
+    fn step(&mut self, _global: &Global, frame: i32) -> Step {
         match frame {
             BLAST_FRAME => self.blast(),
             VERDICT_FRAME => self.check(),

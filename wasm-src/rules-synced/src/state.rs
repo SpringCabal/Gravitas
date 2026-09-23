@@ -1,65 +1,65 @@
-use core::cell::RefCell;
+//! What the gadgets share. Everything else is owned by the gadget that uses it.
+//!
+//! Each part is its own `Resource`, borrowed only for the duration of a state
+//! update: never across an engine call that can raise a callin (creating,
+//! destroying, damaging or ordering a unit). A conflicting borrow panics.
+
+use core::cell::Cell;
 
 use alloc::vec::Vec;
 
-use crate::diagnostics;
-use crate::electrafi::Electrafi;
-use crate::falldamage::FallDamage;
-use crate::fire::Fires;
+use spring_addons::Resource;
+
+use crate::falldamage::FallImmunity;
 use crate::impulse::Impulses;
 use crate::jump::Jumps;
-use crate::mission::Mission;
 use crate::plate::Plates;
-use crate::player::Player;
-use crate::respawn::Respawns;
-use crate::robots::Robots;
+use crate::player::PlayerCommand;
+use crate::terrain::Terrain;
 
-pub struct World {
-    pub frame_consumed: bool,
-    pub pending_link: bool,
-    pub initialized: bool,
-    pub frame: i32,
+#[derive(Default)]
+pub struct Global {
+    /// The level being played.
+    pub level: Resource<Level>,
+    /// The unit the local player controls.
+    pub player_unit: Cell<Option<i32>>,
+    /// The latest input from the ui module, until the player gadget takes it.
+    pub player_input: Cell<Option<PlayerCommand>>,
+    /// Units in flight. The player gadget starts jumps; the jump gadget flies
+    /// and lands them.
+    pub jumps: Resource<Jumps>,
+    /// Units that don't take fall damage for a while (a jump landing).
+    pub fall_immunity: Resource<FallImmunity>,
+    /// Gravity-gun pushes collected in UnitPreDamaged, applied each frame.
+    pub impulses: Resource<Impulses>,
+    /// Plates and the gates they open, linked by the level setup.
+    pub plates: Resource<Plates>,
+    /// Terrain under walls and gates, levelled when they appear or open.
+    pub terrain: Resource<Terrain>,
+    pub restart: Restart,
+    /// `Some(victory)` once the game is over.
+    pub outcome: Cell<Option<bool>>,
+}
+
+/// The current level.
+#[derive(Default)]
+pub struct Level {
+    pub phase: Phase,
+    /// Scenario unit ids and the units spawned for them.
     pub spawned: Vec<(i32, i32)>,
-    created: Vec<i32>,
-    duplicates_reported: bool,
-    pub duplicate_creates: u32,
-    pub mission: Mission,
-    pub plates: Plates,
-    pub impulses: Impulses,
-    pub fall_damage: FallDamage,
-    pub jumps: Jumps,
-    pub electrafi: Electrafi,
-    pub robots: Robots,
-    pub fires: Fires,
-    pub respawns: Respawns,
-    pub player: Player,
 }
 
-thread_local! {
-    static WORLD: RefCell<World> = RefCell::new(World::new());
+#[derive(Clone, Copy, Default, PartialEq, Eq)]
+pub enum Phase {
+    /// Spawn the level on the next frame.
+    #[default]
+    Spawn,
+    /// Spawned; link plates and gates on the next frame.
+    Link,
+    Running,
 }
 
-impl World {
-    pub fn observe_created(&mut self, unit_id: i32) -> bool {
-        if self.created.contains(&unit_id) {
-            self.duplicate_creates += 1;
-            if !self.duplicates_reported {
-                self.duplicates_reported = true;
-                diagnostics::warning(&alloc::format!(
-                    "unit_created repeat: first is unit {unit_id} after {} unique",
-                    self.created.len()
-                ));
-            }
-            return false;
-        }
-        self.created.push(unit_id);
-        true
-    }
-
-    pub fn forget_created(&mut self, unit_id: i32) {
-        self.created.retain(|id| *id != unit_id);
-    }
-
+impl Level {
     pub fn unit_of(&self, scenario_id: i32) -> Option<i32> {
         self.spawned
             .iter()
@@ -68,46 +68,67 @@ impl World {
     }
 }
 
-impl World {
-    pub fn reset(&mut self) {
-        *self = World::new();
-    }
-}
-
-pub fn with_world<R>(function: impl FnOnce(&mut World) -> R) -> Option<R> {
-    WORLD.with(|world| match world.try_borrow_mut() {
-        Ok(mut world) => Some(function(&mut world)),
-        Err(_) => {
-            diagnostics::warning("world state re-entered; skipping update");
-            None
-        }
-    })
-}
-
-impl World {
-    fn new() -> Self {
-        Self {
-            initialized: false,
-            frame_consumed: false,
-            pending_link: false,
-            frame: 0,
-            created: Vec::new(),
-            duplicates_reported: false,
-            duplicate_creates: 0,
-            spawned: Vec::new(),
-            mission: Mission::new(),
-            plates: Plates::new(),
-            impulses: Impulses::new(),
-            fall_damage: FallDamage::new(),
-            jumps: Jumps::new(),
-            electrafi: Electrafi::new(),
-            robots: Robots::new(),
-            fires: Fires::new(),
-            respawns: Respawns::new(),
-            player: Player::new(),
-        }
-    }
-}
-
+/// A restart, from the request to the new level.
 #[derive(Default)]
-pub struct Global;
+pub struct Restart {
+    requested: Cell<bool>,
+    wiping: Cell<bool>,
+    /// Bumped on every restart, so gadgets can drop per-level state.
+    generation: Cell<u32>,
+}
+
+impl Restart {
+    pub fn request(&self) {
+        self.requested.set(true);
+    }
+
+    pub fn take_request(&self) -> bool {
+        self.requested.replace(false)
+    }
+
+    /// True while the old level's units are being removed: their deaths are
+    /// not gameplay (no explosions, respawns or game over).
+    pub fn wiping(&self) -> bool {
+        self.wiping.get()
+    }
+
+    pub fn begin_wipe(&self) {
+        self.wiping.set(true);
+        self.generation.set(self.generation.get().wrapping_add(1));
+    }
+
+    pub fn finish_wipe(&self) {
+        self.wiping.set(false);
+    }
+
+    pub fn generation(&self) -> u32 {
+        self.generation.get()
+    }
+}
+
+/// Gadget state that belongs to one level and starts over on a restart.
+pub struct PerLevel<T> {
+    generation: Cell<u32>,
+    value: core::cell::RefCell<T>,
+}
+
+impl<T: Default> Default for PerLevel<T> {
+    fn default() -> Self {
+        Self {
+            generation: Cell::new(0),
+            value: core::cell::RefCell::new(T::default()),
+        }
+    }
+}
+
+impl<T: Default> PerLevel<T> {
+    /// The value for the current level. Panics on a conflicting borrow.
+    pub fn get(&self, global: &Global) -> core::cell::RefMut<'_, T> {
+        let generation = global.restart.generation();
+        let mut value = self.value.borrow_mut();
+        if self.generation.replace(generation) != generation {
+            *value = T::default();
+        }
+        value
+    }
+}

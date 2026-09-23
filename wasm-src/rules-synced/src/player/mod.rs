@@ -1,7 +1,5 @@
 mod control;
 mod messages;
 
-pub use control::Player;
-#[cfg(feature = "e2e")]
-pub use control::PlayerCommand;
+pub use control::{Player, PlayerCommand, accept, apply, disable_auto_fire};
 pub use messages::parse;

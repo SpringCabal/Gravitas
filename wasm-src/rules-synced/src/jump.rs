@@ -2,6 +2,7 @@ use alloc::vec::Vec;
 
 use spring::types::Float3;
 
+use crate::state::Global;
 use crate::units;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -29,6 +30,7 @@ impl Outcome {
     }
 }
 
+#[derive(Default)]
 pub struct Jumps {
     active: Vec<Jump>,
 }
@@ -46,93 +48,39 @@ struct Jump {
     turn: f32,
 }
 
-impl Jumps {
-    pub fn new() -> Self {
-        Self { active: Vec::new() }
-    }
+/// What one jump does this frame.
+struct Flight {
+    unit_id: i32,
+    /// Where the unit is and which way it faces, once it has taken off.
+    pose: Option<(Float3, f32)>,
+    calls: Vec<&'static str>,
+    landed: bool,
+}
 
+impl Jumps {
     pub fn is_jumping(&self, unit_id: i32) -> bool {
         self.active.iter().any(|jump| jump.unit_id == unit_id)
     }
 
-    pub fn start(&mut self, unit_id: i32, goal_x: f32, goal_y: f32, goal_z: f32) -> Outcome {
-        if self.is_jumping(unit_id) {
-            return Outcome::Busy;
-        }
-        let Some(def_id) = units::def_of(unit_id) else {
-            return Outcome::Invalid;
-        };
-        if crate::defs::get().gravit != Some(def_id) {
-            return Outcome::Invalid;
-        }
-        let Some(start) = units::position(unit_id) else {
-            return Outcome::Invalid;
-        };
-        if !on_map(goal_x, goal_z) {
-            return Outcome::OutsideMap;
-        }
-        if (start.y - goal_y).abs() > CLIMB_LIMIT {
-            return Outcome::TooHigh;
-        }
-        let goal = Float3 {
-            x: goal_x,
-            y: units::ground_height(goal_x, goal_z),
-            z: goal_z,
-        };
-        let vector = Float3 {
-            x: goal.x - start.x,
-            y: goal.y - start.y,
-            z: goal.z - start.z,
-        };
-        let range = rules_param(unit_id, RANGE_PARAM).unwrap_or(RANGE);
-        let planar_distance = (vector.x * vector.x + vector.z * vector.z).sqrt();
-        if planar_distance > range {
-            let _ = spring::set_unit_move_goal(unit_id, goal, range, 0.0, false);
-            return Outcome::OutOfRange;
-        }
-        let line_distance = length(vector).max(MINIMUM_DISTANCE);
-        let vertex = Float3 {
-            x: start.x + vector.x * 0.5,
-            y: start.y + vector.y * 0.5 + HEIGHT,
-            z: start.z + vector.z * 0.5,
-        };
-        let flight_distance = distance(start, vertex) + distance(vertex, goal);
-        if flight_distance <= 0.0 {
-            return Outcome::Invalid;
-        }
-        let speed =
-            rules_param(unit_id, SPEED_PARAM).unwrap_or(SPEED) * line_distance / flight_distance;
-        let step = speed / line_distance;
-        if blocked(start, vector, step) {
-            return Outcome::Blocked;
-        }
-        let heading = spring::units_info::get_unit_heading(unit_id, true).unwrap_or(0.0);
-        let turn = shortest_turn(heading, atan2(vector.x, vector.z));
-        let _ = spring::move_ctrl::move_ctrl(unit_id, true);
-        call_script(unit_id, "PreJump");
-        self.active.push(Jump {
-            unit_id,
-            start,
-            vector,
-            height: HEIGHT,
-            step,
-            progress: 0.0,
-            delay: DELAY,
-            half_done: false,
-            heading,
-            turn,
-        });
-        Outcome::Started
+    pub fn forget(&mut self, unit_id: i32) {
+        self.active.retain(|jump| jump.unit_id != unit_id);
     }
 
-    pub fn update(&mut self) -> Vec<i32> {
-        let mut landed = Vec::new();
+    fn advance(&mut self) -> Vec<Flight> {
+        let mut flights = Vec::new();
         for jump in &mut self.active {
+            let mut flight = Flight {
+                unit_id: jump.unit_id,
+                pose: None,
+                calls: Vec::new(),
+                landed: false,
+            };
             if jump.delay > 0 {
                 jump.delay -= 1;
                 if jump.delay == 0 {
-                    call_script(jump.unit_id, "StartJump");
+                    flight.calls.push("StartJump");
                 }
+                flights.push(flight);
                 continue;
             }
             let progress = jump.progress;
@@ -142,29 +90,113 @@ impl Jumps {
                 y: jump.start.y + jump.vector.y * progress + arc * jump.height,
                 z: jump.start.z + jump.vector.z * progress,
             };
-            let _ = spring::set_unit_position(jump.unit_id, position);
-            units::face_radians(jump.unit_id, jump.heading + jump.turn * progress);
-            call_script(jump.unit_id, "Jumping");
+            flight.pose = Some((position, jump.heading + jump.turn * progress));
+            flight.calls.push("Jumping");
             if !jump.half_done && progress > 0.5 {
                 jump.half_done = true;
-                call_script(jump.unit_id, "HalfJump");
+                flight.calls.push("HalfJump");
             }
             jump.progress += jump.step;
-            if jump.progress > 1.0 {
-                landed.push(jump.unit_id);
-            }
+            flight.landed = jump.progress > 1.0;
+            flights.push(flight);
         }
-        for unit_id in &landed {
-            call_script(*unit_id, "StopJump");
-            let _ = spring::move_ctrl::move_ctrl(*unit_id, false);
-        }
-        self.active.retain(|jump| !landed.contains(&jump.unit_id));
-        landed
+        self.active.retain(|jump| jump.progress <= 1.0);
+        flights
     }
+}
 
-    pub fn forget(&mut self, unit_id: i32) {
-        self.active.retain(|jump| jump.unit_id != unit_id);
+/// Start a jump of `unit_id` to the goal, or say why not.
+pub fn start(global: &Global, unit_id: i32, goal_x: f32, goal_y: f32, goal_z: f32) -> Outcome {
+    if global.jumps.access().is_jumping(unit_id) {
+        return Outcome::Busy;
     }
+    let Some(def_id) = units::def_of(unit_id) else {
+        return Outcome::Invalid;
+    };
+    if crate::defs::get().gravit != Some(def_id) {
+        return Outcome::Invalid;
+    }
+    let Some(start) = units::position(unit_id) else {
+        return Outcome::Invalid;
+    };
+    if !on_map(goal_x, goal_z) {
+        return Outcome::OutsideMap;
+    }
+    if (start.y - goal_y).abs() > CLIMB_LIMIT {
+        return Outcome::TooHigh;
+    }
+    let goal = Float3 {
+        x: goal_x,
+        y: units::ground_height(goal_x, goal_z),
+        z: goal_z,
+    };
+    let vector = Float3 {
+        x: goal.x - start.x,
+        y: goal.y - start.y,
+        z: goal.z - start.z,
+    };
+    let range = rules_param(unit_id, RANGE_PARAM).unwrap_or(RANGE);
+    let planar_distance = (vector.x * vector.x + vector.z * vector.z).sqrt();
+    if planar_distance > range {
+        let _ = spring::set_unit_move_goal(unit_id, goal, range, 0.0, false);
+        return Outcome::OutOfRange;
+    }
+    let line_distance = length(vector).max(MINIMUM_DISTANCE);
+    let vertex = Float3 {
+        x: start.x + vector.x * 0.5,
+        y: start.y + vector.y * 0.5 + HEIGHT,
+        z: start.z + vector.z * 0.5,
+    };
+    let flight_distance = distance(start, vertex) + distance(vertex, goal);
+    if flight_distance <= 0.0 {
+        return Outcome::Invalid;
+    }
+    let speed =
+        rules_param(unit_id, SPEED_PARAM).unwrap_or(SPEED) * line_distance / flight_distance;
+    let step = speed / line_distance;
+    if blocked(start, vector, step) {
+        return Outcome::Blocked;
+    }
+    let heading = spring::units_info::get_unit_heading(unit_id, true).unwrap_or(0.0);
+    let turn = shortest_turn(heading, atan2(vector.x, vector.z));
+    let _ = spring::move_ctrl::move_ctrl(unit_id, true);
+    call_script(unit_id, "PreJump");
+    global.jumps.access_mut().active.push(Jump {
+        unit_id,
+        start,
+        vector,
+        height: HEIGHT,
+        step,
+        progress: 0.0,
+        delay: DELAY,
+        half_done: false,
+        heading,
+        turn,
+    });
+    Outcome::Started
+}
+
+/// Move every jumping unit along its arc. Returns the units that landed.
+pub fn fly(global: &Global) -> Vec<i32> {
+    let flights = global.jumps.access_mut().advance();
+    let mut landed = Vec::new();
+    for flight in flights {
+        if let Some((position, heading)) = flight.pose {
+            let _ = spring::set_unit_position(flight.unit_id, position);
+            units::face_radians(flight.unit_id, heading);
+        }
+        for name in flight.calls {
+            call_script(flight.unit_id, name);
+        }
+        if flight.landed {
+            landed.push(flight.unit_id);
+        }
+    }
+    for unit_id in &landed {
+        call_script(*unit_id, "StopJump");
+        let _ = spring::move_ctrl::move_ctrl(*unit_id, false);
+    }
+    landed
 }
 
 pub const RANGE: f32 = 400.0;

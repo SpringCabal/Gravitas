@@ -1,14 +1,14 @@
-use spring_addons::rules::{CommandEvent, Gadget};
+use spring_addons::AddonContext;
+use spring_addons::rules::{CommandEvent, Gadget, UnitDestroyedEvent, UnitPreDamagedEvent};
 
-use crate::state::{self, Global};
+use crate::robots::{self, Robots};
+use crate::state::{Global, PerLevel};
+use crate::units;
 
+/// Robots don't hurt each other, and step out of fire and electric fields.
 #[derive(Default)]
-pub struct RobotsGadget;
-
-impl RobotsGadget {
-    pub fn new() -> Self {
-        Self
-    }
+pub struct RobotsGadget {
+    robots: PerLevel<Robots>,
 }
 
 impl Gadget<Global> for RobotsGadget {
@@ -16,11 +16,31 @@ impl Gadget<Global> for RobotsGadget {
         "Robots"
     }
 
-    fn unit_cmd_done(
+    fn unit_pre_damaged(
         &self,
-        _ctx: &spring_addons::AddonContext<'_, Global>,
-        event: &CommandEvent<'_>,
-    ) {
-        let _ = state::with_world(|world| world.robots.command_done(event.unit_id));
+        ctx: &AddonContext<'_, Global>,
+        event: &UnitPreDamagedEvent,
+    ) -> Option<spring::DamageResult> {
+        let avoidance = self.robots.get(ctx.global()).flee(
+            event.unit_id,
+            event.unit_def_id,
+            event.attacker_id,
+            event.attacker_def_id,
+            units::game_frame(),
+        );
+        if let Some(avoidance) = avoidance {
+            robots::move_away(avoidance);
+        }
+        let same_team = event.unit_team == event.attacker_team;
+        robots::is_friendly_fire(event.unit_def_id, event.attacker_def_id, same_team)
+            .then(|| spring::DamageResult::unchanged(0.0))
+    }
+
+    fn unit_cmd_done(&self, ctx: &AddonContext<'_, Global>, event: &CommandEvent<'_>) {
+        self.robots.get(ctx.global()).command_done(event.unit_id);
+    }
+
+    fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
+        self.robots.get(ctx.global()).command_done(event.unit_id);
     }
 }

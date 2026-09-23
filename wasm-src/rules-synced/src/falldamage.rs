@@ -2,7 +2,8 @@ use alloc::vec::Vec;
 
 use crate::units;
 
-pub struct FallDamage {
+#[derive(Default)]
+pub struct FallImmunity {
     immune_until: Vec<(i32, i32)>,
 }
 
@@ -13,13 +14,7 @@ pub struct Attributes {
     pub velocity_damage_scale: f32,
 }
 
-impl FallDamage {
-    pub fn new() -> Self {
-        Self {
-            immune_until: Vec::new(),
-        }
-    }
-
+impl FallImmunity {
     pub fn set_immunity(&mut self, unit_id: i32, until_frame: i32) {
         if let Some(entry) = self.immune_until.iter_mut().find(|(id, _)| *id == unit_id) {
             entry.1 = entry.1.max(until_frame);
@@ -143,3 +138,27 @@ fn ground_normal(x: f32, z: f32) -> spring::types::Float3 {
         z: normal.z / magnitude,
     }
 }
+
+/// The bounce sound of a hard landing that doesn't kill.
+pub fn play_bounce(unit_id: i32, damage: f32) {
+    if damage <= BOUNCE_DAMAGE_THRESHOLD {
+        return;
+    }
+    let Some(position) = units::position(unit_id) else {
+        return;
+    };
+    if spring::units_info::get_unit_health(unit_id).is_ok_and(|health| health.health <= 0.0) {
+        return;
+    }
+    let _ = spring::sound::play_sound_file(
+        BOUNCE_SOUND,
+        BOUNCE_VOLUME,
+        position,
+        spring::types::Float3::default(),
+        0,
+    );
+}
+
+const BOUNCE_DAMAGE_THRESHOLD: f32 = 10.0;
+const BOUNCE_SOUND: &str = "sounds/bounce.ogg";
+const BOUNCE_VOLUME: f32 = 20.0;

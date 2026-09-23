@@ -1,9 +1,10 @@
 use alloc::vec::Vec;
 
 use crate::level;
-use crate::state::World;
+use crate::state::Global;
 use crate::units;
 
+#[derive(Default)]
 pub struct Mission {
     fired: Vec<i32>,
     inside: Vec<i32>,
@@ -16,13 +17,6 @@ pub struct Assault {
 }
 
 impl Mission {
-    pub fn new() -> Self {
-        Self {
-            fired: Vec::new(),
-            inside: Vec::new(),
-        }
-    }
-
     pub fn update(&mut self, player_unit: Option<i32>, frame: i32) -> Vec<Assault> {
         if frame % ENTER_AREA_INTERVAL != 0 {
             return Vec::new();
@@ -53,9 +47,29 @@ impl Mission {
     }
 }
 
-pub fn stun_electrafi_proximity(world: &World) {
-    for unit_id in world.electrafi.units_in_proximity() {
-        stun(unit_id);
+/// Stun every unit near an electric field, so the level starts with its
+/// robots already twitching in the fields.
+pub fn stun_electrafi_proximity() {
+    let Some(electrafi) = crate::defs::get().electrafi else {
+        return;
+    };
+    let mut stunned = Vec::new();
+    for field in spring::get_all_units().unwrap_or_default() {
+        if units::def_of(field) != Some(electrafi) {
+            continue;
+        }
+        let Some(position) = units::position(field) else {
+            continue;
+        };
+        let radius = spring::get_unit_rules_param_f32(field, crate::electrafi::SIZE_PARAM)
+            .unwrap_or(crate::electrafi::DEFAULT_RADIUS);
+        for unit_id in units::units_in_sphere(position, radius + crate::electrafi::PROXIMITY_MARGIN)
+        {
+            if !stunned.contains(&unit_id) {
+                stunned.push(unit_id);
+                stun(unit_id);
+            }
+        }
     }
 }
 
@@ -75,23 +89,11 @@ pub fn issue_assault(assault: &Assault) {
     }
 }
 
-pub fn win(ally_teams: &[i32]) {
+/// End the game: `ally_teams` won.
+pub fn win(global: &Global, ally_teams: &[i32]) {
     let victory = ally_teams.contains(&PLAYER_ALLY_TEAM);
-    OVER.with(|over| over.set(Some(victory)));
+    global.outcome.set(Some(victory));
     let _ = spring::send_to_unsynced(&alloc::format!("GRAVITAS_OVER|{}", i32::from(victory)));
-}
-
-#[cfg(feature = "e2e")]
-pub fn over() -> Option<bool> {
-    OVER.with(|over| over.get())
-}
-
-pub fn clear_over() {
-    OVER.with(|over| over.set(None));
-}
-
-thread_local! {
-    static OVER: core::cell::Cell<Option<bool>> = const { core::cell::Cell::new(None) };
 }
 
 const PLAYER_ALLY_TEAM: i32 = 0;

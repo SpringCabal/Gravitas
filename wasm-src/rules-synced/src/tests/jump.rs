@@ -1,6 +1,6 @@
 use spring::types::Float3;
 
-use crate::state;
+use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
 
 pub struct Jumping {
@@ -22,11 +22,11 @@ impl Case for Jumping {
         "jump"
     }
 
-    fn step(&mut self, frame: i32) -> Step {
+    fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
-            LEAP_FRAME => self.leap(),
-            AIRBORNE_FRAME => self.check_airborne(),
-            VERDICT_FRAME => self.check_landed(),
+            LEAP_FRAME => self.leap(global),
+            AIRBORNE_FRAME => self.check_airborne(global),
+            VERDICT_FRAME => self.check_landed(global),
             _ => Step::Wait,
         }
     }
@@ -42,7 +42,7 @@ const LEDGE: f32 = 200.0;
 const DIRECTIONS: [(f32, f32); 4] = [(1.0, 0.0), (-1.0, 0.0), (0.0, 1.0), (0.0, -1.0)];
 
 impl Jumping {
-    fn leap(&mut self) -> Step {
+    fn leap(&mut self, global: &Global) -> Step {
         let Some(unit_id) = harness::arena(|arena| arena.vaulter) else {
             return fail("no arena");
         };
@@ -51,33 +51,32 @@ impl Jumping {
         };
         self.unit_id = unit_id;
         self.origin = origin;
-        if request(unit_id, -1000.0, origin.z) {
+        if request(global, unit_id, -1000.0, origin.z) {
             return fail("a jump outside the map was accepted");
         }
-        if request_at(unit_id, origin.x, origin.y + LEDGE, origin.z) {
+        if request_at(global, unit_id, origin.x, origin.y + LEDGE, origin.z) {
             return fail("a jump onto a ledge was accepted");
         }
         for (x, z) in DIRECTIONS {
-            if request(unit_id, origin.x + x * REACH, origin.z + z * REACH) {
+            if request(global, unit_id, origin.x + x * REACH, origin.z + z * REACH) {
                 return Step::Wait;
             }
         }
         Step::Fail(alloc::format!("no {REACH} elmo jump was accepted"))
     }
 
-    fn check_airborne(&mut self) -> Step {
-        let jumping =
-            state::with_world(|world| world.jumps.is_jumping(self.unit_id)).unwrap_or(false);
+    fn check_airborne(&mut self, global: &Global) -> Step {
+        let jumping = global.jumps.access().is_jumping(self.unit_id);
         if !jumping {
             return fail("the unit was not airborne");
         }
-        if request(self.unit_id, self.origin.x, self.origin.z) {
+        if request(global, self.unit_id, self.origin.x, self.origin.z) {
             return fail("a second jump started while airborne");
         }
         Step::Wait
     }
 
-    fn check_landed(&mut self) -> Step {
+    fn check_landed(&mut self, global: &Global) -> Step {
         let Some(position) = harness::position(self.unit_id) else {
             return fail("no jumper position");
         };
@@ -85,7 +84,7 @@ impl Jumping {
         if travelled < REACH - TOLERANCE {
             return Step::Fail(alloc::format!("jump travelled {travelled} of {REACH}"));
         }
-        if request(self.unit_id, position.x + OUT_OF_REACH, position.z) {
+        if request(global, self.unit_id, position.x + OUT_OF_REACH, position.z) {
             return fail("a jump beyond range was accepted");
         }
         harness::halt(self.unit_id);
@@ -93,11 +92,10 @@ impl Jumping {
     }
 }
 
-fn request(unit_id: i32, x: f32, z: f32) -> bool {
-    request_at(unit_id, x, crate::units::ground_height(x, z), z)
+fn request(global: &Global, unit_id: i32, x: f32, z: f32) -> bool {
+    request_at(global, unit_id, x, crate::units::ground_height(x, z), z)
 }
 
-fn request_at(unit_id: i32, x: f32, y: f32, z: f32) -> bool {
-    state::with_world(|world| world.jumps.start(unit_id, x, y, z))
-        == Some(crate::jump::Outcome::Started)
+fn request_at(global: &Global, unit_id: i32, x: f32, y: f32, z: f32) -> bool {
+    crate::jump::start(global, unit_id, x, y, z) == crate::jump::Outcome::Started
 }

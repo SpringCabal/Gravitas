@@ -1,42 +1,10 @@
-use core::cell::Cell;
+use crate::state::{Global, Level};
 
-use crate::state;
-use crate::terrain;
-
-pub fn request() {
-    PENDING.with(|pending| pending.set(true));
-}
-
-pub fn take() -> bool {
-    PENDING.with(|pending| pending.replace(false))
-}
-
-pub fn wiping() -> bool {
-    WIPING.with(|wiping| wiping.get())
-}
-
-pub fn finish_wipe() {
-    WIPING.with(|wiping| wiping.set(false));
-}
-
-pub fn perform() {
-    WIPING.with(|wiping| wiping.set(true));
-    wipe();
-    terrain::clear();
-    crate::mission::clear_over();
-    let _ = state::with_world(|world| world.reset());
-}
-
-thread_local! {
-    static PENDING: Cell<bool> = const { Cell::new(false) };
-    static WIPING: Cell<bool> = const { Cell::new(false) };
-}
-
-fn wipe() {
-    let Ok(units) = spring::get_all_units() else {
-        return;
-    };
-    for unit_id in units {
+/// Remove the level and everything in it; the level gadget spawns it again
+/// on the next frame.
+pub fn perform(global: &Global) {
+    global.restart.begin_wipe();
+    for unit_id in spring::get_all_units().unwrap_or_default() {
         let _ = spring::destroy_unit(
             unit_id,
             spring::generated::owned::unit_control::DestroyUnitOptions {
@@ -47,4 +15,14 @@ fn wipe() {
             },
         );
     }
+    global.restart.finish_wipe();
+    *global.level.access_mut() = Level::default();
+    *global.plates.access_mut() = Default::default();
+    *global.jumps.access_mut() = Default::default();
+    *global.fall_immunity.access_mut() = Default::default();
+    *global.impulses.access_mut() = Default::default();
+    *global.terrain.access_mut() = Default::default();
+    global.player_input.set(None);
+    global.player_unit.set(None);
+    global.outcome.set(None);
 }

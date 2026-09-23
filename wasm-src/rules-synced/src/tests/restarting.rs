@@ -1,4 +1,4 @@
-use crate::mission;
+use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
 use crate::units;
 
@@ -17,13 +17,13 @@ impl Case for Restarting {
         "restart"
     }
 
-    fn step(&mut self, frame: i32) -> Step {
+    fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
             KILL_FRAME => self.kill(),
-            PRESS_FRAME => self.press(),
-            VERDICT_FRAME => self.check(),
+            PRESS_FRAME => self.press(global),
+            VERDICT_FRAME => self.check(global),
             DIE_AGAIN_FRAME => self.die_again(),
-            SECOND_VERDICT_FRAME => self.check_over_again(),
+            SECOND_VERDICT_FRAME => self.check_over_again(global),
             _ => Step::Wait,
         }
     }
@@ -45,15 +45,15 @@ impl Restarting {
         Step::Wait
     }
 
-    fn press(&mut self) -> Step {
-        if mission::over() != Some(false) {
+    fn press(&mut self, global: &Global) -> Step {
+        if global.outcome.get() != Some(false) {
             return fail("losing the player unit did not end the game");
         }
-        harness::press_restart();
+        harness::press_restart(global);
         Step::Wait
     }
 
-    fn check(&mut self) -> Step {
+    fn check(&mut self, global: &Global) -> Step {
         if units::valid(self.jumper) {
             return fail("restart did not clear the old level");
         }
@@ -70,7 +70,7 @@ impl Restarting {
                 units.len()
             ));
         }
-        if mission::over().is_some() {
+        if global.outcome.get().is_some() {
             return fail("the restart left the game in its over state");
         }
         Step::Wait
@@ -84,8 +84,8 @@ impl Restarting {
         Step::Wait
     }
 
-    fn check_over_again(&mut self) -> Step {
-        if mission::over() != Some(false) {
+    fn check_over_again(&mut self, global: &Global) -> Step {
+        if global.outcome.get() != Some(false) {
             return fail("dying after a restart did not end the game again");
         }
         Step::Pass

@@ -1,4 +1,4 @@
-use crate::state;
+use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
 use crate::units;
 
@@ -25,13 +25,13 @@ impl Case for PushAndPull {
         "impulse"
     }
 
-    fn step(&mut self, frame: i32) -> Step {
+    fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
             0 => self.adopt(),
-            PUSH_FRAME => self.push(),
-            PULL_FRAME => self.pull(),
+            PUSH_FRAME => self.push(global),
+            PULL_FRAME => self.pull(global),
             VERDICT_FRAME => self.check_pulled(),
-            _ => self.keep_firing(frame),
+            _ => self.keep_firing(global, frame),
         }
     }
 }
@@ -54,25 +54,25 @@ impl PushAndPull {
         Step::Wait
     }
 
-    fn keep_firing(&mut self, frame: i32) -> Step {
+    fn keep_firing(&mut self, global: &Global, frame: i32) -> Step {
         if frame > PUSH_FRAME && frame <= PUSH_FRAME + BURST_FRAMES {
-            return self.strike(PUSH_WEAPON);
+            return self.strike(global, PUSH_WEAPON);
         }
         if frame > PULL_FRAME && frame <= PULL_FRAME + BURST_FRAMES {
-            return self.strike(PULL_WEAPON);
+            return self.strike(global, PULL_WEAPON);
         }
         Step::Wait
     }
 
-    fn push(&mut self) -> Step {
+    fn push(&mut self, global: &Global) -> Step {
         let Some(separation) = self.separation() else {
             return fail("lost the crate or the attacker");
         };
         self.pushed_from = separation;
-        self.strike(PUSH_WEAPON)
+        self.strike(global, PUSH_WEAPON)
     }
 
-    fn pull(&mut self) -> Step {
+    fn pull(&mut self, global: &Global) -> Step {
         let Some(separation) = self.separation() else {
             return fail("lost the crate or the attacker");
         };
@@ -83,7 +83,7 @@ impl PushAndPull {
             ));
         }
         self.pulled_from = separation;
-        self.strike(PULL_WEAPON)
+        self.strike(global, PULL_WEAPON)
     }
 
     fn check_pulled(&mut self) -> Step {
@@ -99,21 +99,17 @@ impl PushAndPull {
         Step::Pass
     }
 
-    fn strike(&self, weapon_name: &str) -> Step {
+    fn strike(&self, global: &Global, weapon_name: &str) -> Step {
         let (Ok(weapon), Some(def_id)) = (
             spring::weapon_defs::get_weapon_def_id(weapon_name),
             units::def_of(self.target),
         ) else {
             return Step::Fail(alloc::format!("no weapon def for {weapon_name}"));
         };
-        let applied = state::with_world(|world| {
-            world
-                .impulses
-                .damaged(self.target, def_id, weapon, self.attacker)
-        });
-        if applied.is_none() {
-            return fail("world unavailable");
-        }
+        global
+            .impulses
+            .access_mut()
+            .damaged(self.target, def_id, weapon, self.attacker);
         Step::Wait
     }
 

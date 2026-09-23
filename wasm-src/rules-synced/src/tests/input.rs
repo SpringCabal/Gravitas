@@ -1,5 +1,6 @@
 use spring::types::Float3;
 
+use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
 
 pub struct Input {
@@ -21,10 +22,10 @@ impl Case for Input {
         "input"
     }
 
-    fn step(&mut self, frame: i32) -> Step {
+    fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
-            HOLD_FRAME => self.hold(),
-            VERDICT_FRAME => self.check(),
+            HOLD_FRAME => self.hold(global),
+            VERDICT_FRAME => self.check(global),
             _ => Step::Wait,
         }
     }
@@ -36,7 +37,7 @@ const REACH: f32 = 300.0;
 const TOLERANCE: f32 = 60.0;
 
 impl Input {
-    fn hold(&mut self) -> Step {
+    fn hold(&mut self, global: &Global) -> Step {
         let Some(unit_id) = harness::arena(|arena| arena.jumper) else {
             return fail("no arena");
         };
@@ -45,12 +46,12 @@ impl Input {
         };
         self.unit_id = unit_id;
         self.origin = origin;
-        harness::hold_jump(origin.x + REACH, origin.z);
+        harness::hold_jump(global, origin.x + REACH, origin.z);
         Step::Wait
     }
 
-    fn check(&mut self) -> Step {
-        harness::release_jump();
+    fn check(&mut self, global: &Global) -> Step {
+        harness::release_jump(global);
         let Some(position) = harness::position(self.unit_id) else {
             return fail("no player position");
         };

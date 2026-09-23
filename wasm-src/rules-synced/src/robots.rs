@@ -4,6 +4,7 @@ use spring::types::Float3;
 
 use crate::units;
 
+#[derive(Default)]
 pub struct Robots {
     moving_away: Vec<(i32, i32)>,
 }
@@ -15,16 +16,6 @@ pub struct Avoidance {
 }
 
 impl Robots {
-    pub fn new() -> Self {
-        Self {
-            moving_away: Vec::new(),
-        }
-    }
-
-    pub fn is_friendly_fire(unit_def_id: i32, attacker_def_id: i32, same_team: bool) -> bool {
-        same_team && is_robot(unit_def_id) && is_robot(attacker_def_id)
-    }
-
     pub fn flee(
         &mut self,
         unit_id: i32,
@@ -61,6 +52,25 @@ impl Robots {
     pub fn command_done(&mut self, unit_id: i32) {
         self.moving_away.retain(|(id, _)| *id != unit_id);
     }
+}
+
+pub fn is_friendly_fire(unit_def_id: i32, attacker_def_id: i32, same_team: bool) -> bool {
+    same_team && is_robot(unit_def_id) && is_robot(attacker_def_id)
+}
+
+/// Walk out of the way, replacing the previous escape if there was one.
+pub fn move_away(avoidance: Avoidance) {
+    if avoidance.replace_order {
+        let _ = spring::give_order_to_unit(avoidance.unit_id, spring::cmd::STOP, &[], 0, 0);
+    }
+    let goal = avoidance.goal;
+    let _ = spring::give_order_to_unit(
+        avoidance.unit_id,
+        spring::cmd::MOVE,
+        &[goal.x, goal.y, goal.z],
+        0,
+        0,
+    );
 }
 
 pub struct Hazard {

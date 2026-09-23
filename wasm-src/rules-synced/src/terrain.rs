@@ -1,59 +1,93 @@
-use core::cell::RefCell;
-
+use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::units;
 
-thread_local! {
-    static PENDING: RefCell<Vec<Pending>> = const { RefCell::new(Vec::new()) };
-    static LEVELLED: RefCell<Vec<(alloc::string::String, u32)>> = const { RefCell::new(Vec::new()) };
+/// Terrain levelling queued for walls and gates, flushed once a frame.
+#[derive(Default)]
+pub struct Terrain {
+    pending: Vec<Pending>,
+    /// How many walls of each def were levelled, for the log.
+    levelled: Vec<(String, u32)>,
 }
 
-pub fn levelled_report() -> alloc::string::String {
-    LEVELLED.with(|levelled| {
-        let levelled = levelled.borrow();
-        let mut out = alloc::string::String::new();
-        for (name, count) in levelled.iter() {
+impl Terrain {
+    /// Level the ground under a wall to `height` (0 = its base, 1 = its top).
+    pub fn defer(&mut self, unit_id: i32, unit_def_id: i32, height: f32) {
+        self.queue(unit_id, unit_def_id, height, i32::MIN);
+    }
+
+    /// Like `defer`, but not before `due_frame`.
+    pub fn defer_until(&mut self, unit_id: i32, unit_def_id: i32, height: f32, due_frame: i32) {
+        self.queue(unit_id, unit_def_id, height, due_frame);
+    }
+
+    /// Take what is due by `frame`, counting the walls among it.
+    pub fn take_due(&mut self, frame: i32) -> Vec<(i32, f32)> {
+        let mut due = Vec::new();
+        let mut walls = Vec::new();
+        self.pending.retain(|entry| {
+            if entry.due_frame > frame {
+                return true;
+            }
+            if is_wall_like(entry.unit_id, entry.unit_def_id) {
+                walls.push(entry.unit_def_id);
+                due.push((entry.unit_id, entry.height));
+            }
+            false
+        });
+        for unit_def_id in walls {
+            self.record_levelled(unit_def_id);
+        }
+        due
+    }
+
+    pub fn levelled_report(&self) -> String {
+        let mut out = String::new();
+        for (name, count) in &self.levelled {
             out.push_str(name);
             out.push('=');
             out.push_str(&alloc::format!("{count} "));
         }
         out
-    })
-}
+    }
 
-pub fn clear() {
-    PENDING.with(|pending| pending.borrow_mut().clear());
-    LEVELLED.with(|levelled| levelled.borrow_mut().clear());
-}
-
-pub fn defer_wall_terrain(unit_id: i32, unit_def_id: i32, height: f32) {
-    queue(unit_id, unit_def_id, height, i32::MIN);
-}
-
-pub fn defer_wall_terrain_until(unit_id: i32, unit_def_id: i32, height: f32, due_frame: i32) {
-    queue(unit_id, unit_def_id, height, due_frame);
-}
-
-pub fn flush(frame: i32) {
-    let due = PENDING.with(|pending| {
-        let mut pending = pending.borrow_mut();
-        let mut due = Vec::new();
-        pending.retain(|entry| {
-            if entry.due_frame > frame {
-                return true;
+    fn queue(&mut self, unit_id: i32, unit_def_id: i32, height: f32, due_frame: i32) {
+        match self
+            .pending
+            .iter_mut()
+            .find(|entry| entry.unit_id == unit_id)
+        {
+            Some(entry) => {
+                entry.height = height;
+                entry.due_frame = due_frame;
             }
-            due.push(Pending { ..*entry });
-            false
-        });
-        due
-    });
-    for entry in due {
-        if !is_wall_like(entry.unit_id, entry.unit_def_id) {
-            continue;
+            None => self.pending.push(Pending {
+                unit_id,
+                unit_def_id,
+                height,
+                due_frame,
+            }),
         }
-        record_levelled(entry.unit_def_id);
-        adjust_wall_terrain(entry.unit_id, entry.height);
+    }
+
+    fn record_levelled(&mut self, unit_def_id: i32) {
+        let name = &crate::defs::get().unit(unit_def_id).name;
+        match self
+            .levelled
+            .iter_mut()
+            .find(|(candidate, _)| candidate == name)
+        {
+            Some(entry) => entry.1 += 1,
+            None => self.levelled.push((name.clone(), 1)),
+        }
+    }
+}
+
+/// Level the terrain under each wall.
+pub fn level(due: Vec<(i32, f32)>) {
+    for (unit_id, height) in due {
+        adjust_wall_terrain(unit_id, height);
     }
 }
 
@@ -69,38 +103,6 @@ const STEP: f32 = 8.0;
 const MARGIN: f32 = 2.0;
 const SQUARE_SIZE: f32 = 8.0;
 const MAX_STEPS: i32 = 256;
-
-fn queue(unit_id: i32, unit_def_id: i32, height: f32, due_frame: i32) {
-    PENDING.with(|pending| {
-        let mut pending = pending.borrow_mut();
-        match pending.iter_mut().find(|entry| entry.unit_id == unit_id) {
-            Some(entry) => {
-                entry.height = height;
-                entry.due_frame = due_frame;
-            }
-            None => pending.push(Pending {
-                unit_id,
-                unit_def_id,
-                height,
-                due_frame,
-            }),
-        }
-    });
-}
-
-fn record_levelled(unit_def_id: i32) {
-    let name = crate::defs::get().unit(unit_def_id).name.clone();
-    LEVELLED.with(|levelled| {
-        let mut levelled = levelled.borrow_mut();
-        match levelled
-            .iter_mut()
-            .find(|(candidate, _)| *candidate == name)
-        {
-            Some(entry) => entry.1 += 1,
-            None => levelled.push((name, 1)),
-        }
-    });
-}
 
 fn adjust_wall_terrain(unit_id: i32, height: f32) {
     let Some(position) = units::position(unit_id) else {

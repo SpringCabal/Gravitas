@@ -1,5 +1,6 @@
 use spring::types::Float3;
 
+use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
 use crate::units;
 
@@ -22,7 +23,7 @@ impl Case for Respawning {
         "respawn"
     }
 
-    fn step(&mut self, frame: i32) -> Step {
+    fn step(&mut self, _global: &Global, frame: i32) -> Step {
         match frame {
             KILL_FRAME => self.kill(),
             VERDICT_FRAME => self.check(),

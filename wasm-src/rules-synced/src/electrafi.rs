@@ -18,18 +18,20 @@ pub struct Shock {
 
 pub const SIZE_PARAM: &str = "elecSize";
 
-const DEFAULT_RADIUS: f32 = 100.0;
+pub const DEFAULT_RADIUS: f32 = 100.0;
 const FALLBACK_RADIUS: f32 = 200.0;
-const PROXIMITY_MARGIN: f32 = 250.0;
+pub const PROXIMITY_MARGIN: f32 = 250.0;
 
-impl Electrafi {
-    pub fn new() -> Self {
+impl Default for Electrafi {
+    fn default() -> Self {
         Self {
             fields: Fields::new(SIZE_PARAM, DEFAULT_RADIUS),
             exposures: Exposures::default(),
         }
     }
+}
 
+impl Electrafi {
     pub fn created(&mut self, unit_id: i32, unit_def_id: i32) {
         if crate::defs::get().electrafi == Some(unit_def_id) {
             self.fields.add(unit_id);
@@ -39,22 +41,6 @@ impl Electrafi {
     pub fn destroyed(&mut self, unit_id: i32) {
         self.fields.remove(unit_id);
         self.exposures.remove(unit_id);
-    }
-
-    /// Every unit near any field.
-    pub fn units_in_proximity(&self) -> Vec<i32> {
-        let mut found = Vec::new();
-        for field in self.fields.iter() {
-            let Some(position) = units::position(field.unit_id) else {
-                continue;
-            };
-            for unit_id in units::units_in_sphere(position, field.radius + PROXIMITY_MARGIN) {
-                if !found.contains(&unit_id) {
-                    found.push(unit_id);
-                }
-            }
-        }
-        found
     }
 
     pub fn update(&mut self, frame: i32) -> Vec<Shock> {

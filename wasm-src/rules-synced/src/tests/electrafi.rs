@@ -1,5 +1,6 @@
 use spring::types::Float3;
 
+use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
 
 pub struct Shocking {
@@ -23,7 +24,7 @@ impl Case for Shocking {
         "electrafi"
     }
 
-    fn step(&mut self, frame: i32) -> Step {
+    fn step(&mut self, _global: &Global, frame: i32) -> Step {
         match frame {
             0 => self.enter(),
             VERDICT_FRAME => self.check(),

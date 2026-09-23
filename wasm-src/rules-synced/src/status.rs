@@ -1,10 +1,11 @@
 use alloc::format;
 
-use crate::state::World;
+use crate::state::Global;
 use crate::units;
 
-pub fn publish(world: &World, frame: i32) {
-    let player = world.player.unit_id().unwrap_or(-1);
+/// Send the HUD what it shows: player health and which gun is loaded.
+pub fn publish(global: &Global, frame: i32) {
+    let player = global.player_unit.get().unwrap_or(-1);
     let (health, max_health) = health(player);
     let message = format!(
         "GRAVITAS_STATUS|frame={frame}|playerUnit={player}|health={health}|maxHealth={max_health}|push={}|pull={}",

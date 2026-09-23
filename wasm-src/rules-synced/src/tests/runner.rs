@@ -4,11 +4,11 @@ use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 use crate::diagnostics;
-use crate::state;
+use crate::state::Global;
 use crate::tests::arena::{self, Arena};
 use crate::tests::harness::{Case, Step};
 
-pub fn stage_level() -> bool {
+pub fn stage_level(_global: &Global) -> bool {
     let Some(built) = arena::build() else {
         diagnostics::warning("E2E arena could not be built");
         return true;
@@ -18,28 +18,27 @@ pub fn stage_level() -> bool {
     true
 }
 
-fn link_arena() {
+fn link_arena(global: &Global) {
     if !PENDING_LINK.with(|pending| pending.replace(false)) {
         return;
     }
     let Some((plate, gate)) = with_arena(|arena| (arena.plate, arena.gate)) else {
         return;
     };
-    let _ = state::with_world(|world| {
-        world.plates.simple_link(plate, gate);
-        world.plates.enable_link_checks();
-    });
+    let mut plates = global.plates.access_mut();
+    plates.simple_link(plate, gate);
+    plates.enable_link_checks();
 }
 
-pub fn game_frame(frame: i32) {
-    link_arena();
+pub fn game_frame(global: &Global, frame: i32) {
+    link_arena(global);
     let Some(local) = begin(frame) else {
         return;
     };
-    super::harness::pump_held_input();
+    super::harness::pump_held_input(global);
     let mut cases = take_cases();
     for case in &mut cases {
-        step(case, local);
+        step(case, global, local);
     }
     let finished = cases.iter().all(|case| case.verdict.is_some());
     put_cases(cases);
@@ -127,12 +126,12 @@ fn cases() -> Vec<Entry> {
         .collect()
 }
 
-fn step(entry: &mut Entry, local: i32) {
+fn step(entry: &mut Entry, global: &Global, local: i32) {
     if entry.verdict.is_some() {
         return;
     }
     let name = entry.case.name();
-    match entry.case.step(local) {
+    match entry.case.step(global, local) {
         Step::Wait if local < SUITE_TIMEOUT => {}
         Step::Wait => {
             entry.verdict = Some(false);

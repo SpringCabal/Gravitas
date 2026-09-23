@@ -1,3 +1,4 @@
+use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
 
 pub struct Invulnerable {
@@ -23,7 +24,7 @@ impl Case for Invulnerable {
         "invulnerable"
     }
 
-    fn step(&mut self, frame: i32) -> Step {
+    fn step(&mut self, _global: &Global, frame: i32) -> Step {
         match frame {
             STRIKE_FRAME => self.strike(),
             VERDICT_FRAME => self.check(),

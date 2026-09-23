@@ -1,5 +1,6 @@
 use spring::types::Float3;
 
+use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
 
 pub struct Burning {
@@ -25,7 +26,7 @@ impl Case for Burning {
         "fire"
     }
 
-    fn step(&mut self, frame: i32) -> Step {
+    fn step(&mut self, _global: &Global, frame: i32) -> Step {
         match frame {
             0 => self.enter(),
             BURN_VERDICT_FRAME => self.check_burning(),

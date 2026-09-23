@@ -22,14 +22,16 @@ const FIRE_SPEED: f32 = 0.5;
 const REACH_FACTOR: f32 = 1.7;
 const EMIT_ROTATION_SPREAD: f32 = (8.0 / 360.0) * core::f32::consts::TAU;
 
-impl Fires {
-    pub fn new() -> Self {
+impl Default for Fires {
+    fn default() -> Self {
         Self {
             fields: Fields::new(SIZE_PARAM, DEFAULT_RADIUS),
             exposures: Exposures::default(),
         }
     }
+}
 
+impl Fires {
     pub fn created(&mut self, unit_id: i32, unit_def_id: i32) {
         if crate::defs::get().fire == Some(unit_def_id) {
             self.fields.add(unit_id);

@@ -1,5 +1,6 @@
 use spring::types::Float3;
 
+use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
 use crate::tests::record;
 
@@ -30,7 +31,7 @@ impl Case for PlateAndGate {
         "plate"
     }
 
-    fn step(&mut self, frame: i32) -> Step {
+    fn step(&mut self, _global: &Global, frame: i32) -> Step {
         match frame {
             0 => self.press(),
             PRESS_VERDICT_FRAME => self.check_pressed(),

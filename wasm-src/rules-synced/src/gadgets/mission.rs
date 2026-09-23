@@ -1,16 +1,14 @@
+use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
 
-use crate::gadgets::setup::frame_consumed;
-use crate::orchestration;
-use crate::state::Global;
+use crate::mission::{self, Mission};
+use crate::state::{Global, PerLevel};
 
+/// Sends the level's robots into their assaults as the player enters trigger
+/// areas.
 #[derive(Default)]
-pub struct MissionGadget;
-
-impl MissionGadget {
-    pub fn new() -> Self {
-        Self
-    }
+pub struct MissionGadget {
+    mission: PerLevel<Mission>,
 }
 
 impl Gadget<Global> for MissionGadget {
@@ -18,10 +16,12 @@ impl Gadget<Global> for MissionGadget {
         "Mission"
     }
 
-    fn game_frame(&self, _ctx: &spring_addons::AddonContext<'_, Global>, frame: i32) {
-        if frame_consumed() {
-            return;
+    fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
+        let global = ctx.global();
+        let player_unit = global.player_unit.get();
+        let assaults = self.mission.get(global).update(player_unit, frame);
+        for assault in &assaults {
+            mission::issue_assault(assault);
         }
-        orchestration::apply_mission(frame);
     }
 }

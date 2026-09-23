@@ -1,3 +1,4 @@
+use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
 
 pub struct Visuals;
@@ -13,7 +14,7 @@ impl Case for Visuals {
         "visuals"
     }
 
-    fn step(&mut self, frame: i32) -> Step {
+    fn step(&mut self, _global: &Global, frame: i32) -> Step {
         match frame {
             LOOK_FRAME => self.look(),
             SHOT_FRAME => {

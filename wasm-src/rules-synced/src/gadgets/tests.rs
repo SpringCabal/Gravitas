@@ -1,27 +1,22 @@
-use spring_addons::rules::Gadget;
+use spring_addons::AddonContext;
+use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
-use crate::gadgets::setup::frame_consumed;
 use crate::state::Global;
 use crate::tests;
 
-#[derive(Default)]
+/// Runs the in-game e2e cases (only with the `e2e` feature).
 pub struct TestsGadget;
-
-impl TestsGadget {
-    pub fn new() -> Self {
-        Self
-    }
-}
 
 impl Gadget<Global> for TestsGadget {
     fn name(&self) -> &'static str {
         "Tests"
     }
 
-    fn game_frame(&self, _ctx: &spring_addons::AddonContext<'_, Global>, frame: i32) {
-        if frame_consumed() {
-            return;
-        }
-        tests::game_frame(frame);
+    fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
+        tests::game_frame(ctx.global(), frame);
+    }
+
+    fn unit_destroyed(&self, _ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
+        tests::note_destroyed(event.unit_id, event.unit_def_id);
     }
 }

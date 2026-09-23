@@ -1,6 +1,6 @@
 use spring::types::Float3;
 
-use crate::state;
+use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
 
 pub struct Falling {
@@ -26,9 +26,9 @@ impl Case for Falling {
         "falldamage"
     }
 
-    fn step(&mut self, frame: i32) -> Step {
+    fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
-            DROP_FRAME => self.drop(frame),
+            DROP_FRAME => self.drop(global, frame),
             SLAM_FRAME => self.slam(),
             VERDICT_FRAME => self.check(),
             _ => Step::Wait,
@@ -42,7 +42,7 @@ const VERDICT_FRAME: i32 = 100;
 const IMMUNITY_FRAMES: i32 = 120;
 
 impl Falling {
-    fn drop(&mut self, frame: i32) -> Step {
+    fn drop(&mut self, global: &Global, frame: i32) -> Step {
         let Some((dropped, cushioned)) = harness::arena(|arena| (arena.dropped, arena.cushioned))
         else {
             return fail("no arena");
@@ -56,14 +56,10 @@ impl Falling {
         self.cushioned = cushioned;
         self.dropped_health = dropped_health;
         self.cushioned_health = cushioned_health;
-        let immune = state::with_world(|world| {
-            world
-                .fall_damage
-                .set_immunity(cushioned, frame + IMMUNITY_FRAMES)
-        });
-        if immune.is_none() {
-            return fail("world unavailable");
-        }
+        global
+            .fall_immunity
+            .access_mut()
+            .set_immunity(cushioned, frame + IMMUNITY_FRAMES);
         lift(dropped);
         lift(cushioned);
         Step::Wait

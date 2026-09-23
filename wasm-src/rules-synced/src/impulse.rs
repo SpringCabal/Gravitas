@@ -1,12 +1,15 @@
 use alloc::vec::Vec;
 
+use spring::types::Float3;
+
 use crate::units;
 
+#[derive(Default)]
 pub struct Impulses {
     pending: Vec<Pending>,
 }
 
-struct Pending {
+pub struct Pending {
     unit_id: i32,
     x: f32,
     y: f32,
@@ -14,12 +17,6 @@ struct Pending {
 }
 
 impl Impulses {
-    pub fn new() -> Self {
-        Self {
-            pending: Vec::new(),
-        }
-    }
-
     pub fn damaged(
         &mut self,
         unit_id: i32,
@@ -51,35 +48,36 @@ impl Impulses {
         self.add(unit_id, unit_def_id, x, y, z, magnitude);
     }
 
-    pub fn apply(&mut self) {
-        for pending in core::mem::take(&mut self.pending) {
-            let _ = spring::add_unit_impulse(
-                pending.unit_id,
-                spring::types::Float3 {
-                    x: UNSTICK_CONSTANT,
-                    y: 0.0,
-                    z: 0.0,
-                },
-                0.0,
-            );
-            let _ = spring::add_unit_impulse(
-                pending.unit_id,
-                spring::types::Float3 {
-                    x: pending.x,
-                    y: pending.y,
-                    z: pending.z,
-                },
-                0.0,
-            );
-            let _ = spring::add_unit_impulse(
-                pending.unit_id,
-                spring::types::Float3 {
-                    x: -UNSTICK_CONSTANT,
-                    y: 0.0,
-                    z: 0.0,
-                },
-                0.0,
-            );
+    pub fn take(&mut self) -> Vec<Pending> {
+        core::mem::take(&mut self.pending)
+    }
+
+    pub fn forget(&mut self, unit_id: i32) {
+        self.pending.retain(|pending| pending.unit_id != unit_id);
+    }
+}
+
+/// Push each unit, with the nudge that unsticks a unit resting on the ground.
+pub fn apply(pending: Vec<Pending>) {
+    for pending in pending {
+        for impulse in [
+            Float3 {
+                x: UNSTICK_CONSTANT,
+                y: 0.0,
+                z: 0.0,
+            },
+            Float3 {
+                x: pending.x,
+                y: pending.y,
+                z: pending.z,
+            },
+            Float3 {
+                x: -UNSTICK_CONSTANT,
+                y: 0.0,
+                z: 0.0,
+            },
+        ] {
+            let _ = spring::add_unit_impulse(pending.unit_id, impulse, 0.0);
         }
     }
 }

@@ -1,32 +1,30 @@
-use spring_addons::rules::Gadget;
+use spring_addons::AddonContext;
+use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
-use crate::gadgets::setup::frame_consumed;
-use crate::orchestration;
-use crate::probe;
-use crate::state::{self, Global};
+use crate::jump;
+use crate::state::Global;
 
-#[derive(Default)]
+/// Flies jumping units along their arc and lands them, briefly immune to fall
+/// damage.
 pub struct JumpGadget;
-
-impl JumpGadget {
-    pub fn new() -> Self {
-        Self
-    }
-}
 
 impl Gadget<Global> for JumpGadget {
     fn name(&self) -> &'static str {
         "Jump"
     }
 
-    fn game_frame(&self, _ctx: &spring_addons::AddonContext<'_, Global>, frame: i32) {
-        if frame_consumed() {
-            return;
+    fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
+        let global = ctx.global();
+        let landed = jump::fly(global);
+        let mut immunity = global.fall_immunity.access_mut();
+        for unit_id in landed {
+            immunity.set_immunity(unit_id, frame + jump::LANDING_IMMUNITY_FRAMES);
         }
-        probe::report_levelled(frame);
-        let _ = state::with_world(|world| world.player.update(frame));
-        orchestration::start_jump();
-        orchestration::land_jumps(frame);
-        let _ = state::with_world(|world| world.impulses.apply());
+    }
+
+    fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
+        let global = ctx.global();
+        global.jumps.access_mut().forget(event.unit_id);
+        global.fall_immunity.access_mut().forget(event.unit_id);
     }
 }

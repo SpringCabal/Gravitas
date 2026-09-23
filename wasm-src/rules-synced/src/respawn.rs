@@ -4,6 +4,7 @@ use spring::types::Float3;
 
 use crate::units;
 
+#[derive(Default)]
 pub struct Respawns {
     watched: Vec<Watched>,
 }
@@ -25,12 +26,6 @@ pub struct Rebirth {
 }
 
 impl Respawns {
-    pub fn new() -> Self {
-        Self {
-            watched: Vec::new(),
-        }
-    }
-
     pub fn scan(&mut self, frame: i32) {
         let Ok(units) = spring::get_all_units() else {
             return;

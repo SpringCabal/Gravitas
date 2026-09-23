@@ -1,3 +1,4 @@
+use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
 use crate::units;
 
@@ -22,7 +23,7 @@ impl Case for Terrain {
         "terrain"
     }
 
-    fn step(&mut self, frame: i32) -> Step {
+    fn step(&mut self, _global: &Global, frame: i32) -> Step {
         match frame {
             CLOSED_FRAME => self.check_closed(),
             OPEN_FRAME => self.check_open(),
