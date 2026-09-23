@@ -101,11 +101,11 @@ impl Robots {
 }
 
 fn is_robot(unit_def_id: i32) -> bool {
-    units::custom_param(unit_def_id, "robot").is_some()
+    crate::defs::get().unit(unit_def_id).robot
 }
 
 fn is_inanimate(unit_def_id: i32) -> bool {
-    units::custom_param(unit_def_id, "effect").is_some()
+    crate::defs::get().unit(unit_def_id).effect
 }
 
 fn is_paralyzed(unit_id: i32) -> bool {
@@ -115,9 +115,10 @@ fn is_paralyzed(unit_id: i32) -> bool {
 }
 
 fn inanimate_radius(unit_id: i32, unit_def_id: i32) -> f32 {
-    let key = if units::def_id(crate::fire::FIRE) == Some(unit_def_id) {
+    let defs = crate::defs::get();
+    let key = if defs.fire == Some(unit_def_id) {
         crate::fire::SIZE_PARAM
-    } else if units::def_id(crate::electrafi::ELECTRAFI) == Some(unit_def_id) {
+    } else if defs.electrafi == Some(unit_def_id) {
         crate::electrafi::SIZE_PARAM
     } else {
         return DEFAULT_ATTACK_RADIUS;

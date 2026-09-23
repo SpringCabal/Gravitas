@@ -1,5 +1,3 @@
-use core::cell::RefCell;
-
 use alloc::string::String;
 use alloc::vec::Vec;
 
@@ -7,9 +5,6 @@ use spring::generated::owned::unit_control;
 use spring::types::Float3;
 
 use crate::level::Spawn;
-
-pub const GRAVIT: &str = "gravit";
-pub const PLATE: &str = "plate";
 
 pub const RULES_PARAM_PRIVATE: i32 = 1;
 
@@ -20,20 +15,12 @@ const DEFAULT_FACING: i32 = 0;
 const DEGREES_TO_RADIANS: f32 = core::f32::consts::PI / 180.0;
 const ANY_ALLEGIANCE: i32 = -1;
 
-thread_local! {
-    static CUSTOM_PARAM_KEYS: RefCell<Vec<(i32, Vec<String>)>> = const { RefCell::new(Vec::new()) };
-}
-
-pub fn def_id(name: &str) -> Option<i32> {
-    spring::get_unit_def_id_by_name(name).ok()
-}
-
 pub fn ground_height(x: f32, z: f32) -> f32 {
     spring::get_ground_height(x, z).unwrap_or(0.0)
 }
 
 pub fn spawn(spawn: &Spawn) -> Option<i32> {
-    let def_id = def_id(spawn.def_name)?;
+    let def_id = crate::defs::get().id(spawn.def_name)?;
     let unit_def = unit_control::DefRef {
         name: String::from(spawn.def_name),
         id: def_id,
@@ -75,10 +62,9 @@ pub fn spawn(spawn: &Spawn) -> Option<i32> {
     Some(unit_id)
 }
 
-pub fn create(name: &str, position: Float3, team: i32) -> Option<i32> {
-    let def_id = def_id(name)?;
+pub fn create(def_id: i32, position: Float3, team: i32) -> Option<i32> {
     let unit_def = unit_control::DefRef {
-        name: String::from(name),
+        name: crate::defs::get().unit(def_id).name.clone(),
         id: def_id,
     };
     let options = unit_control::CreateUnitOptions {
@@ -136,39 +122,12 @@ pub fn def_of(unit_id: i32) -> Option<i32> {
     spring::units_info::get_unit_def_id(unit_id).ok()
 }
 
-pub fn custom_param(def_id: i32, key: &str) -> Option<String> {
-    spring::unit_defs::get_unit_def_custom_param(def_id, key).ok()
-}
-
-pub fn has_custom_param(def_id: i32, key: &str) -> bool {
-    CUSTOM_PARAM_KEYS.with(|cache| {
-        let mut cache = cache.borrow_mut();
-        if let Some((_, keys)) = cache.iter().find(|(id, _)| *id == def_id) {
-            return keys.iter().any(|candidate| candidate == key);
-        }
-        let keys = spring::unit_defs::get_unit_def_custom_param_keys(def_id).unwrap_or_default();
-        let present = keys.iter().any(|candidate| candidate == key);
-        cache.push((def_id, keys));
-        present
-    })
-}
-
-pub fn custom_param_is_one(def_id: i32, key: &str) -> bool {
-    custom_param(def_id, key).is_some_and(|value| value.parse::<f32>() == Ok(1.0))
-}
-
 pub fn game_frame() -> i32 {
     spring::game::frame().map_or(0, |frame| frame as i32)
 }
 
 pub fn valid(unit_id: i32) -> bool {
     spring::valid_unit_id(unit_id).unwrap_or(false)
-}
-
-pub fn def_name(unit_def_id: i32) -> Option<String> {
-    spring::unit_defs::get_unit_def_name_bytes(unit_def_id)
-        .ok()
-        .and_then(|bytes| String::from_utf8(bytes).ok())
 }
 
 pub fn face_radians(unit_id: i32, radians: f32) {

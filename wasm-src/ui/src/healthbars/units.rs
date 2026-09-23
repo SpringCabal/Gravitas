@@ -166,16 +166,8 @@ fn collect(unit_id: i32, blink: bool, frame: i32) -> BarStack {
 }
 
 fn is_healthbar_target(unit_id: i32) -> bool {
-    let Ok(def_id) = spring::units_info::get_unit_def_id(unit_id) else {
-        return false;
-    };
-    has_custom_param(def_id, "player")
-        || has_custom_param(def_id, "robot")
-        || has_custom_param(def_id, "barrel")
-}
-
-fn has_custom_param(def_id: i32, key: &str) -> bool {
-    spring::unit_defs::get_unit_def_custom_param(def_id, key).is_ok_and(|value| !value.is_empty())
+    spring::units_info::get_unit_def_id(unit_id)
+        .is_ok_and(|def_id| crate::defs::unit(def_id).healthbar)
 }
 
 fn push_reload(stack: &mut BarStack, unit_id: i32, frame: i32) {

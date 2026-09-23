@@ -200,7 +200,7 @@ fn adjust_gate_terrain(unit_id: i32, active: bool, frame: i32) {
     let Some(unit_def_id) = units::def_of(unit_id) else {
         return;
     };
-    if units::def_id(GATE) != Some(unit_def_id) {
+    if crate::defs::get().gate != Some(unit_def_id) {
         return;
     }
     if active {
@@ -210,5 +210,4 @@ fn adjust_gate_terrain(unit_id: i32, active: bool, frame: i32) {
     terrain::defer_wall_terrain_until(unit_id, unit_def_id, 1.0, frame + GATE_CLOSE_FRAMES);
 }
 
-const GATE: &str = "gate";
 const GATE_CLOSE_FRAMES: i32 = 27;

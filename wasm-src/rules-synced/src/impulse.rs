@@ -125,13 +125,11 @@ impl Impulses {
 }
 
 fn weapon_impulse(weapon_def_id: i32) -> Option<f32> {
-    spring::weapon_defs::get_weapon_def_custom_param(weapon_def_id, "impulse")
-        .ok()
-        .and_then(|value| value.parse().ok())
+    crate::defs::get().weapon_impulse(weapon_def_id)
 }
 
 fn unit_mass(unit_def_id: i32) -> f32 {
-    spring::get_unit_def_param_float(unit_def_id, "mass").unwrap_or(0.0)
+    crate::defs::get().unit(unit_def_id).mass
 }
 
 fn in_build(unit_id: i32) -> bool {

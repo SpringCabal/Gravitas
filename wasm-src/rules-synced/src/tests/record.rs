@@ -65,6 +65,6 @@ fn with_record<R>(function: impl FnOnce(&mut Record) -> R) -> Option<R> {
 fn describe(unit_id: i32, unit_def_id: i32) -> String {
     alloc::format!(
         "{} (unit {unit_id})",
-        crate::units::def_name(unit_def_id).unwrap_or_else(|| String::from("?"))
+        crate::defs::get().unit(unit_def_id).name
     )
 }

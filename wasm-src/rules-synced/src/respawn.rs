@@ -125,8 +125,7 @@ pub fn rebirth(rebirth: &Rebirth) -> Option<i32> {
             },
         );
     }
-    let name = units::def_name(rebirth.unit_def_id)?;
-    units::create(&name, rebirth.origin, rebirth.team_id)
+    units::create(rebirth.unit_def_id, rebirth.origin, rebirth.team_id)
 }
 
 pub const SCAN_FRAME: i32 = 30;

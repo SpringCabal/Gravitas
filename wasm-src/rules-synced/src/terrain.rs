@@ -69,7 +69,6 @@ const STEP: f32 = 8.0;
 const MARGIN: f32 = 2.0;
 const SQUARE_SIZE: f32 = 8.0;
 const MAX_STEPS: i32 = 256;
-const GATE: &str = "gate";
 
 fn queue(unit_id: i32, unit_def_id: i32, height: f32, due_frame: i32) {
     PENDING.with(|pending| {
@@ -90,9 +89,7 @@ fn queue(unit_id: i32, unit_def_id: i32, height: f32, due_frame: i32) {
 }
 
 fn record_levelled(unit_def_id: i32) {
-    let Some(name) = units::def_name(unit_def_id) else {
-        return;
-    };
+    let name = crate::defs::get().unit(unit_def_id).name.clone();
     LEVELLED.with(|levelled| {
         let mut levelled = levelled.borrow_mut();
         match levelled
@@ -147,10 +144,10 @@ fn adjust_wall_terrain(unit_id: i32, height: f32) {
 }
 
 fn is_wall_like(unit_id: i32, unit_def_id: i32) -> bool {
-    if units::def_id(GATE) == Some(unit_def_id) {
+    if crate::defs::get().gate == Some(unit_def_id) {
         return true;
     }
-    units::has_custom_param(unit_def_id, "wall")
+    crate::defs::get().unit(unit_def_id).wall
         && spring::get_unit_rules_param_f32(unit_id, "invulnerable").is_ok_and(|value| value == 0.0)
 }
 

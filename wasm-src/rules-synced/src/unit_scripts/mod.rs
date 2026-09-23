@@ -27,7 +27,7 @@ use self::common::{EnginePieces, SIG_AIM, SIG_ANIMATION, SIG_STOP, explode, play
 use self::robots::{RobotAnimationState, RobotKind, RobotPieces};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum ScriptKind {
+pub enum ScriptKind {
     Barrel,
     Canister,
     Crate,
@@ -46,47 +46,28 @@ enum ScriptKind {
     Boss,
 }
 
-fn def_matches(def: i32, names: &[&str]) -> bool {
-    names
-        .iter()
-        .any(|name| spring::get_unit_def_id_by_name(name).ok() == Some(def))
-}
-
-fn script_kind_for_def(def: i32) -> Option<ScriptKind> {
-    if def_matches(def, &["barrel"]) {
-        Some(ScriptKind::Barrel)
-    } else if def_matches(def, &["canister"]) {
-        Some(ScriptKind::Canister)
-    } else if def_matches(def, &["crate"]) {
-        Some(ScriptKind::Crate)
-    } else if def_matches(def, &["gate"]) {
-        Some(ScriptKind::Gate)
-    } else if def_matches(def, &["electrafi"]) {
-        Some(ScriptKind::Electrafi)
-    } else if def_matches(def, &["fire"]) {
-        Some(ScriptKind::Fire)
-    } else if def_matches(def, &["plate"]) {
-        Some(ScriptKind::Plate)
-    } else if def_matches(def, &["wall1"]) {
-        Some(ScriptKind::Wall1)
-    } else if def_matches(def, &["wall2"]) {
-        Some(ScriptKind::Wall2)
-    } else if def_matches(def, &["wall3"]) {
-        Some(ScriptKind::Wall3)
-    } else if def_matches(def, &["wall4"]) {
-        Some(ScriptKind::Wall4)
-    } else if def_matches(def, &["gravit"]) {
-        Some(ScriptKind::Gravit)
-    } else if def_matches(def, &["bob", "b.o.b"]) {
-        Some(ScriptKind::Bob)
-    } else if def_matches(def, &["wallier"]) {
-        Some(ScriptKind::Wallier)
-    } else if def_matches(def, &["projector"]) {
-        Some(ScriptKind::Projector)
-    } else if def_matches(def, &["cometopapa", "come_to_papa"]) {
-        Some(ScriptKind::Boss)
-    } else {
-        None
+impl ScriptKind {
+    /// The script a unit def uses, by def name.
+    pub fn for_def_name(name: &str) -> Option<Self> {
+        Some(match name {
+            "barrel" => Self::Barrel,
+            "canister" => Self::Canister,
+            "crate" => Self::Crate,
+            "gate" => Self::Gate,
+            "electrafi" => Self::Electrafi,
+            "fire" => Self::Fire,
+            "plate" => Self::Plate,
+            "wall1" => Self::Wall1,
+            "wall2" => Self::Wall2,
+            "wall3" => Self::Wall3,
+            "wall4" => Self::Wall4,
+            "gravit" => Self::Gravit,
+            "bob" | "b.o.b" => Self::Bob,
+            "wallier" => Self::Wallier,
+            "projector" => Self::Projector,
+            "cometopapa" | "come_to_papa" => Self::Boss,
+            _ => return None,
+        })
     }
 }
 
@@ -455,7 +436,7 @@ impl GravitasCusModule {
     fn attach_pending(&mut self) {
         let pending = PENDING_UNITS.with(|units| core::mem::take(&mut *units.borrow_mut()));
         for (unit_id, def) in pending {
-            let Some(kind) = script_kind_for_def(def) else {
+            let Some(kind) = crate::defs::get().unit(def).script else {
                 continue;
             };
             let unit = UnitId(unit_id);

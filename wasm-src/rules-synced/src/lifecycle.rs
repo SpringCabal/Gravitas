@@ -136,7 +136,7 @@ fn report_game_over(unit_id: i32, unit_def_id: i32) {
     if restart::wiping() {
         return;
     }
-    if units::def_id(units::GRAVIT) == Some(unit_def_id) {
+    if crate::defs::get().gravit == Some(unit_def_id) {
         mission::win(&[ENEMY_ALLY_TEAM]);
         return;
     }

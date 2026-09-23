@@ -1,6 +1,7 @@
 extern crate alloc;
 
 mod camera;
+mod defs;
 mod diagnostics;
 mod fire;
 mod fx;

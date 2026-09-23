@@ -2,7 +2,7 @@
 /// are drawn by the particle widget instead of as models.
 pub fn configure(unit_id: i32, unit_def_id: i32) {
     let _ = spring::unsynced_ctrl::set_unit_no_select(unit_id, true);
-    if is_effect(unit_def_id) {
+    if crate::defs::unit(unit_def_id).effect {
         let _ = spring::unsynced_ctrl::set_unit_no_draw(unit_id, true);
     }
     let _ = spring::selection::select_unit_array(&[], false);
@@ -15,11 +15,4 @@ pub fn configure_all() {
             configure(unit_id, unit_def_id);
         }
     }
-}
-
-fn is_effect(unit_def_id: i32) -> bool {
-    spring::unit_defs::get_unit_def_custom_param_keys(unit_def_id)
-        .unwrap_or_default()
-        .iter()
-        .any(|key| key == "effect")
 }

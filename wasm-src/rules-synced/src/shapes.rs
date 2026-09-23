@@ -1,9 +1,6 @@
-use crate::units;
-
 pub fn apply(unit_id: i32, unit_def_id: i32) {
-    if let Some(radius) =
-        units::custom_param(unit_def_id, "radius").and_then(|value| value.parse::<f32>().ok())
-    {
+    let def = crate::defs::get().unit(unit_def_id);
+    if let Some(radius) = def.radius {
         let _ = spring::set_unit_radius_and_height(unit_id, radius, HEIGHT);
     }
     let offset = spring::types::Float3 {
@@ -15,7 +12,7 @@ pub fn apply(unit_id: i32, unit_def_id: i32) {
 }
 
 pub fn configure_effect(unit_id: i32, unit_def_id: i32) {
-    if units::custom_param(unit_def_id, "effect").is_none() {
+    if !crate::defs::get().unit(unit_def_id).effect {
         return;
     }
     let _ = spring::set_unit_neutral(unit_id, true);

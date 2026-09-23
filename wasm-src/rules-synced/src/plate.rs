@@ -36,7 +36,7 @@ impl Plates {
     }
 
     pub fn created(&mut self, unit_id: i32, unit_def_id: i32) {
-        if units::def_id(units::PLATE) == Some(unit_def_id) {
+        if crate::defs::get().plate == Some(unit_def_id) {
             self.plates.push(Plate {
                 unit_id,
                 gate_id: None,
@@ -125,7 +125,6 @@ pub fn set_state(unit_id: i32, active: bool) {
 
 const UPDATE_RATE: i32 = 5;
 const PLATE_ACTIVATION_RANGE: f32 = 40.0;
-const GATE: &str = "gate";
 
 impl Plates {
     fn plate_state(&self, plate_id: i32) -> bool {
@@ -157,7 +156,7 @@ impl Plates {
 }
 
 fn is_gate(unit_id: i32) -> bool {
-    units::def_of(unit_id).is_some_and(|def_id| units::has_custom_param(def_id, GATE))
+    units::def_of(unit_id).is_some_and(|def_id| crate::defs::get().unit(def_id).gate)
 }
 
 fn disable_collision(unit_id: i32) {
@@ -196,5 +195,5 @@ fn is_toggler(unit_id: i32) -> bool {
     let Some(def_id) = units::def_of(unit_id) else {
         return false;
     };
-    units::has_custom_param(def_id, "plate_toggler")
+    crate::defs::get().unit(def_id).plate_toggler
 }

@@ -30,7 +30,7 @@ pub fn setup() {
                     spawn.def_name,
                     spawn.x,
                     spawn.z,
-                    units::def_id(spawn.def_name)
+                    crate::defs::get().id(spawn.def_name)
                 ));
             }
         }

@@ -141,7 +141,10 @@ fn spawn(name: &str, centre: Float3, rig: usize, offset_x: f32, offset_z: f32) -
     } else {
         ENEMY_TEAM
     };
-    let Some(unit_id) = units::create(name, position, team) else {
+    let Some(unit_id) = crate::defs::get()
+        .id(name)
+        .and_then(|def_id| units::create(def_id, position, team))
+    else {
         return -1;
     };
     let _ = spring::give_order_to_unit(unit_id, spring::cmd::FIRE_STATE, &[FIRE_STATE_HOLD], 0, 0);

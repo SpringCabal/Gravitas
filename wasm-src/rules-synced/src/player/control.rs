@@ -41,7 +41,7 @@ impl Player {
     }
 
     pub fn adopt(&mut self, unit_id: i32, unit_def_id: i32, unit_team: i32) {
-        if unit_team == 0 && units::def_id(units::GRAVIT) == Some(unit_def_id) {
+        if unit_team == 0 && crate::defs::get().gravit == Some(unit_def_id) {
             self.unit_id = Some(unit_id);
             disable_auto_fire(unit_id);
         }

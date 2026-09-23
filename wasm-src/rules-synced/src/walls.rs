@@ -1,7 +1,5 @@
-use crate::units;
-
 pub fn configure(unit_id: i32, unit_def_id: i32) {
-    if !units::has_custom_param(unit_def_id, "wall") {
+    if !crate::defs::get().unit(unit_def_id).wall {
         return;
     }
     let _ = spring::set_unit_always_visible(unit_id, true);

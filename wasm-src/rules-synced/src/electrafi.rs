@@ -16,7 +16,6 @@ pub struct Shock {
     pub intensity: f32,
 }
 
-pub const ELECTRAFI: &str = "electrafi";
 pub const SIZE_PARAM: &str = "elecSize";
 
 const DEFAULT_RADIUS: f32 = 100.0;
@@ -32,7 +31,7 @@ impl Electrafi {
     }
 
     pub fn created(&mut self, unit_id: i32, unit_def_id: i32) {
-        if units::def_id(ELECTRAFI) == Some(unit_def_id) {
+        if crate::defs::get().electrafi == Some(unit_def_id) {
             self.fields.add(unit_id);
         }
     }
@@ -89,14 +88,13 @@ impl Electrafi {
                 let Some(def_id) = units::def_of(unit_id) else {
                     continue;
                 };
-                let is_player = units::custom_param(def_id, "player").is_some();
-                let is_robot = units::custom_param(def_id, "robot").is_some();
-                if !is_player && !is_robot {
+                let def = crate::defs::get().unit(def_id);
+                if !def.player && !def.robot {
                     continue;
                 }
                 let proximity = proximity_inside(unit_id, centre, field.radius);
                 self.exposures
-                    .record(unit_id, is_robot, proximity, field.unit_id, frame);
+                    .record(unit_id, def.robot, proximity, field.unit_id, frame);
             }
         }
     }

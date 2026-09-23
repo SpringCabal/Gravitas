@@ -1,9 +1,14 @@
 use crate::units;
 
 pub fn tag_on_create(unit_id: i32, unit_def_id: i32) {
-    set_flag(unit_id, unit_def_id, "invulnerable");
-    set_flag(unit_id, unit_def_id, "nonparalyzable");
-    if units::custom_param(unit_def_id, "respawnable").is_some() {
+    let def = crate::defs::get().unit(unit_def_id);
+    if def.invulnerable {
+        set_rules_param(unit_id, "invulnerable", 1.0);
+    }
+    if def.nonparalyzable {
+        set_rules_param(unit_id, "nonparalyzable", 1.0);
+    }
+    if def.respawnable {
         set_rules_param(unit_id, "respawnable", 1.0);
     }
 }
@@ -20,7 +25,7 @@ pub fn blocks_damage(unit_id: i32, paralyzer: bool) -> bool {
 }
 
 pub fn explode_barrel(unit_id: i32, unit_def_id: i32) {
-    if units::custom_param(unit_def_id, "barrel").is_none() {
+    if !crate::defs::get().unit(unit_def_id).barrel {
         return;
     }
     let Some(position) = units::position(unit_id) else {
@@ -97,12 +102,6 @@ const EXPLOSION_CEG: &str = "flashnuke";
 const FALL_CHECK_RATE: i32 = 31;
 const FALL_FLOOR: f32 = -500.0;
 const FALL_CEILING: f32 = 50.0;
-
-fn set_flag(unit_id: i32, unit_def_id: i32, key: &str) {
-    if units::custom_param_is_one(unit_def_id, key) {
-        set_rules_param(unit_id, key, 1.0);
-    }
-}
 
 fn set_rules_param(unit_id: i32, name: &str, value: f32) {
     if spring::set_unit_rules_param_f32(unit_id, name, value, units::RULES_PARAM_PRIVATE).is_err() {

@@ -82,17 +82,15 @@ const DEFAULT_ELASTICITY: f32 = 0.3;
 const DEFAULT_FRICTION: f32 = 0.8;
 
 pub fn attributes(unit_def_id: i32) -> Attributes {
-    let mass = def_float(unit_def_id, "mass");
-    let health = spring::get_unit_def_health(unit_def_id).unwrap_or(0.0);
-    let speed = spring::get_unit_def_speed(unit_def_id).unwrap_or(0.0);
-    let mut velocity_damage_scale = mass * VELOCITY_DAMAGE_MASS_FACTOR;
-    if speed == 0.0 {
+    let def = crate::defs::get().unit(unit_def_id);
+    let mut velocity_damage_scale = def.mass * VELOCITY_DAMAGE_MASS_FACTOR;
+    if def.speed == 0.0 {
         velocity_damage_scale *= IMMOBILE_MASS_MULTIPLIER;
     }
     Attributes {
-        elasticity: custom_float(unit_def_id, "elasticity").unwrap_or(DEFAULT_ELASTICITY),
-        friction: custom_float(unit_def_id, "friction").unwrap_or(DEFAULT_FRICTION),
-        out_of_map_damage_per_elmo: health / OUT_OF_MAP_DAMAGE_DIVISOR,
+        elasticity: def.elasticity.unwrap_or(DEFAULT_ELASTICITY),
+        friction: def.friction.unwrap_or(DEFAULT_FRICTION),
+        out_of_map_damage_per_elmo: def.health / OUT_OF_MAP_DAMAGE_DIVISOR,
         velocity_damage_scale,
     }
 }
@@ -144,12 +142,4 @@ fn ground_normal(x: f32, z: f32) -> spring::types::Float3 {
         y: normal.y / magnitude,
         z: normal.z / magnitude,
     }
-}
-
-fn custom_float(unit_def_id: i32, key: &str) -> Option<f32> {
-    units::custom_param(unit_def_id, key).and_then(|value| value.parse().ok())
-}
-
-fn def_float(unit_def_id: i32, key: &str) -> f32 {
-    spring::get_unit_def_param_float(unit_def_id, key).unwrap_or(0.0)
 }

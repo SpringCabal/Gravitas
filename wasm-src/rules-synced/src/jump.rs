@@ -62,7 +62,7 @@ impl Jumps {
         let Some(def_id) = units::def_of(unit_id) else {
             return Outcome::Invalid;
         };
-        if units::def_id(units::GRAVIT) != Some(def_id) {
+        if crate::defs::get().gravit != Some(def_id) {
             return Outcome::Invalid;
         }
         let Some(start) = units::position(unit_id) else {

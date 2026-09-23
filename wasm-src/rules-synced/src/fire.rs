@@ -15,7 +15,6 @@ pub struct Burn {
     pub size_mult: f32,
 }
 
-pub const FIRE: &str = "fire";
 pub const SIZE_PARAM: &str = "fireSize";
 
 const DEFAULT_RADIUS: f32 = 500.0;
@@ -32,7 +31,7 @@ impl Fires {
     }
 
     pub fn created(&mut self, unit_id: i32, unit_def_id: i32) {
-        if units::def_id(FIRE) == Some(unit_def_id) {
+        if crate::defs::get().fire == Some(unit_def_id) {
             self.fields.add(unit_id);
         }
     }
