@@ -16,19 +16,19 @@ impl UnitDefScript for GravitasUnitScript {
         crate::defs::get().unit(def).script.map(capabilities)
     }
 
-    fn for_def(def: i32, ctx: &mut InitCtx<'_>) -> Self {
+    fn for_def(def: i32, ctx: &mut InitCtx<'_>, _: &mut ()) -> Self {
         Self::for_kind(crate::defs::get().unit(def).script, ctx)
     }
 }
 
-/// Attach the script of a unit that was just created, or that existed before
-/// the game started. Deferred while the CUS state is in use further up the
+/// Attach the script of a unit that was just created. Deferred while the CUS state is in use further up the
 /// stack (a unit created from inside a unit script).
 pub fn attach(unit: i32, def: i32) {
     crate::with_cus_module_or_defer(move |host| host.unit_created(UnitId(unit), def));
 }
 
-/// Attach the scripts of every unit that exists now.
+/// Attach the scripts of units that exist when the rules load (after a rules
+/// reload).
 pub fn attach_existing() {
     crate::with_cus_module_or_defer(|host| host.attach_existing());
 }
