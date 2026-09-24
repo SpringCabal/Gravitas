@@ -7,12 +7,13 @@ use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
 use crate::player::{self, Player};
 use crate::state::Global;
-use crate::{diagnostics, jump};
+use crate::{diagnostics, jump, mission};
 
 const RESTART_MESSAGE: &[u8] = b"gravitas_restart";
+const ENEMY_ALLY_TEAM: i32 = 1;
 
 /// Takes the ui module's input and drives the player unit with it: moving,
-/// aiming, holding fire and jumping.
+/// aiming, holding fire and jumping. The game is lost with that unit.
 #[derive(Default)]
 pub struct PlayerGadget {
     player: RefCell<Player>,
@@ -58,10 +59,20 @@ impl Gadget<Global> for PlayerGadget {
         }
     }
 
+    /// Losing the player's unit loses the game. Other Gravits (the e2e arena
+    /// has several) are just units.
     fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
-        let mut player = self.player.borrow_mut();
-        player.release(event.unit_id);
-        ctx.global().player_unit.set(player.unit_id());
+        let global = ctx.global();
+        let lost = {
+            let mut player = self.player.borrow_mut();
+            let lost = player.unit_id() == Some(event.unit_id);
+            player.release(event.unit_id);
+            global.player_unit.set(player.unit_id());
+            lost
+        };
+        if lost && !global.restart.wiping() {
+            mission::win(global, &[ENEMY_ALLY_TEAM]);
+        }
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {

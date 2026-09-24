@@ -19,6 +19,7 @@ impl Case for Restarting {
 
     fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
+            OTHER_GRAVIT_FRAME => self.kill_other_gravit(global),
             KILL_FRAME => self.kill(global),
             PRESS_FRAME => self.press(global),
             VERDICT_FRAME => self.check(global),
@@ -29,6 +30,8 @@ impl Case for Restarting {
     }
 }
 
+/// After the jump case is done with its Gravit.
+const OTHER_GRAVIT_FRAME: i32 = 144;
 const KILL_FRAME: i32 = 148;
 const PRESS_FRAME: i32 = 150;
 const VERDICT_FRAME: i32 = 175;
@@ -36,6 +39,17 @@ const DIE_AGAIN_FRAME: i32 = 180;
 const SECOND_VERDICT_FRAME: i32 = 190;
 
 impl Restarting {
+    fn kill_other_gravit(&mut self, global: &Global) -> Step {
+        let Some(vaulter) = harness::arena(global, |arena| arena.vaulter) else {
+            return fail("no arena");
+        };
+        destroy(vaulter);
+        if global.outcome.get().is_some() {
+            return fail("losing a Gravit that is not the player's ended the game");
+        }
+        Step::Wait
+    }
+
     fn kill(&mut self, global: &Global) -> Step {
         let Some(jumper) = harness::arena(global, |arena| arena.jumper) else {
             return fail("no arena");

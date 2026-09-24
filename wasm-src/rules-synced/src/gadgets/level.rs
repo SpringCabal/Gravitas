@@ -5,7 +5,7 @@ use crate::state::{Global, Phase};
 use crate::{diagnostics, level, mission, restart, setup};
 
 /// Spawns the level at the end of a frame, links it at the start of the next, restarts it on request, and
-/// ends the game when the player or the boss dies.
+/// wins the game when the boss dies. (The player gadget ends it when the player's unit dies.)
 pub struct LevelGadget;
 
 impl Gadget<Global> for LevelGadget {
@@ -35,10 +35,6 @@ impl Gadget<Global> for LevelGadget {
         if global.restart.wiping() {
             return;
         }
-        if crate::defs::get().gravit == Some(event.unit_def_id) {
-            mission::win(global, &[ENEMY_ALLY_TEAM]);
-            return;
-        }
         let boss = global.level.access().unit_of(level::BOSS_UNIT);
         if boss == Some(event.unit_id) {
             mission::win(global, &[PLAYER_ALLY_TEAM]);
@@ -47,4 +43,3 @@ impl Gadget<Global> for LevelGadget {
 }
 
 const PLAYER_ALLY_TEAM: i32 = 0;
-const ENEMY_ALLY_TEAM: i32 = 1;
