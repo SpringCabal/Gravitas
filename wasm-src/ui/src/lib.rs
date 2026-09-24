@@ -10,7 +10,6 @@ mod healthbars;
 mod hud;
 mod input;
 mod mapedge;
-mod music;
 mod selection;
 mod shots;
 mod state;

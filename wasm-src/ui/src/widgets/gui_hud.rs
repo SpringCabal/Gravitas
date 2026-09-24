@@ -1,6 +1,8 @@
 use spring_addons::AddonContext;
 use spring_addons::ui::Widget;
 
+use gravitas_shared::Status;
+
 use crate::hud;
 use crate::state::Global;
 
@@ -27,11 +29,11 @@ impl Widget<Global> for GuiHudWidget {
             return;
         };
         let global = ctx.global();
-        if let Some(outcome) = text.strip_prefix("GRAVITAS_OVER|") {
-            hud::game_over(&mut global.hud.access_mut(), outcome == "1");
-        } else if text.starts_with("GRAVITAS_STATUS|") {
-            let player_unit = hud::update(&mut global.hud.access_mut(), text);
-            global.player_unit.set(player_unit);
+        if let Some(victory) = gravitas_shared::parse_game_over(text) {
+            hud::game_over(&mut global.hud.access_mut(), victory);
+        } else if let Some(status) = Status::parse(text) {
+            hud::update(&mut global.hud.access_mut(), status);
+            global.player_unit.set(status.player_unit);
         }
     }
 

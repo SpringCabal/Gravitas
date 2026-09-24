@@ -15,6 +15,9 @@ fire-probe = ["e2e"]
 [dependencies]
 spring = { workspace = true }
 spring-addons = { workspace = true }
+springcabal = { workspace = true }
+springcabal-control = { workspace = true }
+gravitas-shared = { path = "../shared" }
 
 [lints]
 workspace = true

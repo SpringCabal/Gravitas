@@ -1,16 +1,20 @@
+use spring_addons::AddonContext;
 use spring_addons::ui::Widget;
 
-use crate::fire;
-#[cfg(not(feature = "fire-probe"))]
-use crate::state;
+use crate::fire::{self, Distortion};
 use crate::state::Global;
 
+/// Moves and draws the fire and electric particles.
 #[derive(Default)]
-pub struct GfxFireWidget;
+pub struct GfxFireWidget {
+    distortion: Distortion,
+    #[cfg(feature = "fire-probe")]
+    probe: fire::probe::Probe,
+}
 
 impl GfxFireWidget {
     pub fn new() -> Self {
-        Self
+        Self::default()
     }
 }
 
@@ -19,21 +23,22 @@ impl Widget<Global> for GfxFireWidget {
         "GfxFire"
     }
 
-    fn update(&self, _ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
+    fn update(&self, ctx: &AddonContext<'_, Global>, _dt: f32) {
+        let global = ctx.global();
         #[cfg(feature = "fire-probe")]
-        {
-            fire::probe::update();
-        }
+        self.probe.update(global);
         #[cfg(not(feature = "fire-probe"))]
         {
-            let frames = state::with_state(|ui| ui.frames_this_update).unwrap_or(0);
+            let frames = global.clock.get().elapsed;
             if frames > 0 {
-                fire::update(frames as f32);
+                global.fire.access_mut().advance(frames as f32);
             }
         }
     }
 
-    fn draw_world(&self, _ctx: &spring_addons::AddonContext<'_, Global>) {
-        fire::draw();
+    fn draw_world(&self, ctx: &AddonContext<'_, Global>) {
+        let global = ctx.global();
+        let time = global.clock.get().frame as f32;
+        fire::draw(&global.fire.access(), &self.distortion, time);
     }
 }

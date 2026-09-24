@@ -1,11 +1,11 @@
 //! What the widgets share. Everything else is owned by the widget that uses
 //! it.
 
-use core::cell::{Cell, RefCell};
+use core::cell::Cell;
 
 use spring_addons::Resource;
 
-use crate::fire::Field;
+use crate::fire::Fire;
 use crate::hud::Hud;
 
 #[derive(Default)]
@@ -14,47 +14,22 @@ pub struct Global {
     pub player_unit: Cell<Option<i32>>,
     /// The RmlUi HUD, also used by its event callbacks.
     pub hud: Resource<Hud>,
+    /// The game clock, recorded by the GameClock widget at the start of each
+    /// Update for the widgets that advance with the game.
+    pub clock: Cell<Clock>,
+    /// The fire and electric particles: the rules' effect messages spawn
+    /// them, the fire widget moves and draws them.
+    pub fire: Resource<Fire>,
     /// The e2e scenario's stand-in for the mouse: the input widget sends it
     /// through the normal input message.
     #[cfg(feature = "e2e")]
     pub scripted_pointer: Cell<Option<crate::shots::ScriptedPointer>>,
 }
 
-/// The fire module's particle state, and the game clock it advances with
-/// (written by the GameClock widget).
-pub struct UiState {
+#[derive(Clone, Copy, Default)]
+pub struct Clock {
     /// The game frame at the start of this Update.
-    pub game_frame: i32,
+    pub frame: i32,
     /// Game frames since the previous Update.
-    pub frames_this_update: i32,
-    pub fire_pass: usize,
-    pub fire: Field,
-    pub fire_seed: u64,
-}
-
-thread_local! {
-    static STATE: RefCell<UiState> = RefCell::new(UiState::new());
-}
-
-/// Borrow the fire and clock state. Panics on a conflicting borrow rather than
-/// skipping the update.
-pub fn with_state<R>(function: impl FnOnce(&mut UiState) -> R) -> Option<R> {
-    STATE.with(|state| {
-        let mut ui = state
-            .try_borrow_mut()
-            .expect("gravitas ui state is already borrowed");
-        Some(function(&mut ui))
-    })
-}
-
-impl UiState {
-    fn new() -> Self {
-        Self {
-            game_frame: 0,
-            frames_this_update: 0,
-            fire_pass: 0,
-            fire: Field::new(),
-            fire_seed: 0,
-        }
-    }
+    pub elapsed: i32,
 }

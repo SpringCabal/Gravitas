@@ -77,17 +77,12 @@ pub struct Sample {
     pub distortion_heat: f32,
 }
 
+#[derive(Default)]
 pub struct Field {
     particles: Vec<Particle>,
 }
 
 impl Field {
-    pub fn new() -> Self {
-        Self {
-            particles: Vec::new(),
-        }
-    }
-
     pub fn spawn(&mut self, particle: Particle) {
         if self.particles.len() >= MAX_PARTICLES {
             return;

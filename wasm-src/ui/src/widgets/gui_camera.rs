@@ -17,24 +17,24 @@ impl Widget<Global> for GuiCameraWidget {
     /// Don't wait for the first status message: the engine already knows the
     /// player's unit during ui startup.
     fn init(&self, ctx: &AddonContext<'_, Global>) {
-        self.camera.follow(ctx.global());
+        self.camera.follow(ctx.global(), 0.0);
     }
 
-    fn update(&self, ctx: &AddonContext<'_, Global>, _dt: f32) {
-        self.camera.follow(ctx.global());
+    fn update(&self, ctx: &AddonContext<'_, Global>, dt: f32) {
+        self.camera.follow(ctx.global(), dt);
     }
 
     /// The first status message can come before the first Update; follow it
     /// so the full-map camera never shows.
     fn recv_from_synced(&self, ctx: &AddonContext<'_, Global>, message: &[u8]) {
-        if message.starts_with(b"GRAVITAS_STATUS|") {
-            self.camera.follow(ctx.global());
+        if core::str::from_utf8(message)
+            .ok()
+            .and_then(gravitas_shared::Status::parse)
+            .is_some()
+        {
+            self.camera.follow(ctx.global(), 0.0);
         }
         #[cfg(feature = "e2e")]
-        if message.starts_with(b"GRAVITAS_SHOT|")
-            && let Ok(text) = core::str::from_utf8(message)
-        {
-            self.camera.handle_shot_message(text);
-        }
+        self.camera.handle_request(message);
     }
 }

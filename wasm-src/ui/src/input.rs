@@ -1,35 +1,22 @@
-use alloc::format;
 use core::cell::Cell;
 
+use gravitas_shared::Input as InputMessage;
 use spring::types::Float3;
-use spring_addons::keys;
+use spring_addons::KeyEvent;
+use springcabal::keys::MoveKeys;
+use springcabal::message::SendOnChange;
 
 use crate::state::Global;
 
 /// The keys held and what was last sent to the rules module.
 #[derive(Default)]
 pub struct Input {
-    north: Cell<bool>,
-    south: Cell<bool>,
-    west: Cell<bool>,
-    east: Cell<bool>,
+    movement: MoveKeys,
     jump: Cell<bool>,
     /// Whether jump was held at the previous poll.
     jump_held: Cell<bool>,
-    last_sent: Cell<Option<Sent>>,
-}
-
-/// What one input message says, and for which player unit.
-#[derive(Clone, Copy, PartialEq)]
-struct Sent {
-    player_unit: i32,
-    move_x: f32,
-    move_z: f32,
-    target: Float3,
-    target_unit: i32,
-    push: bool,
-    pull: bool,
-    jump: bool,
+    /// The player unit is part of it: a new unit needs the input again.
+    sent: SendOnChange<(i32, InputMessage)>,
 }
 
 /// Where the cursor points and the mouse buttons held.
@@ -53,62 +40,39 @@ impl Input {
             return;
         };
         let held = self.jump.get() || pointer.middle;
-        let sent = Sent {
-            // The player unit is part of the key: a new unit needs the input
-            // again.
-            player_unit,
-            move_x: f32::from(self.east.get()) - f32::from(self.west.get()),
-            move_z: f32::from(self.south.get()) - f32::from(self.north.get()),
-            target: pointer.target,
+        let (move_x, move_z) = self.movement.axis();
+        let input = InputMessage {
+            move_x: move_x as f32,
+            move_z: move_z as f32,
+            target: [pointer.target.x, pointer.target.y, pointer.target.z],
             target_unit: pointer.target_unit,
             push: pointer.left,
             pull: pointer.right,
             jump: held && !self.jump_held.replace(held),
         };
-        if self.last_sent.get() == Some(sent) {
-            return;
+        // A failed send isn't recorded, so the next poll tries again.
+        self.sent
+            .send_if_changed((player_unit, input), |(_, input)| {
+                let message = input.encode();
+                spring::send_lua_rules_msg(&message)
+                    .map_err(|error| {
+                        crate::diagnostics::warning(&alloc::format!(
+                            "player input not sent (error {}): {message}",
+                            error.code
+                        ))
+                    })
+                    .is_ok()
+            });
+    }
+
+    /// A key went down or up; whether it is one of the game's.
+    pub fn key(&self, event: &KeyEvent<'_>, down: bool) -> bool {
+        if event.matches("e") || event.matches("space") {
+            self.jump.set(down);
+            return true;
         }
-        let message = format!(
-            "gravitas|{}|{}|{}|{}|{}|{}|{}|{}|{}",
-            sent.move_x,
-            sent.move_z,
-            sent.target.x,
-            sent.target.y,
-            sent.target.z,
-            sent.target_unit,
-            i32::from(sent.push),
-            i32::from(sent.pull),
-            i32::from(sent.jump),
-        );
-        match spring::send_lua_rules_msg(&message) {
-            Ok(_) => self.last_sent.set(Some(sent)),
-            // Not recorded as sent, so the next poll tries again.
-            Err(error) => crate::diagnostics::warning(&format!(
-                "player input not sent (error {}): {message}",
-                error.code
-            )),
-        }
-    }
-
-    pub fn key_press(&self, key_code: i32) -> bool {
-        self.set_key(key_code, true)
-    }
-
-    pub fn key_release(&self, key_code: i32) -> bool {
-        self.set_key(key_code, false)
-    }
-
-    fn set_key(&self, key_code: i32, pressed: bool) -> bool {
-        let key = match key_code {
-            KEY_W | KEY_UP => &self.north,
-            KEY_S | KEY_DOWN => &self.south,
-            KEY_A | KEY_LEFT => &self.west,
-            KEY_D | KEY_RIGHT => &self.east,
-            KEY_E | KEY_SPACE => &self.jump,
-            _ => return false,
-        };
-        key.set(pressed);
-        true
+        self.movement.set(event, down);
+        MoveKeys::is_move_key(event)
     }
 }
 
@@ -118,16 +82,6 @@ pub fn mouse_press(_x: i32, _y: i32, button: i32) -> bool {
 
 pub fn mouse_release(_x: i32, _y: i32, _button: i32) {}
 
-const KEY_W: i32 = 119;
-const KEY_A: i32 = 97;
-const KEY_S: i32 = 115;
-const KEY_D: i32 = 100;
-const KEY_E: i32 = 101;
-const KEY_SPACE: i32 = 32;
-const KEY_UP: i32 = keys::UP;
-const KEY_DOWN: i32 = keys::DOWN;
-const KEY_RIGHT: i32 = keys::RIGHT;
-const KEY_LEFT: i32 = keys::LEFT;
 const NO_UNIT: i32 = -1;
 
 /// The mouse, or the e2e scenario's scripted pointer when it has one.

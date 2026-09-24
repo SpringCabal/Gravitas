@@ -15,8 +15,6 @@ pub struct HudBindings {
 
 pub const HEALTH_FULL_COLOR: &str = "#00bf00";
 
-const RESTART_MESSAGE: &str = "gravitas_restart";
-
 pub fn create(context: u64) -> Option<HudBindings> {
     let model = spring::context_create_data_model(context, "gravitas").ok()?;
     if !model.success || model.data_model_handle == 0 {
@@ -24,7 +22,7 @@ pub fn create(context: u64) -> Option<HudBindings> {
     }
     let model = model.data_model_handle;
     bind_event(model, "endgameRestart", restart);
-    bind_event(model, "endgameExit", |_| reload());
+    bind_event(model, "endgameExit", |_| springcabal::menu::quit_to_menu());
     Some(HudBindings {
         health_percent: bind_percent(model, "healthPercent", 100.0)?,
         health_caption: bind_string(model, "healthCaption", "")?,
@@ -80,14 +78,9 @@ fn bind_string(model: u64, name: &str, initial: &str) -> Option<u64> {
     binding.success.then_some(binding.variable_handle)
 }
 
-/// Reload the game: the engine goes back to whatever started it.
-pub fn reload() {
-    let _ = spring::send_commands("reloadforce", "");
-}
-
 /// The end-of-game panel's restart button.
 pub fn restart(global: &Global) {
-    if let Err(error) = spring::send_lua_rules_msg(RESTART_MESSAGE) {
+    if let Err(error) = spring::send_lua_rules_msg(gravitas_shared::RESTART) {
         crate::diagnostics::warning(&alloc::format!("restart not sent (error {})", error.code));
     }
     super::overlays::hide_game_over(&mut global.hud.access_mut());

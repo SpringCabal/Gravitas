@@ -13,11 +13,12 @@ impl Widget<Global> for GfxRulesEffectsWidget {
         "GfxRulesEffects"
     }
 
-    fn recv_from_synced(&self, _ctx: &AddonContext<'_, Global>, message: &[u8]) {
-        if message.starts_with(b"GRAVITAS_FX|")
-            && let Ok(text) = core::str::from_utf8(message)
+    fn recv_from_synced(&self, ctx: &AddonContext<'_, Global>, message: &[u8]) {
+        if let Some(effect) = core::str::from_utf8(message)
+            .ok()
+            .and_then(gravitas_shared::Effect::parse)
         {
-            fx::handle(text);
+            fx::handle(ctx.global(), effect);
         }
     }
 }

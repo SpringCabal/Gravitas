@@ -1,53 +1,29 @@
 use alloc::format;
 use alloc::string::String;
 
+use gravitas_shared::Status;
+
 use super::{Hud, model};
 
-/// Show a GRAVITAS_STATUS message. Returns the player unit it reports.
-pub fn update(hud: &mut Hud, message: &str) -> Option<i32> {
-    if hud.status != message {
-        hud.status = String::from(message);
-    }
-    show(hud, message)
+/// Show a status; it is shown again once the HUD exists.
+pub fn update(hud: &mut Hud, status: Status) {
+    hud.status = Some(status);
+    show(hud, status);
 }
 
-/// Show a status message on the HUD.
-pub fn show(hud: &Hud, message: &str) -> Option<i32> {
-    let mut health = 0;
-    let mut max_health = 1;
-    let mut player_unit = None;
-    let mut ready = [None, None];
-    for field in message.split('|').skip(1) {
-        let Some((key, value)) = field.split_once('=') else {
-            continue;
-        };
-        match key {
-            "health" => health = value.parse().unwrap_or(0),
-            "maxHealth" => max_health = value.parse().unwrap_or(1),
-            "playerUnit" => player_unit = value.parse().ok().filter(|unit_id| *unit_id >= 0),
-            "push" => ready[0] = Some(value != "0"),
-            "pull" => ready[1] = Some(value != "0"),
-            _ => {}
-        }
-    }
+/// Show a status on the HUD.
+pub fn show(hud: &Hud, status: Status) {
     let Some(bindings) = hud.bindings else {
-        return player_unit;
+        return;
     };
-    for (handle, ready) in [bindings.push_ready, bindings.pull_ready]
-        .into_iter()
-        .zip(ready)
-    {
-        if let Some(ready) = ready {
-            model::set_bool(handle, ready);
-        }
-    }
-    let max_health = max_health.max(1);
-    let health = health.max(0);
+    model::set_bool(bindings.push_ready, status.push_ready);
+    model::set_bool(bindings.pull_ready, status.pull_ready);
+    let max_health = status.max_health.max(1);
+    let health = status.health.max(0);
     let ratio = (health as f32 / max_health as f32).clamp(0.0, 1.0);
     model::set_percent(bindings.health_percent, ratio * 100.0);
     model::set_string(bindings.health_caption, &format!("{health}/{max_health}"));
     model::set_string(bindings.health_color, &health_color(ratio));
-    player_unit
 }
 
 fn health_color(ratio: f32) -> String {

@@ -1,35 +1,28 @@
-pub fn handle(message: &str) {
-    let mut fields = message.split('|').skip(1);
-    let Some(kind) = fields.next() else {
-        return;
-    };
-    let Some(x) = number(&mut fields) else {
-        return;
-    };
-    let Some(y) = number(&mut fields) else {
-        return;
-    };
-    let Some(z) = number(&mut fields) else {
-        return;
-    };
-    let magnitude = number(&mut fields).unwrap_or(1.0);
-    if !in_view(x, y, z, magnitude) {
+use gravitas_shared::{Effect, EffectKind};
+
+use crate::state::Global;
+
+/// Draw a fire or electric effect the rules module sent, if it can be seen.
+pub fn handle(global: &Global, effect: Effect) {
+    let [x, y, z] = effect.position;
+    if !in_view(x, y, z, effect.magnitude()) {
         return;
     }
     let position = spring::types::Float3 { x, y, z };
-    match kind {
-        "burn" => {
-            let size_mult = number(&mut fields).unwrap_or(1.0);
-            let velocity_x = number(&mut fields).unwrap_or(0.0);
-            let velocity_z = number(&mut fields).unwrap_or(0.0);
-            crate::fire::burn(position, magnitude, size_mult, [velocity_x, velocity_z]);
-        }
-        "flame" => crate::fire::flame(position, magnitude),
-        "arc" => crate::fire::electric_field(position, magnitude),
-        "spark" => {
-            let velocity_x = number(&mut fields).unwrap_or(0.0);
-            let velocity_z = number(&mut fields).unwrap_or(0.0);
-            let spread = number(&mut fields).unwrap_or(0.0);
+    let mut fire = global.fire.access_mut();
+    match effect.kind {
+        EffectKind::Burn {
+            radius,
+            strength,
+            velocity,
+        } => crate::fire::burn(&mut fire, position, radius, strength, velocity),
+        EffectKind::Flame { radius } => crate::fire::flame(&mut fire, position, radius),
+        EffectKind::Arc { radius } => crate::fire::electric_field(&mut fire, position, radius),
+        EffectKind::Spark {
+            intensity,
+            velocity,
+            spread,
+        } => {
             // Like the Lua effect, every spark starts at its own point inside
             // a cube around the unit.
             let position = spring::types::Float3 {
@@ -37,9 +30,8 @@ pub fn handle(message: &str) {
                 y: position.y + spread * signed_random(),
                 z: position.z + spread * signed_random(),
             };
-            crate::fire::electric_spark(position, magnitude, [velocity_x, velocity_z]);
+            crate::fire::electric_spark(&mut fire, position, intensity, velocity);
         }
-        _ => {}
     }
 }
 
@@ -49,13 +41,6 @@ fn in_view(x: f32, y: f32, z: f32, magnitude: f32) -> bool {
 }
 
 const VIEW_RADIUS: f32 = 150.0;
-
-fn number<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<f32> {
-    fields
-        .next()
-        .and_then(|value| value.parse::<f32>().ok())
-        .filter(|value| value.is_finite())
-}
 
 /// A value in [-1, 1) from the unsynced RNG: the scatter is only drawn, never
 /// part of the game state.

@@ -33,9 +33,9 @@ pub fn initialize(hud: &mut Hud) {
     }
     hud.context = context;
     hud.bindings = Some(bindings);
-    let status = core::mem::take(&mut hud.status);
-    super::status::show(hud, &status);
-    hud.status = status;
+    if let Some(status) = hud.status {
+        super::status::show(hud, status);
+    }
     diagnostics::info("Gravitas RmlUi HUD initialized");
 }
 

@@ -1,3 +1,4 @@
+use spring::ResultExt;
 use spring_addons::event::{EventResult, KeyEvent};
 use spring_addons::ui::Widget;
 
@@ -58,7 +59,7 @@ impl Widget<Global> for GuiInputWidget {
         // particular, this makes F12 reliable even after the HUD has removed
         // the engine's default key bindings.
         if event.matches("f11") || event.matches("f12") {
-            let _ = spring::send_commands("screenshot", "");
+            spring::send_command("screenshot").log_err("screenshot key");
             return EventResult::Handled;
         }
 
@@ -68,11 +69,11 @@ impl Widget<Global> for GuiInputWidget {
             return EventResult::Handled;
         }
 
-        if event.key_code == KEY_CTRL_Q || (event.ctrl && event.matches("q")) {
-            crate::hud::reload();
+        if springcabal::menu::is_quit_to_menu(event) {
+            springcabal::menu::quit_to_menu();
             return EventResult::Handled;
         }
-        self.input.key_press(event.key_code).into()
+        self.input.key(event, true).into()
     }
 
     fn key_release(
@@ -80,9 +81,6 @@ impl Widget<Global> for GuiInputWidget {
         _ctx: &spring_addons::AddonContext<'_, Global>,
         event: &KeyEvent<'_>,
     ) -> EventResult {
-        self.input.key_release(event.key_code).into()
+        self.input.key(event, false).into()
     }
 }
-
-/// Ctrl+Q as some platforms report it: the ASCII control character DC1.
-const KEY_CTRL_Q: i32 = 17;

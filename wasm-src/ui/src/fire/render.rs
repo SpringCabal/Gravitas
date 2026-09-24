@@ -1,14 +1,15 @@
 use spring::gl;
 
-use crate::state;
-
-use super::distortion;
 use super::effects::SMOKE_TEXTURE;
-use super::particles::Sample;
+use super::particles::{Field, Sample};
+use super::{Distortion, Fire};
 
-pub fn draw() {
-    distortion::capture_camera();
-    let textures = state::with_state(|ui| ui.fire.textures()).unwrap_or_default();
+/// Draw the particles: each texture's flames, the heat haze over them, then
+/// the smoke. `time` (in game frames) moves the haze.
+pub fn draw(fire: &Fire, distortion: &Distortion, time: f32) {
+    distortion.capture_camera();
+    let field = &fire.field;
+    let textures = field.textures();
     if textures.is_empty() {
         return;
     }
@@ -22,47 +23,39 @@ pub fn draw() {
     });
     let _ = spring::gfx::depth_mask(false);
     let _ = spring::gfx::alpha_test(true, gl::GREATER, ALPHA_FLOOR);
-    for (index, texture) in textures.iter().enumerate() {
+    for texture in &textures {
         if *texture == SMOKE_TEXTURE {
             continue;
         }
-        let _ = state::with_state(|ui| ui.fire_pass = index);
-        let _ = spring::gfx::bind_texture(texture, 0, true);
-        let _ = spring::gfx::begin_end(gl::QUADS, emit_vertices);
-        let _ = spring::gfx::bind_texture(texture, 0, false);
+        draw_texture(field, texture);
     }
     // LUPS composites heat after layer 0 flames and before layer 1 smoke.
     if let Ok(view) = spring::display::get_view_geometry(0) {
-        distortion::draw_screen_effects(view.view_size_x, view.view_size_y);
+        distortion.draw_screen_effects(field, time, view.view_size_x, view.view_size_y);
     }
-    if let Some(index) = textures
-        .iter()
-        .position(|texture| *texture == SMOKE_TEXTURE)
-    {
-        let _ = state::with_state(|ui| ui.fire_pass = index);
-        let _ = spring::gfx::bind_texture(SMOKE_TEXTURE, 0, true);
-        let _ = spring::gfx::begin_end(gl::QUADS, emit_vertices);
-        let _ = spring::gfx::bind_texture(SMOKE_TEXTURE, 0, false);
+    if textures.contains(&SMOKE_TEXTURE) {
+        draw_texture(field, SMOKE_TEXTURE);
     }
     let _ = spring::gfx::pop_attrib(0);
 }
 
-pub fn emit_vertices() {
+fn draw_texture(field: &Field, texture: &'static str) {
+    let _ = spring::gfx::bind_texture(texture, 0, true);
+    let _ = spring::gfx::begin_end(gl::QUADS, || emit_vertices(field, texture));
+    let _ = spring::gfx::bind_texture(texture, 0, false);
+}
+
+fn emit_vertices(field: &Field, texture: &'static str) {
     let Ok(vectors) = spring::unit_rendering::get_camera_vectors(0) else {
         return;
     };
     let (up, right) = (vectors.up, vectors.right);
-    let _ = state::with_state(|ui| {
-        let Some(texture) = ui.fire.textures().get(ui.fire_pass).copied() else {
-            return;
-        };
-        for particle in ui.fire.visible(texture) {
-            if particle.color[3] <= 0.0 {
-                continue;
-            }
-            quad(&particle, up, right);
+    for particle in field.visible(texture) {
+        if particle.color[3] <= 0.0 {
+            continue;
         }
-    });
+        quad(&particle, up, right);
+    }
 }
 
 const ALPHA_FLOOR: f32 = 0.0;

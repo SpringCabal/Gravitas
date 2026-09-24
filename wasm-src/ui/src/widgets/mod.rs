@@ -23,4 +23,3 @@ pub use gui_hud::GuiHudWidget;
 pub use gui_input::GuiInputWidget;
 pub use gui_unselectable::GuiUnselectableWidget;
 pub use setup::setup;
-pub use snd_music::SndMusicWidget;

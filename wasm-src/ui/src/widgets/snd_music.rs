@@ -1,20 +1,9 @@
-use spring_addons::AddonContext;
-use spring_addons::ui::Widget;
+use springcabal::music::MusicLoop;
 
-use crate::music::Music;
-use crate::state::Global;
-
-#[derive(Default)]
-pub struct SndMusicWidget {
-    music: Music,
+/// `snd_music.lua`: the one track, looped.
+pub fn music() -> MusicLoop {
+    MusicLoop::new(TRACK, VOLUME)
 }
 
-impl Widget<Global> for SndMusicWidget {
-    fn name(&self) -> &'static str {
-        "SndMusic"
-    }
-
-    fn update(&self, _ctx: &AddonContext<'_, Global>, dt: f32) {
-        self.music.update(dt.max(0.0));
-    }
-}
+const TRACK: &str = "sounds/music.ogg";
+const VOLUME: f32 = 0.3;

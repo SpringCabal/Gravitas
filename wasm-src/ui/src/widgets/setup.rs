@@ -38,7 +38,7 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
             GuiInputWidget::default(),
             GuiUnselectableWidget::new(),
             GfxFireWidget::new(),
-            SndMusicWidget::default(),
+            snd_music::music(),
             GfxHealthbarsWidget::new(),
             GfxMapEdgeWidget::default(),
         ]

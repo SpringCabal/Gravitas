@@ -3,7 +3,7 @@ use core::cell::Cell;
 use spring_addons::AddonContext;
 use spring_addons::ui::Widget;
 
-use crate::state::{self, Global};
+use crate::state::{Clock, Global};
 
 /// At most this many game frames are simulated in one Update after a stall.
 const MAX_CATCH_UP_FRAMES: i32 = 30;
@@ -20,12 +20,9 @@ impl Widget<Global> for GameClockWidget {
         "GameClock"
     }
 
-    fn update(&self, _ctx: &AddonContext<'_, Global>, _dt: f32) {
+    fn update(&self, ctx: &AddonContext<'_, Global>, _dt: f32) {
         let frame = spring::game::current_frame();
         let elapsed = (frame - self.last_frame.replace(frame)).clamp(0, MAX_CATCH_UP_FRAMES);
-        let _ = state::with_state(|ui| {
-            ui.game_frame = frame;
-            ui.frames_this_update = elapsed;
-        });
+        ctx.global().clock.set(Clock { frame, elapsed });
     }
 }

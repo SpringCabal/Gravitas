@@ -1,20 +1,16 @@
 use spring::types::Float3;
 
-use crate::state;
-
+use super::Fire;
 use super::effects;
 use super::particles::{Effect, Particle};
 
-pub fn update(frames: f32) {
-    let _ = state::with_state(|ui| ui.fire.advance(frames));
-}
-
-pub fn burn(position: Float3, radius: f32, size_mult: f32, velocity: [f32; 2]) {
-    let seed = seed_of(position);
-    raw_burn(position, radius, size_mult, velocity, seed);
+pub fn burn(fire: &mut Fire, position: Float3, radius: f32, size_mult: f32, velocity: [f32; 2]) {
+    let seed = seed_of(fire, position);
+    raw_burn(fire, position, radius, size_mult, velocity, seed);
 }
 
 pub(super) fn raw_burn(
+    fire: &mut Fire,
     position: Float3,
     radius: f32,
     size_mult: f32,
@@ -39,37 +35,37 @@ pub(super) fn raw_burn(
     smoke.life *= size_mult;
     smoke.start_radius = flame.start_radius;
     // onFireUnit never assigns smokeFX.force; LUPS supplies its zero default.
-    emit_effect(&flame, position, seed.wrapping_add(1));
-    emit_effect(&smoke, position, seed.wrapping_add(2));
+    emit_effect(fire, &flame, position, seed.wrapping_add(1));
+    emit_effect(fire, &smoke, position, seed.wrapping_add(2));
 }
 
-pub fn flame(position: Float3, radius: f32) {
-    let seed = seed_of(position);
+pub fn flame(fire: &mut Fire, position: Float3, radius: f32) {
+    let seed = seed_of(fire, position);
     // unit_fire.lua's SpawnFire keeps the gameplay radius authoritative but
     // gives each visual emission its own small speed/radius variation.  The
     // source chooses this in synced code, but it affects visuals only.
     let speed = effects::FIRE_SPEED + 0.1 * signed(seed);
     let radius = radius * (1.0 + 0.1 * signed(next(seed)));
-    raw_flame(position, radius, speed, seed);
+    raw_flame(fire, position, radius, speed, seed);
 }
 
-pub(super) fn raw_flame(position: Float3, radius: f32, speed: f32, seed: u64) {
+pub(super) fn raw_flame(fire: &mut Fire, position: Float3, radius: f32, speed: f32, seed: u64) {
     let mut heat = effects::TRAP_HEAT;
     heat.life = radius / effects::TRAP_FLAME_LIFE_DIVISOR;
     heat.emit_vector = [0.0, speed, 0.0];
-    let mut fire = effects::TRAP_FLAME;
-    fire.life = radius / effects::TRAP_FLAME_LIFE_DIVISOR;
-    fire.emit_vector = [0.0, speed, 0.0];
+    let mut flame = effects::TRAP_FLAME;
+    flame.life = radius / effects::TRAP_FLAME_LIFE_DIVISOR;
+    flame.emit_vector = [0.0, speed, 0.0];
     let mut sparks = effects::TRAP_SPARK;
     sparks.life = radius / effects::TRAP_SPARK_LIFE_DIVISOR;
     sparks.emit_vector = [0.0, speed, 0.0];
-    emit_effect(&heat, position, seed);
-    emit_effect(&fire, position, seed.wrapping_add(1));
-    emit_effect(&sparks, position, seed.wrapping_add(2));
+    emit_effect(fire, &heat, position, seed);
+    emit_effect(fire, &flame, position, seed.wrapping_add(1));
+    emit_effect(fire, &sparks, position, seed.wrapping_add(2));
 }
 
-pub fn electric_field(position: Float3, radius: f32) {
-    let seed = seed_of(position);
+pub fn electric_field(fire: &mut Fire, position: Float3, radius: f32) {
+    let seed = seed_of(fire, position);
     let mut heat = effects::ELECTRIC_FIELD_HEAT;
     heat.life = radius;
     let mut effect = effects::ELECTRIC_FIELD;
@@ -79,12 +75,12 @@ pub fn electric_field(position: Float3, radius: f32) {
     } else {
         SLOW_SPIN
     };
-    emit_effect(&heat, position, seed);
-    emit_effect(&effect, position, next(seed));
+    emit_effect(fire, &heat, position, seed);
+    emit_effect(fire, &effect, position, next(seed));
 }
 
-pub fn electric_spark(position: Float3, intensity: f32, velocity: [f32; 2]) {
-    let seed = seed_of(position);
+pub fn electric_spark(fire: &mut Fire, position: Float3, intensity: f32, velocity: [f32; 2]) {
+    let seed = seed_of(fire, position);
     let life = (effects::SPARK_BASE_LIFE + effects::SPARK_LIFE_SPREAD * signed(seed))
         * intensity.max(0.05);
 
@@ -92,20 +88,20 @@ pub fn electric_spark(position: Float3, intensity: f32, velocity: [f32; 2]) {
     heat.force = [velocity[0] * 0.5, 0.6, velocity[1] * 0.5];
     heat.life = life;
     heat.size_growth += effects::SPARK_SIZE_GROWTH_SPREAD * signed(next(seed));
-    emit_effect(&heat, position, seed);
+    emit_effect(fire, &heat, position, seed);
 
     let mut effect = effects::ELECTRIC_SPARK;
     effect.force = [velocity[0] * 0.65, 0.5, velocity[1] * 0.65];
     effect.life = life;
     effect.size_growth += effects::SPARK_SIZE_GROWTH_SPREAD * signed(next(seed));
-    emit_effect(&effect, position, next(seed));
+    emit_effect(fire, &effect, position, next(seed));
 }
 
 const FAST_SPIN: f32 = 1.0;
 const SLOW_SPIN: f32 = 0.2;
 const DEGREES_TO_RADIANS: f32 = core::f32::consts::PI / 180.0;
 
-fn emit_effect(effect: &Effect, position: Float3, seed: u64) {
+fn emit_effect(fire: &mut Fire, effect: &Effect, position: Float3, seed: u64) {
     let force = [
         effect.force[0] * (effect.life + effect.life_spread),
         effect.force[1] * (effect.life + effect.life_spread),
@@ -113,11 +109,12 @@ fn emit_effect(effect: &Effect, position: Float3, seed: u64) {
     ];
     let mut random = Random(seed as u32 ^ (seed >> 32) as u32);
     for _ in 0..effect.count {
-        spawn(effect, position, force, &mut random);
+        fire.field
+            .spawn(particle(effect, position, force, &mut random));
     }
 }
 
-fn spawn(effect: &Effect, position: Float3, force: [f32; 3], random: &mut Random) {
+fn particle(effect: &Effect, position: Float3, force: [f32; 3], random: &mut Random) -> Particle {
     // Consume distinct samples, in the source particle class' attribute order.
     let azimuth = random.sample() * core::f32::consts::TAU;
     let cone = random.sample() * effect.emit_rotation_spread * DEGREES_TO_RADIANS;
@@ -147,7 +144,7 @@ fn spawn(effect: &Effect, position: Float3, force: [f32; 3], random: &mut Random
     // second transform looks plausible for a unit-up emitter, but changes the
     // spread and height of Gravitas' 0.5-speed trap fire.
     let direction = emit_direction(effect.emit_vector, cone, azimuth, travel);
-    let particle = Particle {
+    Particle {
         x: position.x + disc * disc_angle.sin(),
         y: position.y,
         z: position.z + disc * disc_angle.cos(),
@@ -186,8 +183,7 @@ fn spawn(effect: &Effect, position: Float3, force: [f32; 3], random: &mut Random
         distortion_heat: effect.distortion_heat,
         colormap: effect.colormap,
         texture: effect.texture,
-    };
-    let _ = state::with_state(|ui| ui.fire.spawn(particle));
+    }
 }
 
 struct Random(u32);
@@ -255,12 +251,9 @@ fn cross(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
     ]
 }
 
-fn seed_of(position: Float3) -> u64 {
-    let serial = state::with_state(|ui| {
-        ui.fire_seed = ui.fire_seed.wrapping_add(1);
-        ui.fire_seed
-    })
-    .unwrap_or(0);
+fn seed_of(fire: &mut Fire, position: Float3) -> u64 {
+    fire.emissions = fire.emissions.wrapping_add(1);
+    let serial = fire.emissions;
     position.x.to_bits() as u64
         ^ ((position.z.to_bits() as u64) << 16)
         ^ serial.wrapping_mul(2_862_933_555_777_941_757)
