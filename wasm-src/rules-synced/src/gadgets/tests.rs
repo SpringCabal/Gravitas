@@ -19,6 +19,17 @@ impl Gadget<Global> for TestsGadget {
         self.runner.game_frame(ctx.global(), frame);
     }
 
+    fn unit_created(
+        &self,
+        ctx: &AddonContext<'_, Global>,
+        unit_id: i32,
+        unit_def_id: i32,
+        _team: i32,
+        _builder: i32,
+    ) {
+        tests::note_created(ctx.global(), unit_id, unit_def_id);
+    }
+
     fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
         tests::note_destroyed(ctx.global(), event.unit_id, event.unit_def_id);
     }

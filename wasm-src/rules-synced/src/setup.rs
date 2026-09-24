@@ -16,7 +16,7 @@ pub fn spawn(global: &Global) {
     let mut spawned = Vec::with_capacity(level::SPAWNS.len());
     let mut failed = 0;
     for spawn in level::SPAWNS {
-        match units::spawn(spawn) {
+        match units::spawn(spawn, &global.pending_rules) {
             Some(unit_id) => spawned.push((spawn.id, unit_id)),
             None => {
                 failed += 1;
@@ -47,12 +47,14 @@ pub fn link(global: &Global) {
         let mut level = global.level.access_mut();
         level.phase = Phase::Running;
         let mut plates = global.plates.access_mut();
-        link_gates(&level, &mut plates);
+        level.link_failures = link_gates(&level, &mut plates);
     }
     mission::stun_electrafi_proximity();
 }
 
-fn link_gates(level: &crate::state::Level, plates: &mut crate::plate::Plates) {
+/// Returns how many links failed.
+fn link_gates(level: &crate::state::Level, plates: &mut crate::plate::Plates) -> u32 {
+    let mut failures = 0;
     for link in level::LINKS {
         let plate = level.unit_of(link.plate);
         let gate = level.unit_of(link.gate);
@@ -61,6 +63,7 @@ fn link_gates(level: &crate::state::Level, plates: &mut crate::plate::Plates) {
             _ => false,
         };
         if !linked {
+            failures += 1;
             diagnostics::warning(&format!(
                 "plate link failed: plate {} gate {}",
                 link.plate, link.gate
@@ -70,6 +73,7 @@ fn link_gates(level: &crate::state::Level, plates: &mut crate::plate::Plates) {
     plates.enable_link_checks();
     for link in level::BITMASK_LINKS {
         let Some(gate) = level.unit_of(link.gate) else {
+            failures += 1;
             diagnostics::warning("bitmask link failed: missing gate");
             continue;
         };
@@ -85,9 +89,11 @@ fn link_gates(level: &crate::state::Level, plates: &mut crate::plate::Plates) {
             }
         }
         if !plates.bitmask_link(mask, gate) {
+            failures += 1;
             diagnostics::warning("bitmask link failed");
         }
     }
+    failures
 }
 
 fn reveal_map() {

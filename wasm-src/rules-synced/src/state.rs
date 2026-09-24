@@ -23,6 +23,9 @@ pub struct Global {
     pub level: Resource<Level>,
     /// The unit the local player controls.
     pub player_unit: Cell<Option<i32>>,
+    /// The scenario rules params of the unit being spawned, for the unit
+    /// setup gadget's UnitCreated.
+    pub pending_rules: Cell<crate::units::RulesParams>,
     /// The latest input from the ui module, until the player gadget takes it.
     pub player_input: Cell<Option<PlayerCommand>>,
     /// Units in flight. The player gadget starts jumps; the jump gadget flies
@@ -50,6 +53,8 @@ pub struct Level {
     pub phase: Phase,
     /// Scenario unit ids and the units spawned for them.
     pub spawned: Vec<(i32, i32)>,
+    /// Plate and gate links that could not be made.
+    pub link_failures: u32,
 }
 
 #[derive(Clone, Copy, Default, PartialEq, Eq)]

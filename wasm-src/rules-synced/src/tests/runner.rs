@@ -8,9 +8,13 @@ use crate::state::Global;
 use crate::tests::arena;
 use crate::tests::harness::{Case, Step};
 
-/// Build the e2e arena instead of the level. Returns true: the level is
-/// replaced even if the arena could not be built (the cases then fail).
+/// Build the e2e arena instead of the level, until the level case asks for
+/// the real one. Returns true when the level is replaced, even if the arena
+/// could not be built (the cases then fail).
 pub fn stage_level(global: &Global) -> bool {
+    if global.tests.real_level.get() {
+        return false;
+    }
     match arena::build() {
         Some(built) => {
             global.tests.arena.set(Some(built));
@@ -96,6 +100,11 @@ impl Runner {
     }
 }
 
+/// Ask for the real level on the next restart.
+pub fn use_real_level(global: &Global) {
+    global.tests.real_level.set(true);
+}
+
 /// Link the arena's plate and gate on the frame after it was built.
 fn link_arena(global: &Global) {
     if !global.tests.pending_link.replace(false) {
@@ -127,6 +136,7 @@ fn cases() -> Vec<Entry> {
         Box::new(crate::tests::terrain::Terrain::new()),
         Box::new(crate::tests::respawn::Respawning::new()),
         Box::new(crate::tests::restarting::Restarting::new()),
+        Box::new(crate::tests::level::RealLevel::new()),
         Box::new(crate::tests::visuals::Visuals::new()),
     ];
     cases

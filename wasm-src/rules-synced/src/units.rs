@@ -1,3 +1,5 @@
+use core::cell::Cell;
+
 use alloc::string::String;
 use alloc::vec::Vec;
 
@@ -19,7 +21,10 @@ pub fn ground_height(x: f32, z: f32) -> f32 {
     spring::get_ground_height(x, z).unwrap_or(0.0)
 }
 
-pub fn spawn(spawn: &Spawn) -> Option<i32> {
+/// Create a scenario unit. Its rules params are handed to the unit setup
+/// gadget through `pending_rules`, so they are set before any other gadget's
+/// UnitCreated sees the unit.
+pub fn spawn(spawn: &Spawn, pending_rules: &Cell<RulesParams>) -> Option<i32> {
     let def_id = crate::defs::get().id(spawn.def_name)?;
     let unit_def = unit_control::DefRef {
         name: String::from(spawn.def_name),
@@ -36,21 +41,32 @@ pub fn spawn(spawn: &Spawn) -> Option<i32> {
         y: spawn.y,
         z: spawn.z,
     };
-    let unit_id =
-        unit_control::create_unit(&unit_def, position, DEFAULT_FACING, spawn.team, options).ok()?;
+    pending_rules.set(spawn.rules);
+    let created =
+        unit_control::create_unit(&unit_def, position, DEFAULT_FACING, spawn.team, options);
+    // Taken by UnitCreated; cleared here too in case there was none.
+    pending_rules.set(&[]);
+    let unit_id = created.ok()?;
     if unit_id < 0 {
         return None;
     }
     face(unit_id, spawn.angle);
-    for (name, value) in spawn.rules {
+    order(unit_id, spring::cmd::FIRE_STATE, &[spawn.fire_state as f32]);
+    order(unit_id, spring::cmd::MOVE_STATE, &[spawn.move_state as f32]);
+    Some(unit_id)
+}
+
+/// Rules params by name, as the scenario sets them.
+pub type RulesParams = &'static [(&'static str, f32)];
+
+/// Set a new unit's scenario rules params.
+pub fn set_rules_params(unit_id: i32, rules: RulesParams) {
+    for (name, value) in rules {
         crate::diagnostics::check(
             spring::set_unit_rules_param_f32(unit_id, name, *value, RULES_PARAM_PRIVATE),
             || alloc::format!("rules param {name} for unit {unit_id}"),
         );
     }
-    order(unit_id, spring::cmd::FIRE_STATE, &[spawn.fire_state as f32]);
-    order(unit_id, spring::cmd::MOVE_STATE, &[spawn.move_state as f32]);
-    Some(unit_id)
 }
 
 pub fn create(def_id: i32, position: Float3, team: i32) -> Option<i32> {

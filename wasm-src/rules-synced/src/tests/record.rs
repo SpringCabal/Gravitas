@@ -9,6 +9,41 @@ pub struct Record {
     deaths: u32,
     first_death: Option<String>,
     toggles: Vec<(i32, bool)>,
+    /// Fire and electric-field units and their size when UnitCreated reached
+    /// the tests gadget.
+    hazard_sizes: Vec<(i32, Option<f32>)>,
+}
+
+pub fn note_created(global: &Global, unit_id: i32, unit_def_id: i32) {
+    let defs = crate::defs::get();
+    let param = if defs.fire == Some(unit_def_id) {
+        crate::fire::SIZE_PARAM
+    } else if defs.electrafi == Some(unit_def_id) {
+        crate::electrafi::SIZE_PARAM
+    } else {
+        return;
+    };
+    let size = spring::get_unit_rules_param_f32(unit_id, param).ok();
+    global
+        .tests
+        .record
+        .borrow_mut()
+        .hazard_sizes
+        .push((unit_id, size));
+}
+
+/// The hazard's size when it was created, if it was recorded (the latest
+/// record: ids are reused after a restart).
+pub fn hazard_size_at_creation(global: &Global, unit_id: i32) -> Option<Option<f32>> {
+    global
+        .tests
+        .record
+        .borrow()
+        .hazard_sizes
+        .iter()
+        .rev()
+        .find(|(id, _)| *id == unit_id)
+        .map(|(_, size)| *size)
 }
 
 pub fn note_destroyed(global: &Global, unit_id: i32, unit_def_id: i32) {
