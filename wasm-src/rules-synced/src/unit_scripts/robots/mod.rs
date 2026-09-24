@@ -3,7 +3,7 @@ use core::cell::RefCell;
 use core::f32::consts::PI;
 
 use spring::cus::{
-    AngularSpeed, Axis, InitCtx, Piece, SfxFlags, TaskDefinition, UnitCtx, WeaponId,
+    AngularSpeed, Axis, Duration, InitCtx, Piece, SfxFlags, TaskDefinition, UnitCtx, WeaponId,
 };
 
 mod gait;
@@ -101,6 +101,8 @@ struct RobotAnimationState {
     pub moving: bool,
     /// Paralyzed: the walk and idle cycles give way to the stun spasm.
     pub stunned: bool,
+    /// The death explosions are under way.
+    pub dying: bool,
     pub aiming: bool,
     pub explicit_target: bool,
     pub last_heading: f32,
@@ -122,6 +124,7 @@ impl RobotScript {
                 started: false,
                 moving: false,
                 stunned: false,
+                dying: false,
                 aiming: false,
                 explicit_target: false,
                 last_heading: 0.0,
@@ -152,7 +155,17 @@ impl RobotScript {
     }
 
     pub(super) fn killed(&self, ctx: &UnitCtx) -> spring::cus::WreckLevel {
-        killed(ctx, &self.state.borrow())
+        self.state.borrow_mut().dying = true;
+        ctx.spawn(TaskDefinition::with_state(
+            "gravitas-robot-die",
+            Rc::clone(&self.state),
+            die,
+        ));
+        WRECK_LEVEL
+    }
+
+    pub(super) fn killed_pending(&self) -> bool {
+        self.state.borrow().dying
     }
 
     pub(super) fn query_weapon(&mut self, weapon: WeaponId) -> Piece {
@@ -251,24 +264,31 @@ fn create(
     ));
 }
 
-fn killed(ctx: &UnitCtx, state: &RobotAnimationState) -> spring::cus::WreckLevel {
-    ctx.signal(SIG_ANIMATION);
-    let p = state.pieces;
-    for piece in [
-        p.leg_front_01,
-        p.leg_front_02,
-        p.fr_blade_01,
-        p.fr_blade_02,
-        p.leg_rear_01,
-        p.leg_rear_02,
-        p.r_blade_01,
-        p.r_blade_02,
-        p.center,
-    ] {
-        explode(ctx, piece, SfxFlags::EXPLODE);
+/// DeathAnimation in projector.lua and projector_boss.lua: the front legs,
+/// the rear legs and the body fly off 200 ms apart. The unit stays until the
+/// last one.
+async fn die(state: Rc<RefCell<RobotAnimationState>>, ctx: UnitCtx) {
+    let p = state.borrow().pieces;
+    let stages = [
+        &[p.leg_front_01, p.leg_front_02, p.fr_blade_01, p.fr_blade_02][..],
+        &[p.leg_rear_01, p.leg_rear_02, p.r_blade_01, p.r_blade_02][..],
+        &[p.center][..],
+    ];
+    for (index, stage) in stages.iter().enumerate() {
+        if index > 0 {
+            ctx.sleep(Duration::from_millis(DEATH_STAGE_MS)).await;
+        }
+        for piece in *stage {
+            explode(&ctx, *piece, SfxFlags::EXPLODE);
+        }
     }
-    spring::cus::WreckLevel::One
+    state.borrow_mut().dying = false;
+    ctx.set_killed_finished(WRECK_LEVEL);
 }
+
+const DEATH_STAGE_MS: u64 = 200;
+/// The Lua scripts' Killed returns 1.
+const WRECK_LEVEL: spring::cus::WreckLevel = spring::cus::WreckLevel::One;
 
 fn hide(ctx: &UnitCtx, piece: Piece) {
     if piece != Piece::INVALID {

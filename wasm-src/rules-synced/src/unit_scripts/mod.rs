@@ -185,7 +185,8 @@ impl UnitScript for GravitasUnitScript {
     fn killed_pending(&self) -> bool {
         match &self.script {
             Script::Gravit(gravit) => gravit.killed_pending(),
-            _ => false,
+            Script::Robot(robot) => robot.killed_pending(),
+            Script::Immobile(_) | Script::None => false,
         }
     }
 
