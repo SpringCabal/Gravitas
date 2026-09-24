@@ -7,7 +7,7 @@ use core::cell::RefCell;
 use spring::cus::{Axis, Duration, InitCtx, Piece, SfxFlags, TaskDefinition, UnitCtx};
 
 use super::ScriptKind;
-use super::common::{SIG_ANIMATION, explode, move_piece, play_unit_sound, set_blocking};
+use super::common::{SIG_ANIMATION, explode, move_piece, play_sound, set_blocking};
 
 const WALL2_FRAGMENTS: [&str; 11] = [
     "frag1", "frag2", "frag3", "frag4", "frag5", "frag6", "frag7", "frag8", "frag9", "frag10",
@@ -95,7 +95,7 @@ impl ImmobileScript {
 async fn gate_open(pieces: Rc<RefCell<Pieces>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_ANIMATION);
     ctx.sleep(Duration::from_millis(500)).await;
-    play_unit_sound("sounds/gate.ogg", 0.7, ctx.unit());
+    play_sound("sounds/gate.ogg", 0.7);
     let gate = pieces.borrow().gate;
     move_piece(&ctx, gate, Axis::Z, -168.0, 180.0);
     ctx.wait_for_move(gate, Axis::Z).await;
@@ -104,7 +104,7 @@ async fn gate_open(pieces: Rc<RefCell<Pieces>>, ctx: UnitCtx) {
 
 async fn gate_close(pieces: Rc<RefCell<Pieces>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_ANIMATION);
-    play_unit_sound("sounds/gate.ogg", 0.7, ctx.unit());
+    play_sound("sounds/gate.ogg", 0.7);
     let gate = pieces.borrow().gate;
     move_piece(&ctx, gate, Axis::Z, 0.0, 190.0);
     ctx.wait_for_move(gate, Axis::Z).await;
@@ -113,7 +113,7 @@ async fn gate_close(pieces: Rc<RefCell<Pieces>>, ctx: UnitCtx) {
 
 async fn plate_on(pieces: Rc<RefCell<Pieces>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_ANIMATION);
-    play_unit_sound("sounds/click.ogg", 1.0, ctx.unit());
+    play_sound("sounds/click.ogg", 1.0);
     let Pieces { button, middle, .. } = *pieces.borrow();
     move_piece(&ctx, button, Axis::Z, -15.0, 150.0);
     ctx.wait_for_move(button, Axis::Z).await;
@@ -122,7 +122,7 @@ async fn plate_on(pieces: Rc<RefCell<Pieces>>, ctx: UnitCtx) {
 
 async fn plate_off(pieces: Rc<RefCell<Pieces>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_ANIMATION);
-    play_unit_sound("sounds/click.ogg", 1.0, ctx.unit());
+    play_sound("sounds/click.ogg", 1.0);
     let Pieces { button, middle, .. } = *pieces.borrow();
     move_piece(&ctx, button, Axis::Z, 0.0, 150.0);
     ctx.wait_for_move(button, Axis::Z).await;

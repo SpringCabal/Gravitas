@@ -35,12 +35,11 @@ pub(super) fn move_piece(ctx: &UnitCtx, piece: Piece, axis: Axis, target: f32, s
     }
 }
 
-pub(super) fn play_unit_sound(name: &str, volume: f32, unit: UnitId) {
-    let Some(position) = spring::get_unit_position(unit.0, false, false).ok() else {
-        return;
-    };
-    let _ =
-        spring::sound::play_sound_file(name, volume, position, spring::types::Float3::default(), 0);
+/// A sound heard everywhere, like the scripts' `Spring.PlaySoundFile(name,
+/// volume)` (a zero position means no position).
+pub(super) fn play_sound(name: &str, volume: f32) {
+    let none = spring::types::Float3::default();
+    let _ = spring::sound::play_sound_file(name, volume, none, none, 0);
 }
 
 pub(super) fn set_blocking(unit: UnitId, blocking: bool) {

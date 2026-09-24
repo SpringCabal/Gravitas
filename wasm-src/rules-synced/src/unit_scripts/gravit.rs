@@ -10,7 +10,7 @@ use spring::cus::{
 
 use super::JumpCall;
 use super::common::{
-    SIG_AIM, SIG_IDLE, SIG_JUMP, SIG_STOP, SIG_WALK, explode, move_piece, play_unit_sound, turn,
+    SIG_AIM, SIG_IDLE, SIG_JUMP, SIG_STOP, SIG_WALK, explode, move_piece, play_sound, turn,
 };
 use data::{AnimAxis, Command, CommandKind, Keyframe, PieceName};
 
@@ -144,7 +144,7 @@ impl GravitScript {
         ctx.signal(SIG_AIM);
         ctx.signal(SIG_WALK);
         ctx.signal(SIG_IDLE);
-        play_unit_sound("sounds/death.ogg", 1.0, ctx.unit());
+        play_sound("sounds/death.ogg", 1.0);
         self.state.borrow_mut().dying = true;
         ctx.spawn(TaskDefinition::with_state(
             "gravitas-gravit-die",
