@@ -7,24 +7,27 @@ use spring_addons::ui::{HideDefaultInterface, WidgetHandler};
 use super::*;
 use crate::state::Global;
 
+/// The engine interface parts the Lua game hid; the FPS counter and speed
+/// indicator stay, as there. The map edge grid replaces the border.
+pub const HIDDEN_INTERFACE: u32 = CONSOLE
+    | RESOURCE_BAR
+    | TOOLTIP
+    | CLOCK
+    | PLAYER_INFO
+    | MINIMAP
+    | END_GRAPH
+    | UNIT_ICONS
+    | MAP_BORDER;
+
 pub fn setup(handler: &mut WidgetHandler<Global>) {
+    if gallery::active() {
+        gallery::setup(handler);
+        return;
+    }
     register_widgets!(
         handler,
         [
-            // The engine interface parts the Lua game hid; the FPS counter
-            // and speed indicator stay, as there. The map edge grid replaces
-            // the border.
-            HideDefaultInterface::new(
-                CONSOLE
-                    | RESOURCE_BAR
-                    | TOOLTIP
-                    | CLOCK
-                    | PLAYER_INFO
-                    | MINIMAP
-                    | END_GRAPH
-                    | UNIT_ICONS
-                    | MAP_BORDER
-            ),
+            HideDefaultInterface::new(HIDDEN_INTERFACE),
             // Before the fire widget: it reads the frame this records.
             GameClockWidget::default(),
             GfxRulesEffectsWidget,

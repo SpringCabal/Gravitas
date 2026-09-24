@@ -1,4 +1,5 @@
 pub mod dbg_screenshots;
+pub mod gallery;
 pub mod game_clock;
 pub mod gfx_fire;
 pub mod gfx_healthbars;
