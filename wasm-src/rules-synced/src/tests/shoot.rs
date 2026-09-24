@@ -40,7 +40,8 @@ impl Case for Shooting {
 
 const WALK_FRAME: i32 = 2;
 const VERDICT_FRAME: i32 = 60;
-/// Away from the target, and far enough to still be walking at the verdict.
+/// Up the arena screenshot (away from the HUD strip), and far
+/// enough to still be walking at the verdict.
 const WALK_DISTANCE: f32 = 250.0;
 const FIRE_AT_WILL: f32 = 2.0;
 const MOVED: f32 = 20.0;
@@ -60,7 +61,7 @@ impl Shooting {
         self.origin = origin;
         self.target_health = health;
         units::order(gunner, spring::cmd::FIRE_STATE, &[FIRE_AT_WILL]);
-        let z = origin.z + WALK_DISTANCE;
+        let z = origin.z - WALK_DISTANCE;
         units::order(
             gunner,
             spring::cmd::MOVE,
@@ -81,6 +82,7 @@ impl Shooting {
         if health >= self.target_health {
             return fail("the walking robot never hit its target");
         }
+        harness::halt(self.gunner);
         Step::Pass
     }
 }

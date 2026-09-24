@@ -50,7 +50,7 @@ pub fn build() -> Option<Arena> {
         bystander: spawn(ROBOT, centre, RIG_BARREL, BARREL_REACH, 0.0),
         revivable: spawn(ROBOT, centre, RIG_RESPAWN, 0.0, 0.0),
         gunner: spawn(ROBOT, centre, RIG_SHOOT, 0.0, 0.0),
-        target: spawn(GRAVIT, centre, RIG_SHOOT, 0.0, -TARGET_OFFSET),
+        target: spawn(GRAVIT, centre, RIG_SHOOT, -TARGET_OFFSET, 0.0),
         // Last of the Gravits: the player gadget adopts it.
         jumper: spawn(GRAVIT, centre, RIG_INPUT, 0.0, 0.0),
         fleeing: spawn(ROBOT, centre, RIG_FLEE, 0.0, 0.0),

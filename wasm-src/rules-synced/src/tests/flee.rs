@@ -31,7 +31,10 @@ impl Case for Fleeing {
             FIRST_HIT_FRAME => self.hit_and_check("the first escape"),
             // After the flee cooldown, while the first escape is still queued.
             SECOND_HIT_FRAME => match self.hit_and_check("the second escape") {
-                Step::Wait => Step::Pass,
+                Step::Wait => {
+                    harness::halt(self.robot);
+                    Step::Pass
+                }
                 verdict => verdict,
             },
             _ => Step::Wait,
@@ -56,8 +59,8 @@ impl Fleeing {
         };
         self.robot = robot;
         self.fire = fire;
-        // Away from the other rigs.
-        let z = origin.z + ASSAULT_DISTANCE;
+        // Up the arena screenshot, away from the HUD.
+        let z = origin.z - ASSAULT_DISTANCE;
         let target = Float3 {
             x: origin.x,
             y: crate::units::ground_height(origin.x, z),
