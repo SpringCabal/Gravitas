@@ -8,6 +8,7 @@ version = "0.1.0"
 dependencies = [
  "spring",
  "spring-addons",
+ "springcabal",
 ]
 
 [[package]]
@@ -36,4 +37,12 @@ name = "spring-addons"
 version = "0.1.0"
 dependencies = [
  "spring",
+]
+
+[[package]]
+name = "springcabal"
+version = "0.1.0"
+dependencies = [
+ "spring",
+ "spring-addons",
 ]

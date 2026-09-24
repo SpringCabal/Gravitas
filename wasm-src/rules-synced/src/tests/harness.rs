@@ -1,6 +1,7 @@
 use alloc::string::String;
 
 use spring::types::Float3;
+use springcabal::message::Encoder;
 
 use crate::player::PlayerCommand;
 use crate::state::Global;
@@ -27,11 +28,13 @@ pub fn arena<R>(global: &Global, function: impl FnOnce(&Arena) -> R) -> Option<R
 }
 
 pub fn look(position: Float3, height: f32) {
-    let _ = spring::send_to_unsynced(&alloc::format!(
-        "GRAVITAS_SHOT|look|{}|{}|{height}",
-        position.x,
-        position.z
-    ));
+    let message = Encoder::new("GRAVITAS_SHOT")
+        .field("look")
+        .field(position.x)
+        .field(position.z)
+        .field(height)
+        .finish();
+    let _ = spring::send_to_unsynced(&message);
 }
 
 // Input is simulated on the synced side, because a headless run has no ui
@@ -63,7 +66,11 @@ fn player_command(global: &Global, command: PlayerCommand) {
 }
 
 pub fn capture(name: &str) {
-    let _ = spring::send_to_unsynced(&alloc::format!("GRAVITAS_SHOT|shot|{name}"));
+    let message = Encoder::new("GRAVITAS_SHOT")
+        .field("shot")
+        .field(name)
+        .finish();
+    let _ = spring::send_to_unsynced(&message);
 }
 
 pub fn health(unit_id: i32) -> Option<f32> {

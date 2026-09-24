@@ -1,31 +1,19 @@
 use super::control::PlayerCommand;
 
+/// `gravitas|move_x|move_z|target_x|target_y|target_z|target_unit|push|pull|jump`,
+/// sent by the ui module's input widget.
 pub fn parse(data: &[u8]) -> Option<PlayerCommand> {
     let message = core::str::from_utf8(data).ok()?;
-    let mut fields = message.split('|');
-    if fields.next()? != "gravitas" {
-        return None;
-    }
+    let mut fields = springcabal::message::fields(message, "gravitas")?;
     Some(PlayerCommand {
-        move_x: number(&mut fields)?,
-        move_z: number(&mut fields)?,
-        target_x: number(&mut fields)?,
-        target_y: number(&mut fields)?,
-        target_z: number(&mut fields)?,
-        target_unit: number(&mut fields)? as i32,
-        push: flag(&mut fields)?,
-        pull: flag(&mut fields)?,
-        jump: flag(&mut fields)?,
+        move_x: fields.f32()?,
+        move_z: fields.f32()?,
+        target_x: fields.f32()?,
+        target_y: fields.f32()?,
+        target_z: fields.f32()?,
+        target_unit: fields.i32()?,
+        push: fields.flag()?,
+        pull: fields.flag()?,
+        jump: fields.flag()?,
     })
-}
-
-fn number<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<f32> {
-    fields
-        .next()
-        .and_then(|value| value.parse::<f32>().ok())
-        .filter(|value| value.is_finite())
-}
-
-fn flag<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<bool> {
-    fields.next().map(|value| value == "1")
 }

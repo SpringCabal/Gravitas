@@ -14,6 +14,7 @@ e2e = []
 [dependencies]
 spring = { workspace = true }
 spring-addons = { workspace = true }
+springcabal = { workspace = true }
 
 [lints]
 workspace = true

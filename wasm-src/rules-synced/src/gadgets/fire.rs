@@ -1,8 +1,7 @@
-use alloc::format;
-
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
+use crate::effects::send_fx;
 use crate::fire::Fires;
 use crate::state::{Global, PerLevel};
 use crate::units;
@@ -50,10 +49,7 @@ impl Gadget<Global> for FireGadget {
             emit_burn(burn.unit_id, burn.size_mult);
         }
         for flame in flames {
-            let _ = spring::send_to_unsynced(&format!(
-                "GRAVITAS_FX|flame|{}|{}|{}|{}",
-                flame.position.x, flame.position.y, flame.position.z, flame.radius
-            ));
+            send_fx("flame", flame.position, &[flame.radius]);
         }
     }
 }
@@ -66,8 +62,9 @@ fn emit_burn(unit_id: i32, size_mult: f32) {
     };
     let radius = spring::units_info::get_unit_radius(unit_id).unwrap_or(DEFAULT_BURN_RADIUS);
     let velocity = spring::units_info::get_unit_velocity(unit_id).unwrap_or_default();
-    let _ = spring::send_to_unsynced(&format!(
-        "GRAVITAS_FX|burn|{}|{}|{}|{radius}|{size_mult}|{}|{}",
-        position.x, position.y, position.z, velocity.x, velocity.z
-    ));
+    send_fx(
+        "burn",
+        position,
+        &[radius, size_mult, velocity.x, velocity.z],
+    );
 }

@@ -1,5 +1,7 @@
 use alloc::vec::Vec;
 
+use springcabal::message::Encoder;
+
 use crate::level;
 use crate::state::Global;
 use crate::units;
@@ -88,7 +90,8 @@ pub fn issue_assault(assault: &Assault) {
 pub fn win(global: &Global, ally_teams: &[i32]) {
     let victory = ally_teams.contains(&PLAYER_ALLY_TEAM);
     global.outcome.set(Some(victory));
-    let _ = spring::send_to_unsynced(&alloc::format!("GRAVITAS_OVER|{}", i32::from(victory)));
+    let message = Encoder::new("GRAVITAS_OVER").flag(victory).finish();
+    let _ = spring::send_to_unsynced(&message);
 }
 
 const PLAYER_ALLY_TEAM: i32 = 0;

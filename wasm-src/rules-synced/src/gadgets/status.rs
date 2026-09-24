@@ -1,9 +1,8 @@
-use core::cell::RefCell;
-
 use alloc::string::String;
 
 use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
+use springcabal::message::SendOnChange;
 
 use crate::state::Global;
 use crate::status;
@@ -13,7 +12,7 @@ const STATUS_PERIOD: i32 = 3;
 /// Keeps the ui module's HUD up to date, sending the status when it changes.
 #[derive(Default)]
 pub struct StatusGadget {
-    last: RefCell<String>,
+    sent: SendOnChange<String>,
 }
 
 impl Gadget<Global> for StatusGadget {
@@ -26,10 +25,7 @@ impl Gadget<Global> for StatusGadget {
             return;
         }
         let message = status::message(ctx.global(), frame);
-        let mut last = self.last.borrow_mut();
-        if *last != message {
-            let _ = spring::send_to_unsynced(&message);
-            *last = message;
-        }
+        self.sent
+            .send_if_changed(message, |message| spring::send_to_unsynced(message).is_ok());
     }
 }
