@@ -112,8 +112,11 @@ impl GravitScript {
         apply_keyframe(ctx, self.pieces, data::STOP[0], false);
     }
 
+    // Walk, Idle and Stop each signal their own mask first in gravit.lua, so
+    // a new one replaces the one already running.
     pub(super) fn start_moving(&self, ctx: &UnitCtx) {
         ctx.signal(SIG_IDLE);
+        ctx.signal(SIG_WALK);
         ctx.spawn(TaskDefinition::with_state(
             "gravitas-gravit-walk",
             Rc::clone(&self.state),
@@ -123,6 +126,7 @@ impl GravitScript {
 
     pub(super) fn stop_moving(&self, ctx: &UnitCtx) {
         ctx.signal(SIG_WALK);
+        ctx.signal(SIG_IDLE);
         ctx.spawn(TaskDefinition::with_state(
             "gravitas-gravit-idle",
             Rc::clone(&self.state),
@@ -281,6 +285,7 @@ async fn stopjump(state: Rc<RefCell<GravitAnimationState>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_JUMP);
     let pieces = state.borrow().pieces;
     play_animation(&ctx, pieces, data::STOPJUMP, false).await;
+    ctx.signal(SIG_STOP);
     ctx.spawn(TaskDefinition::with_state(
         "gravitas-gravit-stop",
         state,
