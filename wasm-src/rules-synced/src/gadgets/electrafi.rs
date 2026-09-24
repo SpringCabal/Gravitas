@@ -45,17 +45,20 @@ impl Gadget<Global> for ElectrafiGadget {
             if !units::valid(shock.unit_id) {
                 continue;
             }
-            let paralyze_time = if shock.paralyze { PARALYZING } else { 0.0 };
-            spring::add_unit_damage(
-                shock.unit_id,
-                shock.damage,
-                paralyze_time,
-                -1,
-                shock.attacker_id,
-                spring::types::Float3::default(),
-            )
-            .log_err_once("electric field damage");
+            if let Some(damage) = shock.damage {
+                let paralyze_time = if shock.paralyze { PARALYZING } else { 0.0 };
+                spring::add_unit_damage(
+                    shock.unit_id,
+                    damage,
+                    paralyze_time,
+                    -1,
+                    shock.attacker_id,
+                    spring::types::Float3::default(),
+                )
+                .log_err_once("electric field damage");
+            }
             emit_spark(shock.unit_id, shock.intensity);
+            crate::tests::note_spark(ctx.global(), shock.unit_id, shock.damage.is_some());
         }
         for arc in arcs {
             send_fx("arc", arc.position, &[arc.radius]);

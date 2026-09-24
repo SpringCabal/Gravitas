@@ -11,7 +11,8 @@ pub struct Electrafi {
 pub struct Shock {
     pub unit_id: i32,
     pub attacker_id: i32,
-    pub damage: f32,
+    /// None for a robot that left the field: it still sparks, unhurt.
+    pub damage: Option<f32>,
     pub paralyze: bool,
     pub intensity: f32,
 }
@@ -48,13 +49,12 @@ impl Electrafi {
         self.exposures
             .resolve(frame)
             .into_iter()
-            // Robots are only stunned while inside; the lingering burn is for
-            // the player.
-            .filter(|contact| contact.inside || !contact.robot)
             .map(|contact| Shock {
                 unit_id: contact.unit_id,
                 attacker_id: contact.attacker_id,
-                damage: contact.damage,
+                // Robots are only stunned while inside; the lingering burn is
+                // for the player.
+                damage: (contact.inside || !contact.robot).then_some(contact.damage),
                 paralyze: contact.inside && contact.robot,
                 intensity: contact.strength,
             })

@@ -49,13 +49,14 @@ mod visuals;
 mod disabled;
 
 #[cfg(feature = "e2e")]
-pub use record::{note_created, note_destroyed, note_message, note_toggled};
+pub use record::{note_created, note_destroyed, note_message, note_spark, note_toggled};
 #[cfg(feature = "e2e")]
 pub use runner::{Runner, stage_level};
 
 #[cfg(not(feature = "e2e"))]
 pub use disabled::{
-    Runner, Shared, note_created, note_destroyed, note_message, note_toggled, stage_level,
+    Runner, Shared, note_created, note_destroyed, note_message, note_spark, note_toggled,
+    stage_level,
 };
 
 /// What the e2e cases share with the gadgets: the arena that replaces the

@@ -14,6 +14,8 @@ pub struct Record {
     hazard_sizes: Vec<(i32, Option<f32>)>,
     /// Screenshots the ui module reported taken.
     shots: Vec<String>,
+    /// Units that sparked in an electric field without being hurt.
+    unhurt_sparks: Vec<i32>,
 }
 
 pub fn note_created(global: &Global, unit_id: i32, unit_def_id: i32) {
@@ -89,6 +91,23 @@ pub fn note_toggled(global: &Global, unit_id: i32, active: bool) {
         record.toggles.remove(0);
     }
     record.toggles.push((unit_id, active));
+}
+
+/// An electric field's spark on `unit_id`, and whether it came with damage.
+pub fn note_spark(global: &Global, unit_id: i32, hurt: bool) {
+    let mut record = global.tests.record.borrow_mut();
+    if !hurt && !record.unhurt_sparks.contains(&unit_id) {
+        record.unhurt_sparks.push(unit_id);
+    }
+}
+
+pub fn sparked_unhurt(global: &Global, unit_id: i32) -> bool {
+    global
+        .tests
+        .record
+        .borrow()
+        .unhurt_sparks
+        .contains(&unit_id)
 }
 
 pub fn deaths(global: &Global) -> u32 {
