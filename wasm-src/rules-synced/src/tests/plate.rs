@@ -31,11 +31,11 @@ impl Case for PlateAndGate {
         "plate"
     }
 
-    fn step(&mut self, _global: &Global, frame: i32) -> Step {
+    fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
-            0 => self.press(),
-            PRESS_VERDICT_FRAME => self.check_pressed(),
-            RELEASE_VERDICT_FRAME => self.check_released(),
+            0 => self.press(global),
+            PRESS_VERDICT_FRAME => self.check_pressed(global),
+            RELEASE_VERDICT_FRAME => self.check_released(global),
             _ => Step::Wait,
         }
     }
@@ -48,9 +48,9 @@ const GATE_PIECE: &str = "Gate";
 const PIECE_DISPLACEMENT: f32 = 1.0;
 
 impl PlateAndGate {
-    fn press(&mut self) -> Step {
+    fn press(&mut self, global: &Global) -> Step {
         let Some((plate, gate, toggler)) =
-            harness::arena(|arena| (arena.plate, arena.gate, arena.toggler))
+            harness::arena(global, |arena| (arena.plate, arena.gate, arena.toggler))
         else {
             return fail("no arena");
         };
@@ -68,16 +68,16 @@ impl PlateAndGate {
         if self.plate_piece.is_none() || self.gate_piece.is_none() {
             return fail("plate or gate has no moving piece");
         }
-        record::clear_toggles();
+        record::clear_toggles(global);
         harness::place(toggler, plate_position);
         Step::Wait
     }
 
-    fn check_pressed(&mut self) -> Step {
-        if !record::toggled_to(self.plate, true) {
+    fn check_pressed(&mut self, global: &Global) -> Step {
+        if !record::toggled_to(global, self.plate, true) {
             return fail("crate on the plate did not press it");
         }
-        if !record::toggled_to(self.gate, true) {
+        if !record::toggled_to(global, self.gate, true) {
             return fail("pressed plate did not open its linked gate");
         }
         if !harness::moved(
@@ -94,16 +94,16 @@ impl PlateAndGate {
         ) {
             return fail("opened gate did not animate");
         }
-        record::clear_toggles();
+        record::clear_toggles(global);
         harness::place(self.toggler, self.park);
         Step::Wait
     }
 
-    fn check_released(&mut self) -> Step {
-        if !record::toggled_to(self.plate, false) {
+    fn check_released(&mut self, global: &Global) -> Step {
+        if !record::toggled_to(global, self.plate, false) {
             return fail("plate stayed pressed after the crate left");
         }
-        if !record::toggled_to(self.gate, false) {
+        if !record::toggled_to(global, self.gate, false) {
             return fail("gate stayed open after the plate released");
         }
         Step::Pass

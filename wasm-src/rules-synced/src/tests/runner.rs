@@ -1,102 +1,112 @@
-use core::cell::{Cell, RefCell};
+use core::cell::RefCell;
 
 use alloc::boxed::Box;
 use alloc::vec::Vec;
 
 use crate::diagnostics;
 use crate::state::Global;
-use crate::tests::arena::{self, Arena};
+use crate::tests::arena;
 use crate::tests::harness::{Case, Step};
 
-pub fn stage_level(_global: &Global) -> bool {
-    let Some(built) = arena::build() else {
-        diagnostics::warning("E2E arena could not be built");
-        return true;
-    };
-    ARENA.with(|arena| *arena.borrow_mut() = Some(built));
-    PENDING_LINK.with(|pending| pending.set(true));
+/// Build the e2e arena instead of the level. Returns true: the level is
+/// replaced even if the arena could not be built (the cases then fail).
+pub fn stage_level(global: &Global) -> bool {
+    match arena::build() {
+        Some(built) => {
+            global.tests.arena.set(Some(built));
+            global.tests.pending_link.set(true);
+        }
+        None => diagnostics::warning("E2E arena could not be built"),
+    }
     true
 }
 
-fn link_arena(global: &Global) {
-    if !PENDING_LINK.with(|pending| pending.replace(false)) {
-        return;
-    }
-    let Some((plate, gate)) = with_arena(|arena| (arena.plate, arena.gate)) else {
-        return;
-    };
-    let mut plates = global.plates.access_mut();
-    plates.simple_link(plate, gate);
-    plates.enable_link_checks();
+/// The e2e cases and their verdicts, owned by the tests gadget.
+#[derive(Default)]
+pub struct Runner {
+    state: RefCell<State>,
 }
 
-pub fn game_frame(global: &Global, frame: i32) {
-    link_arena(global);
-    let Some(local) = begin(frame) else {
-        return;
-    };
-    let mut cases = take_cases();
-    for case in &mut cases {
-        step(case, global, local);
-    }
-    let finished = cases.iter().all(|case| case.verdict.is_some());
-    put_cases(cases);
-    if finished || local >= SUITE_TIMEOUT {
-        finish();
-    }
-}
-
-pub fn with_arena<R>(function: impl FnOnce(&Arena) -> R) -> Option<R> {
-    ARENA.with(|arena| arena.borrow().as_ref().map(function))
-}
-
-thread_local! {
-    static PENDING_LINK: Cell<bool> = const { Cell::new(false) };
-}
-
-const FIRST_CASE_FRAME: i32 = 6;
-const SUITE_TIMEOUT: i32 = 240;
-
-struct Entry {
-    case: Box<dyn Case>,
-    verdict: Option<bool>,
-}
-
-struct Runner {
+#[derive(Default)]
+struct State {
     entries: Vec<Entry>,
     started: i32,
     booted: bool,
     done: bool,
 }
 
-thread_local! {
-    static ARENA: RefCell<Option<Arena>> = const { RefCell::new(None) };
-    static RUNNER: RefCell<Runner> = const {
-        RefCell::new(Runner {
-            entries: Vec::new(),
-            started: 0,
-            booted: false,
-            done: false,
-        })
-    };
+struct Entry {
+    case: Box<dyn Case>,
+    verdict: Option<bool>,
 }
 
-fn begin(frame: i32) -> Option<i32> {
-    if frame < FIRST_CASE_FRAME {
-        return None;
+const FIRST_CASE_FRAME: i32 = 6;
+const SUITE_TIMEOUT: i32 = 240;
+
+impl Runner {
+    pub fn game_frame(&self, global: &Global, frame: i32) {
+        link_arena(global);
+        let Some(local) = self.begin(frame) else {
+            return;
+        };
+        // The cases create, destroy and damage units, which raises callins in
+        // this gadget: no borrow of the state is held while they run.
+        let mut entries = core::mem::take(&mut self.state.borrow_mut().entries);
+        for entry in &mut entries {
+            step(entry, global, local);
+        }
+        let finished = entries.iter().all(|entry| entry.verdict.is_some());
+        self.state.borrow_mut().entries = entries;
+        if finished || local >= SUITE_TIMEOUT {
+            self.finish();
+        }
     }
-    with_runner(|runner| {
-        if runner.done {
+
+    fn begin(&self, frame: i32) -> Option<i32> {
+        if frame < FIRST_CASE_FRAME {
             return None;
         }
-        if !runner.booted {
-            runner.booted = true;
-            runner.started = frame;
-            runner.entries = cases();
+        let mut state = self.state.borrow_mut();
+        if state.done {
+            return None;
         }
-        Some(frame - runner.started)
-    })
-    .flatten()
+        if !state.booted {
+            state.booted = true;
+            state.started = frame;
+            state.entries = cases();
+        }
+        Some(frame - state.started)
+    }
+
+    fn finish(&self) {
+        {
+            let mut state = self.state.borrow_mut();
+            state.done = true;
+            let passed = state
+                .entries
+                .iter()
+                .filter(|entry| entry.verdict == Some(true))
+                .count();
+            let failed = state.entries.len() - passed;
+            diagnostics::info(&alloc::format!(
+                "E2E summary passed={passed} failed={failed}"
+            ));
+        }
+        let _ = spring::send_to_unsynced("GRAVITAS_SHOT|done");
+    }
+}
+
+/// Link the arena's plate and gate on the frame after it was built.
+fn link_arena(global: &Global) {
+    if !global.tests.pending_link.replace(false) {
+        return;
+    }
+    let Some(arena) = global.tests.arena.get() else {
+        return;
+    };
+    let mut plates = global.plates.access_mut();
+    plates.simple_link(arena.plate, arena.gate);
+    plates.enable_link_checks();
 }
 
 fn cases() -> Vec<Entry> {
@@ -145,39 +155,4 @@ fn step(entry: &mut Entry, global: &Global, local: i32) {
             diagnostics::info(&alloc::format!("E2E case {name} FAIL {reason}"));
         }
     }
-}
-
-fn finish() {
-    let _ = with_runner(|runner| {
-        runner.done = true;
-        let passed = runner
-            .entries
-            .iter()
-            .filter(|entry| entry.verdict == Some(true))
-            .count();
-        let failed = runner.entries.len() - passed;
-        diagnostics::info(&alloc::format!(
-            "E2E summary passed={passed} failed={failed}"
-        ));
-    });
-    let _ = spring::send_to_unsynced("GRAVITAS_SHOT|done");
-}
-
-fn take_cases() -> Vec<Entry> {
-    with_runner(|runner| core::mem::take(&mut runner.entries)).unwrap_or_default()
-}
-
-fn put_cases(entries: Vec<Entry>) {
-    let _ = with_runner(|runner| {
-        if runner.entries.is_empty() {
-            runner.entries = entries;
-        }
-    });
-}
-
-fn with_runner<R>(function: impl FnOnce(&mut Runner) -> R) -> Option<R> {
-    RUNNER.with(|runner| match runner.try_borrow_mut() {
-        Ok(mut runner) => Some(function(&mut runner)),
-        Err(_) => None,
-    })
 }

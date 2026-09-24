@@ -43,7 +43,7 @@ const DIRECTIONS: [(f32, f32); 4] = [(1.0, 0.0), (-1.0, 0.0), (0.0, 1.0), (0.0, 
 
 impl Jumping {
     fn leap(&mut self, global: &Global) -> Step {
-        let Some(unit_id) = harness::arena(|arena| arena.vaulter) else {
+        let Some(unit_id) = harness::arena(global, |arena| arena.vaulter) else {
             return fail("no arena");
         };
         let Some(origin) = harness::position(unit_id) else {

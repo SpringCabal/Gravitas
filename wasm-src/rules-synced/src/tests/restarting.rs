@@ -19,10 +19,10 @@ impl Case for Restarting {
 
     fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
-            KILL_FRAME => self.kill(),
+            KILL_FRAME => self.kill(global),
             PRESS_FRAME => self.press(global),
             VERDICT_FRAME => self.check(global),
-            DIE_AGAIN_FRAME => self.die_again(),
+            DIE_AGAIN_FRAME => self.die_again(global),
             SECOND_VERDICT_FRAME => self.check_over_again(global),
             _ => Step::Wait,
         }
@@ -36,8 +36,8 @@ const DIE_AGAIN_FRAME: i32 = 180;
 const SECOND_VERDICT_FRAME: i32 = 190;
 
 impl Restarting {
-    fn kill(&mut self) -> Step {
-        let Some(jumper) = harness::arena(|arena| arena.jumper) else {
+    fn kill(&mut self, global: &Global) -> Step {
+        let Some(jumper) = harness::arena(global, |arena| arena.jumper) else {
             return fail("no arena");
         };
         self.jumper = jumper;
@@ -57,7 +57,7 @@ impl Restarting {
         if units::valid(self.jumper) {
             return fail("restart did not clear the old level");
         }
-        let Some(units) = harness::arena(|arena| arena.units()) else {
+        let Some(units) = harness::arena(global, |arena| arena.units()) else {
             return fail("no arena after the restart");
         };
         let missing = units
@@ -76,8 +76,8 @@ impl Restarting {
         Step::Wait
     }
 
-    fn die_again(&mut self) -> Step {
-        let Some(jumper) = harness::arena(|arena| arena.jumper) else {
+    fn die_again(&mut self, global: &Global) -> Step {
+        let Some(jumper) = harness::arena(global, |arena| arena.jumper) else {
             return fail("no arena after the restart");
         };
         destroy(jumper);

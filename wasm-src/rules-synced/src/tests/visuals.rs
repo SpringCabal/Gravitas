@@ -14,9 +14,9 @@ impl Case for Visuals {
         "visuals"
     }
 
-    fn step(&mut self, _global: &Global, frame: i32) -> Step {
+    fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
-            LOOK_FRAME => self.look(),
+            LOOK_FRAME => self.look(global),
             SHOT_FRAME => {
                 harness::capture(ARENA_SHOT);
                 Step::Wait
@@ -34,8 +34,8 @@ const ARENA_SHOT: &str = "arena";
 const CAMERA_HEIGHT: f32 = 1500.0;
 
 impl Visuals {
-    fn look(&mut self) -> Step {
-        let Some(centre) = harness::arena(|arena| arena.centre) else {
+    fn look(&mut self, global: &Global) -> Step {
+        let Some(centre) = harness::arena(global, |arena| arena.centre) else {
             return fail("no arena");
         };
         harness::look(centre, CAMERA_HEIGHT);

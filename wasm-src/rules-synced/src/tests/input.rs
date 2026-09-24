@@ -38,7 +38,7 @@ const TOLERANCE: f32 = 60.0;
 
 impl Input {
     fn press(&mut self, global: &Global) -> Step {
-        let Some(unit_id) = harness::arena(|arena| arena.jumper) else {
+        let Some(unit_id) = harness::arena(global, |arena| arena.jumper) else {
             return fail("no arena");
         };
         let Some(origin) = harness::position(unit_id) else {

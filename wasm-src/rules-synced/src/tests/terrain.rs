@@ -23,9 +23,9 @@ impl Case for Terrain {
         "terrain"
     }
 
-    fn step(&mut self, _global: &Global, frame: i32) -> Step {
+    fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
-            CLOSED_FRAME => self.check_closed(),
+            CLOSED_FRAME => self.check_closed(global),
             OPEN_FRAME => self.check_open(),
             SHUT_AGAIN_FRAME => self.check_shut_again(),
             _ => Step::Wait,
@@ -39,8 +39,8 @@ const SHUT_AGAIN_FRAME: i32 = 100;
 const LEVEL_MARGIN: f32 = 5.0;
 
 impl Terrain {
-    fn check_closed(&mut self) -> Step {
-        let Some(gate) = harness::arena(|arena| arena.gate) else {
+    fn check_closed(&mut self, global: &Global) -> Step {
+        let Some(gate) = harness::arena(global, |arena| arena.gate) else {
             return fail("no arena");
         };
         let Some(position) = harness::position(gate) else {

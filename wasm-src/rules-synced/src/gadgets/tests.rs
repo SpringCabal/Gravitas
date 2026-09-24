@@ -5,7 +5,10 @@ use crate::state::Global;
 use crate::tests;
 
 /// Runs the in-game e2e cases (only with the `e2e` feature).
-pub struct TestsGadget;
+#[derive(Default)]
+pub struct TestsGadget {
+    runner: tests::Runner,
+}
 
 impl Gadget<Global> for TestsGadget {
     fn name(&self) -> &'static str {
@@ -13,10 +16,10 @@ impl Gadget<Global> for TestsGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
-        tests::game_frame(ctx.global(), frame);
+        self.runner.game_frame(ctx.global(), frame);
     }
 
-    fn unit_destroyed(&self, _ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
-        tests::note_destroyed(event.unit_id, event.unit_def_id);
+    fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
+        tests::note_destroyed(ctx.global(), event.unit_id, event.unit_def_id);
     }
 }

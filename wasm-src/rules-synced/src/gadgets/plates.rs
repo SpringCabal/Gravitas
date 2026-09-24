@@ -38,7 +38,7 @@ impl Gadget<Global> for PlatesGadget {
         let global = ctx.global();
         let changes = global.plates.access_mut().pending(frame);
         for (unit_id, active) in changes {
-            tests::note_toggled(unit_id, active, frame);
+            tests::note_toggled(global, unit_id, active);
             plate::set_state(unit_id, active);
             let Some(unit_def_id) = crate::units::def_of(unit_id) else {
                 continue;

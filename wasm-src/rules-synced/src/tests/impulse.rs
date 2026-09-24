@@ -27,7 +27,7 @@ impl Case for PushAndPull {
 
     fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
-            0 => self.adopt(),
+            0 => self.adopt(global),
             PUSH_FRAME => self.push(global),
             PULL_FRAME => self.pull(global),
             VERDICT_FRAME => self.check_pulled(),
@@ -45,8 +45,9 @@ const PUSH_WEAPON: &str = "gravity_pos";
 const PULL_WEAPON: &str = "gravity_neg";
 
 impl PushAndPull {
-    fn adopt(&mut self) -> Step {
-        let Some((target, attacker)) = harness::arena(|arena| (arena.pushed, arena.pusher)) else {
+    fn adopt(&mut self, global: &Global) -> Step {
+        let Some((target, attacker)) = harness::arena(global, |arena| (arena.pushed, arena.pusher))
+        else {
             return fail("no arena");
         };
         self.target = target;

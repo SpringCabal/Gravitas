@@ -43,7 +43,8 @@ const IMMUNITY_FRAMES: i32 = 120;
 
 impl Falling {
     fn drop(&mut self, global: &Global, frame: i32) -> Step {
-        let Some((dropped, cushioned)) = harness::arena(|arena| (arena.dropped, arena.cushioned))
+        let Some((dropped, cushioned)) =
+            harness::arena(global, |arena| (arena.dropped, arena.cushioned))
         else {
             return fail("no arena");
         };

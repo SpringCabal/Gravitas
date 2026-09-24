@@ -26,9 +26,9 @@ impl Case for Burning {
         "fire"
     }
 
-    fn step(&mut self, _global: &Global, frame: i32) -> Step {
+    fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
-            0 => self.enter(),
+            0 => self.enter(global),
             BURN_VERDICT_FRAME => self.check_burning(),
             SETTLE_FRAME => self.settle(),
             EXTINGUISH_VERDICT_FRAME => self.check_extinguished(),
@@ -42,8 +42,9 @@ const SETTLE_FRAME: i32 = 105;
 const EXTINGUISH_VERDICT_FRAME: i32 = 135;
 
 impl Burning {
-    fn enter(&mut self) -> Step {
-        let Some((field, victim)) = harness::arena(|arena| (arena.fire, arena.burning)) else {
+    fn enter(&mut self, global: &Global) -> Step {
+        let Some((field, victim)) = harness::arena(global, |arena| (arena.fire, arena.burning))
+        else {
             return fail("no arena");
         };
         let (Some(park), Some(centre), Some(health)) = (

@@ -24,9 +24,9 @@ impl Case for Shocking {
         "electrafi"
     }
 
-    fn step(&mut self, _global: &Global, frame: i32) -> Step {
+    fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
-            0 => self.enter(),
+            0 => self.enter(global),
             VERDICT_FRAME => self.check(),
             _ => Step::Wait,
         }
@@ -36,8 +36,10 @@ impl Case for Shocking {
 const VERDICT_FRAME: i32 = 45;
 
 impl Shocking {
-    fn enter(&mut self) -> Step {
-        let Some((field, victim)) = harness::arena(|arena| (arena.electrafi, arena.shocked)) else {
+    fn enter(&mut self, global: &Global) -> Step {
+        let Some((field, victim)) =
+            harness::arena(global, |arena| (arena.electrafi, arena.shocked))
+        else {
             return fail("no arena");
         };
         let (Some(park), Some(centre), Some(paralyze)) = (

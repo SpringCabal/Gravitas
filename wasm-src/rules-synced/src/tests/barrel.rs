@@ -20,9 +20,9 @@ impl Case for Barrel {
         "barrel"
     }
 
-    fn step(&mut self, _global: &Global, frame: i32) -> Step {
+    fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
-            BLAST_FRAME => self.blast(),
+            BLAST_FRAME => self.blast(global),
             VERDICT_FRAME => self.check(),
             _ => Step::Wait,
         }
@@ -33,8 +33,9 @@ const BLAST_FRAME: i32 = 40;
 const VERDICT_FRAME: i32 = 50;
 
 impl Barrel {
-    fn blast(&mut self) -> Step {
-        let Some((barrel, bystander)) = harness::arena(|arena| (arena.barrel, arena.bystander))
+    fn blast(&mut self, global: &Global) -> Step {
+        let Some((barrel, bystander)) =
+            harness::arena(global, |arena| (arena.barrel, arena.bystander))
         else {
             return fail("no arena");
         };

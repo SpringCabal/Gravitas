@@ -5,7 +5,6 @@ use spring::types::Float3;
 use crate::player::PlayerCommand;
 use crate::state::Global;
 use crate::tests::arena::Arena;
-use crate::tests::runner;
 use crate::units;
 
 pub trait Case {
@@ -23,8 +22,8 @@ pub fn fail(reason: &str) -> Step {
     Step::Fail(String::from(reason))
 }
 
-pub fn arena<R>(function: impl FnOnce(&Arena) -> R) -> Option<R> {
-    runner::with_arena(function)
+pub fn arena<R>(global: &Global, function: impl FnOnce(&Arena) -> R) -> Option<R> {
+    global.tests.arena.get().map(|arena| function(&arena))
 }
 
 pub fn look(position: Float3, height: f32) {

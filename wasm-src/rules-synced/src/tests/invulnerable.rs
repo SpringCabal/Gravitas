@@ -24,9 +24,9 @@ impl Case for Invulnerable {
         "invulnerable"
     }
 
-    fn step(&mut self, _global: &Global, frame: i32) -> Step {
+    fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
-            STRIKE_FRAME => self.strike(),
+            STRIKE_FRAME => self.strike(global),
             VERDICT_FRAME => self.check(),
             _ => Step::Wait,
         }
@@ -39,8 +39,9 @@ const DAMAGE: f32 = 10.0;
 const NO_WEAPON: i32 = -1;
 
 impl Invulnerable {
-    fn strike(&mut self) -> Step {
-        let Some((protected, exposed)) = harness::arena(|arena| (arena.protected, arena.exposed))
+    fn strike(&mut self, global: &Global) -> Step {
+        let Some((protected, exposed)) =
+            harness::arena(global, |arena| (arena.protected, arena.exposed))
         else {
             return fail("no arena");
         };

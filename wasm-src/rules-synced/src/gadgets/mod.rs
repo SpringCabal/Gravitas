@@ -47,7 +47,7 @@ pub fn setup(handler: &mut GadgetHandler<Global>) {
             mission::MissionGadget::default(),
             plates::PlatesGadget,
             status::StatusGadget::default(),
-            tests::TestsGadget,
+            tests::TestsGadget::default(),
             barrel::BarrelGadget,
         ]
     );

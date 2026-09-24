@@ -16,11 +16,11 @@ impl Case for Spawned {
         "spawn"
     }
 
-    fn step(&mut self, _global: &Global, frame: i32) -> Step {
+    fn step(&mut self, global: &Global, frame: i32) -> Step {
         if frame < VERDICT_FRAME {
             return Step::Wait;
         }
-        let Some(units) = harness::arena(|arena| arena.units()) else {
+        let Some(units) = harness::arena(global, |arena| arena.units()) else {
             return fail("no arena");
         };
         let missing = units
@@ -33,11 +33,11 @@ impl Case for Spawned {
                 units.len()
             ));
         }
-        if record::deaths() != 0 {
+        if record::deaths(global) != 0 {
             return Step::Fail(alloc::format!(
                 "{} unit(s) died during setup, first {}",
-                record::deaths(),
-                record::first_death().unwrap_or_default()
+                record::deaths(global),
+                record::first_death(global).unwrap_or_default()
             ));
         }
         Step::Pass

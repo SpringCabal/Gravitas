@@ -23,9 +23,9 @@ impl Case for Respawning {
         "respawn"
     }
 
-    fn step(&mut self, _global: &Global, frame: i32) -> Step {
+    fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
-            KILL_FRAME => self.kill(),
+            KILL_FRAME => self.kill(global),
             VERDICT_FRAME => self.check(),
             _ => Step::Wait,
         }
@@ -37,8 +37,8 @@ const VERDICT_FRAME: i32 = 60;
 const REBORN_RANGE: f32 = 40.0;
 
 impl Respawning {
-    fn kill(&mut self) -> Step {
-        let Some(victim) = harness::arena(|arena| arena.revivable) else {
+    fn kill(&mut self, global: &Global) -> Step {
+        let Some(victim) = harness::arena(global, |arena| arena.revivable) else {
             return fail("no arena");
         };
         let Some(origin) = harness::position(victim) else {

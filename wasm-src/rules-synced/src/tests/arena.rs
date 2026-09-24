@@ -2,6 +2,7 @@ use spring::types::Float3;
 
 use crate::units;
 
+#[derive(Clone, Copy)]
 pub struct Arena {
     pub centre: Float3,
     pub plate: i32,

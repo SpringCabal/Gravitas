@@ -39,6 +39,9 @@ pub struct Global {
     pub restart: Restart,
     /// `Some(victory)` once the game is over.
     pub outcome: Cell<Option<bool>>,
+    /// The e2e arena and what the gadgets report to its cases (empty without
+    /// the `e2e` feature).
+    pub tests: crate::tests::Shared,
 }
 
 /// The current level.
