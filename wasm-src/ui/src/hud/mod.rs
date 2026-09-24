@@ -5,6 +5,8 @@ mod status;
 
 pub use document::{apply_bindings, initialize, render};
 pub use model::reload;
+#[cfg(feature = "e2e")]
+pub use model::restart;
 pub use overlays::{game_over, update_pause};
 pub use status::update;
 

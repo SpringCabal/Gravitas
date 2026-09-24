@@ -17,6 +17,8 @@ pub fn stage_level(_global: &Global) -> bool {
 
 pub fn note_created(_global: &Global, _unit_id: i32, _unit_def_id: i32) {}
 
+pub fn note_message(_global: &Global, _data: &[u8]) {}
+
 pub fn note_destroyed(_global: &Global, _unit_id: i32, _unit_def_id: i32) {}
 
 pub fn note_toggled(_global: &Global, _unit_id: i32, _active: bool) {}

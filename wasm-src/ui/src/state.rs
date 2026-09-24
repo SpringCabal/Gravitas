@@ -14,6 +14,10 @@ pub struct Global {
     pub player_unit: Cell<Option<i32>>,
     /// The RmlUi HUD, also used by its event callbacks.
     pub hud: Resource<Hud>,
+    /// The e2e scenario's stand-in for the mouse: the input widget sends it
+    /// through the normal input message.
+    #[cfg(feature = "e2e")]
+    pub scripted_pointer: Cell<Option<crate::shots::ScriptedPointer>>,
 }
 
 /// The fire module's particle state, and the game clock it advances with

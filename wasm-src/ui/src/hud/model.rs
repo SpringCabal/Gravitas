@@ -85,7 +85,8 @@ pub fn reload() {
     let _ = spring::send_commands("reloadforce", "");
 }
 
-fn restart(global: &Global) {
+/// The end-of-game panel's restart button.
+pub fn restart(global: &Global) {
     if let Err(error) = spring::send_lua_rules_msg(RESTART_MESSAGE) {
         crate::diagnostics::warning(&alloc::format!("restart not sent (error {})", error.code));
     }

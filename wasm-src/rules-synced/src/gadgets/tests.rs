@@ -19,6 +19,17 @@ impl Gadget<Global> for TestsGadget {
         self.runner.game_frame(ctx.global(), frame);
     }
 
+    fn handle_lua_msg(
+        &self,
+        ctx: &AddonContext<'_, Global>,
+        _player_id: i32,
+        _script: i32,
+        _mode: i32,
+        data: &[u8],
+    ) {
+        tests::note_message(ctx.global(), data);
+    }
+
     fn unit_created(
         &self,
         ctx: &AddonContext<'_, Global>,

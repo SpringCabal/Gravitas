@@ -25,7 +25,7 @@ impl Case for Input {
     fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
             PRESS_FRAME => self.press(global),
-            VERDICT_FRAME => self.check(global),
+            VERDICT_FRAME => self.check(),
             _ => Step::Wait,
         }
     }
@@ -46,12 +46,12 @@ impl Input {
         };
         self.unit_id = unit_id;
         self.origin = origin;
-        harness::press_jump(global, origin.x + REACH, origin.z);
+        harness::press_jump(origin.x + REACH, origin.z);
         Step::Wait
     }
 
-    fn check(&mut self, global: &Global) -> Step {
-        harness::release_jump(global);
+    fn check(&mut self) -> Step {
+        harness::release_pointer();
         let Some(position) = harness::position(self.unit_id) else {
             return fail("no player position");
         };

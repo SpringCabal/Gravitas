@@ -3,7 +3,6 @@ use alloc::string::String;
 use spring::types::Float3;
 use springcabal::message::Encoder;
 
-use crate::player::PlayerCommand;
 use crate::state::Global;
 use crate::tests::arena::Arena;
 use crate::units;
@@ -37,32 +36,31 @@ pub fn look(position: Float3, height: f32) {
     let _ = spring::send_to_unsynced(&message);
 }
 
-// Input is simulated on the synced side, because a headless run has no ui
-// module. The PlayerCommand is the one the ui module's message would produce:
-// sent when it changes, with `jump` set on the message where the key went down.
-pub fn press_jump(global: &Global, x: f32, z: f32) {
+// Input goes through the ui module, which the headless run also loads: it
+// points its input widget where asked and sends the usual input message, and
+// it presses the HUD's restart button.
+
+/// Point at the ground at `x`, `z` and press jump (the middle button).
+pub fn press_jump(x: f32, z: f32) {
     // The height matters: a jump is refused as TooHigh unless the goal sits at
     // the terrain, which is what the ui module's cursor trace supplies.
-    let command = PlayerCommand {
-        target_x: x,
-        target_y: units::ground_height(x, z),
-        target_z: z,
-        jump: true,
-        ..PlayerCommand::default()
-    };
-    player_command(global, command);
+    let y = units::ground_height(x, z);
+    send_to_ui(&alloc::format!("GRAVITAS_E2E|pointer|{x}|{y}|{z}|1"));
 }
 
-pub fn release_jump(global: &Global) {
-    player_command(global, PlayerCommand::default());
+/// Give the mouse back to the ui module.
+pub fn release_pointer() {
+    send_to_ui("GRAVITAS_E2E|pointer|off");
 }
 
-pub fn press_restart(global: &Global) {
-    global.restart.request();
+pub fn press_restart() {
+    send_to_ui("GRAVITAS_E2E|restart");
 }
 
-fn player_command(global: &Global, command: PlayerCommand) {
-    crate::player::accept(&global.player_input, command);
+fn send_to_ui(message: &str) {
+    if spring::send_to_unsynced(message).is_err() {
+        crate::diagnostics::warning(&alloc::format!("E2E request not sent: {message}"));
+    }
 }
 
 pub fn capture(name: &str) {

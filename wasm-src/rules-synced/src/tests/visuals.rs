@@ -1,6 +1,9 @@
 use crate::state::Global;
 use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::record;
 
+/// Point the camera at the arena and have the ui module take the screenshot
+/// the shots suite compares; the ui module reports it taken.
 pub struct Visuals;
 
 impl Visuals {
@@ -21,7 +24,13 @@ impl Case for Visuals {
                 harness::capture(ARENA_SHOT);
                 Step::Wait
             }
-            VERDICT_FRAME => Step::Pass,
+            VERDICT_FRAME => {
+                if record::shot_taken(global, ARENA_SHOT) {
+                    Step::Pass
+                } else {
+                    fail("the ui module did not take the arena screenshot")
+                }
+            }
             _ => Step::Wait,
         }
     }

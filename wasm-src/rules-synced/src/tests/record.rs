@@ -12,6 +12,8 @@ pub struct Record {
     /// Fire and electric-field units and their size when UnitCreated reached
     /// the tests gadget.
     hazard_sizes: Vec<(i32, Option<f32>)>,
+    /// Screenshots the ui module reported taken.
+    shots: Vec<String>,
 }
 
 pub fn note_created(global: &Global, unit_id: i32, unit_def_id: i32) {
@@ -44,6 +46,33 @@ pub fn hazard_size_at_creation(global: &Global, unit_id: i32) -> Option<Option<f
         .rev()
         .find(|(id, _)| *id == unit_id)
         .map(|(_, size)| *size)
+}
+
+/// A message from the ui module: `gravitas_e2e|shot|<name>` once it took a
+/// screenshot.
+pub fn note_message(global: &Global, data: &[u8]) {
+    let Some(name) = data.strip_prefix(b"gravitas_e2e|shot|") else {
+        return;
+    };
+    let Ok(name) = core::str::from_utf8(name) else {
+        return;
+    };
+    global
+        .tests
+        .record
+        .borrow_mut()
+        .shots
+        .push(String::from(name));
+}
+
+pub fn shot_taken(global: &Global, name: &str) -> bool {
+    global
+        .tests
+        .record
+        .borrow()
+        .shots
+        .iter()
+        .any(|shot| shot == name)
 }
 
 pub fn note_destroyed(global: &Global, unit_id: i32, unit_def_id: i32) {

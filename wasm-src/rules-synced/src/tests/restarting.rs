@@ -64,7 +64,7 @@ impl Restarting {
         if global.outcome.get() != Some(false) {
             return fail("losing the player unit did not end the game");
         }
-        harness::press_restart(global);
+        harness::press_restart();
         Step::Wait
     }
 

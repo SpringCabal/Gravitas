@@ -2,7 +2,7 @@ use alloc::format;
 
 use crate::level;
 use crate::state::Global;
-use crate::tests::harness::{Case, Step, fail};
+use crate::tests::harness::{self, Case, Step, fail};
 use crate::tests::{record, runner};
 use crate::units;
 
@@ -26,7 +26,7 @@ impl Case for RealLevel {
         match frame {
             RESTART_FRAME => {
                 runner::use_real_level(global);
-                global.restart.request();
+                harness::press_restart();
                 Step::Wait
             }
             VERDICT_FRAME => check(global),
@@ -37,8 +37,9 @@ impl Case for RealLevel {
 
 /// After the restart case's last check.
 const RESTART_FRAME: i32 = 200;
-/// Restart, spawn and link take a frame each.
-const VERDICT_FRAME: i32 = 206;
+/// The restart goes through the ui module and back; then restart, spawn and
+/// link take a frame each.
+const VERDICT_FRAME: i32 = 212;
 const PLAYER_DEF: &str = "gravit";
 
 fn check(global: &Global) -> Step {

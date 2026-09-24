@@ -1,6 +1,7 @@
 use alloc::format;
-use alloc::string::String;
-use core::cell::{Cell, RefCell};
+use core::cell::Cell;
+
+use spring::types::Float3;
 
 use crate::state::Global;
 
@@ -14,7 +15,29 @@ pub struct Input {
     jump: Cell<bool>,
     /// Whether jump was held at the previous poll.
     jump_held: Cell<bool>,
-    last_sent: RefCell<String>,
+    last_sent: Cell<Option<Sent>>,
+}
+
+/// What one input message says, and for which player unit.
+#[derive(Clone, Copy, PartialEq)]
+struct Sent {
+    player_unit: i32,
+    move_x: f32,
+    move_z: f32,
+    target: Float3,
+    target_unit: i32,
+    push: bool,
+    pull: bool,
+    jump: bool,
+}
+
+/// Where the cursor points and the mouse buttons held.
+struct Pointer {
+    target: Float3,
+    target_unit: i32,
+    left: bool,
+    right: bool,
+    middle: bool,
 }
 
 impl Input {
@@ -25,31 +48,39 @@ impl Input {
         let Some(player_unit) = global.player_unit.get() else {
             return;
         };
-        let move_x = f32::from(self.east.get()) - f32::from(self.west.get());
-        let move_z = f32::from(self.south.get()) - f32::from(self.north.get());
-        let Ok(mouse) = spring::input::get_mouse_state(0) else {
+        let Some(pointer) = pointer(global) else {
             return;
         };
-        let (target, target_unit) = trace(mouse.x, mouse.y);
-        let held = self.jump.get() || mouse.middle;
-        let jump = held && !self.jump_held.replace(held);
-        let message = format!(
-            "gravitas|{move_x}|{move_z}|{}|{}|{}|{target_unit}|{}|{}|{}",
-            target.x,
-            target.y,
-            target.z,
-            i32::from(mouse.left),
-            i32::from(mouse.right),
-            i32::from(jump),
-        );
-        let mut last_sent = self.last_sent.borrow_mut();
-        // The player unit is part of the key: a new unit needs the input again.
-        let key = format!("{player_unit}|{message}");
-        if *last_sent == key {
+        let held = self.jump.get() || pointer.middle;
+        let sent = Sent {
+            // The player unit is part of the key: a new unit needs the input
+            // again.
+            player_unit,
+            move_x: f32::from(self.east.get()) - f32::from(self.west.get()),
+            move_z: f32::from(self.south.get()) - f32::from(self.north.get()),
+            target: pointer.target,
+            target_unit: pointer.target_unit,
+            push: pointer.left,
+            pull: pointer.right,
+            jump: held && !self.jump_held.replace(held),
+        };
+        if self.last_sent.get() == Some(sent) {
             return;
         }
+        let message = format!(
+            "gravitas|{}|{}|{}|{}|{}|{}|{}|{}|{}",
+            sent.move_x,
+            sent.move_z,
+            sent.target.x,
+            sent.target.y,
+            sent.target.z,
+            sent.target_unit,
+            i32::from(sent.push),
+            i32::from(sent.pull),
+            i32::from(sent.jump),
+        );
         match spring::send_lua_rules_msg(&message) {
-            Ok(_) => *last_sent = key,
+            Ok(_) => self.last_sent.set(Some(sent)),
             // Not recorded as sent, so the next poll tries again.
             Err(error) => crate::diagnostics::warning(&format!(
                 "player input not sent (error {}): {message}",
@@ -97,10 +128,36 @@ const KEY_DOWN: i32 = 274;
 const KEY_RIGHT: i32 = 275;
 const KEY_LEFT: i32 = 276;
 const HIT_UNIT: i32 = 1;
+const NO_UNIT: i32 = -1;
 const MOUSE_LEFT: i32 = 1;
 const MOUSE_RIGHT: i32 = 3;
 
-fn trace(x: f32, y: f32) -> (spring::types::Float3, i32) {
+/// The mouse, or the e2e scenario's scripted pointer when it has one.
+fn pointer(global: &Global) -> Option<Pointer> {
+    #[cfg(feature = "e2e")]
+    if let Some(scripted) = global.scripted_pointer.get() {
+        return Some(Pointer {
+            target: scripted.target,
+            target_unit: NO_UNIT,
+            left: false,
+            right: false,
+            middle: scripted.jump,
+        });
+    }
+    #[cfg(not(feature = "e2e"))]
+    let _ = global;
+    let mouse = spring::input::get_mouse_state(0).ok()?;
+    let (target, target_unit) = trace(mouse.x, mouse.y);
+    Some(Pointer {
+        target,
+        target_unit,
+        left: mouse.left,
+        right: mouse.right,
+        middle: mouse.middle,
+    })
+}
+
+fn trace(x: f32, y: f32) -> (Float3, i32) {
     let ground = spring::camera::trace_screen_ray(
         x,
         y,
@@ -128,6 +185,6 @@ fn trace(x: f32, y: f32) -> (spring::types::Float3, i32) {
         .ok()
         .filter(|value| value.hit_type == HIT_UNIT)
         .map(|value| value.hit_id)
-        .unwrap_or(-1);
+        .unwrap_or(NO_UNIT);
     (position, target_unit)
 }
