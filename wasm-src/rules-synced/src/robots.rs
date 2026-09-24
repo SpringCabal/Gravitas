@@ -111,9 +111,9 @@ const CIRCLE_DIVISIONS: i32 = 12;
 const LINE_DIVISIONS: i32 = 6;
 const MAX_DELTA_HEIGHT: f32 = 10.0;
 const DEFAULT_ATTACK_RADIUS: f32 = 100.0;
-const SAFE_SCORE: f32 = 1.0;
-const UNSAFE_SCORE: f32 = -3.0;
-const REJECT_SCORE: f32 = -1.0e10;
+const SAFE_SCORE: f64 = 1.0;
+const UNSAFE_SCORE: f64 = -3.0;
+const REJECT_SCORE: f64 = -1.0e11;
 
 impl Robots {
     fn is_busy(&self, unit_id: i32, frame: i32) -> bool {
@@ -169,13 +169,18 @@ fn hazards_near(position: Float3, radius: f32) -> Vec<Hazard> {
         .collect()
 }
 
+/// `GetSafestLocation` in `unit_robots.lua`, quirks included: a better
+/// direction clears the kept ones only once two are kept, so the first
+/// direction tried can stay a candidate; and a direction off the map or up a
+/// slope is only scored down, never ruled out.
 fn safest_location(position: Float3, hazards: &[Hazard], velocity: Float3) -> Option<Float3> {
     if hazards.is_empty() {
         return None;
     }
     let mut theta = initial_theta(position, hazards);
-    let mut best_score = f32::NEG_INFINITY;
-    let mut good_points = Vec::new();
+    // (candidate, score); scores in f64 like Lua's, so the -1e10 of a ruled
+    // down direction doesn't swallow the hazard scores.
+    let mut good_points: Vec<(Float3, f64)> = Vec::new();
     for _ in 0..CIRCLE_DIVISIONS {
         let direction_x = theta.cos();
         let direction_z = theta.sin();
@@ -200,24 +205,21 @@ fn safest_location(position: Float3, hazards: &[Hazard], velocity: Float3) -> Op
             y: end_y,
             z: end_z,
         };
-        if score >= best_score {
-            if score > best_score {
+        let first_score = good_points.first().map(|(_, score)| *score);
+        if first_score.is_none_or(|first| score >= first) {
+            if good_points.len() > 1 && first_score.is_some_and(|first| score > first) {
                 good_points.clear();
-                best_score = score;
             }
-            good_points.push(candidate);
+            good_points.push((candidate, score));
         }
         theta += core::f32::consts::TAU / CIRCLE_DIVISIONS as f32;
-    }
-    if best_score <= REJECT_SCORE {
-        return None;
     }
     let velocity_angle = velocity.x.atan2(velocity.z);
     let mut best = None;
     let mut best_angle = f32::MAX;
-    for candidate in good_points {
-        // This is the same unwrapped angular comparison as the Lua helper:
-        // prefer the safest point closest to the unit's current travel angle.
+    for (candidate, _) in good_points {
+        // Lua's unwrapped comparison: the kept point closest to the unit's
+        // current travel angle.
         let angle = (candidate.x - position.x).atan2(candidate.z - position.z);
         let difference = (angle - velocity_angle).abs();
         if difference < best_angle {
@@ -246,7 +248,7 @@ fn initial_theta(position: Float3, hazards: &[Hazard]) -> f32 {
     theta
 }
 
-fn location_score(x: f32, z: f32, hazards: &[Hazard]) -> f32 {
+fn location_score(x: f32, z: f32, hazards: &[Hazard]) -> f64 {
     hazards
         .iter()
         .map(|hazard| {
