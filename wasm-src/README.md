@@ -1,6 +1,6 @@
 # Gravitas — Core-WASM guest modules
 
-Two guest crates, both compiled to `wasm32-unknown-unknown` and loaded through
+Two guest crates and the messages they share, compiled to `wasm32-unknown-unknown` and loaded through
 `LuaRules/wasm/manifest.txt` and `LuaUI/wasm/manifest.txt`:
 
 | crate          | environment    | ships as                          |
@@ -25,12 +25,12 @@ Two guest crates, both compiled to `wasm32-unknown-unknown` and loaded through
     screenshots go through the ui module (`ui/src/shots.rs`), which the
     headless run loads too.
 - `ui`: the widgets (HUD, camera, input, healthbars, fire particles, map
-  edge, music). Each owns its state; `state.rs` holds the player unit and
-  the HUD, and the fire particle state.
-
-The rules send the HUD status (`GRAVITAS_STATUS|...`) when it changes and
-effect messages (`GRAVITAS_FX|...`); the ui sends the player's input when it
-changes.
+  edge, music). Each owns its state; `state.rs` holds the player unit, the
+  HUD, the game clock and the fire particles.
+- `shared`: the messages between them, host-tested (`just test`). The rules
+  send the HUD status when it changes and the fire and electric effects; the
+  ui sends the player's input when it changes. `shared/src/e2e.rs` has the
+  e2e scenario's requests.
 
 ## Differences from the Lua version
 
@@ -48,6 +48,9 @@ changes.
 - `game_fall_damage.lua` pairs up collisions that have no attacker by their
   damage. On this engine only feature collisions lack one, so the port
   skips the pairing and gives each the 2.5× damage Lua gives an unmatched one.
+- The camera looks 9 frames of the player's velocity ahead;
+  `shoot_n_run.lua` looks 30 frames of a smoothed velocity, times the game
+  speed, ahead, which puts the player near the screen edge while walking.
 - A jump with `jumpSpeed` 0 is refused; in Lua (5.1) its wall check loops
   forever and the game hangs.
 
@@ -55,6 +58,7 @@ changes.
 
     just fmt      # cargo fmt --all
     just clippy   # clippy over the workspace, warnings denied
+    just test     # host tests of the rules-ui messages (shared/)
     just build    # fmt + clippy, then a release build
     just copy     # build, then install both .wasm files into the game
 
