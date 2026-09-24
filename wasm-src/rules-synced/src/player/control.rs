@@ -2,6 +2,7 @@ use alloc::vec::Vec;
 use core::cell::Cell;
 
 use spring::types::Float3;
+use springcabal_control::goal::{Bounds, MoveGoal};
 
 use crate::units::{self, WEAPON_PULL, WEAPON_PUSH};
 
@@ -131,10 +132,9 @@ pub fn apply(unit_id: i32, orders: Vec<Order>, frame: i32) {
                 units::order(unit_id, spring::cmd::STOP, &[]);
             }
             Order::MoveTo(goal) => {
-                crate::diagnostics::check(
-                    spring::set_unit_move_goal(unit_id, goal, 0.0, 0.0, false),
-                    || alloc::format!("move goal for the player unit {unit_id}"),
-                );
+                crate::diagnostics::check(STEER.set(unit_id, goal), || {
+                    alloc::format!("move goal for the player unit {unit_id}")
+                });
             }
         }
     }
@@ -148,7 +148,13 @@ pub fn disable_auto_fire(unit_id: i32) {
 const PLAYER_TEAM: i32 = 0;
 const MOVE_INTERVAL: i32 = 3;
 const FIRE_STATE_HOLD: f32 = 0.0;
-const MOVE_REACH: f32 = 32.0;
+/// The held keys send the player a short way ahead, on the ground; a
+/// diagonal reaches further. The path finder plans the way there.
+const STEER: MoveGoal = MoveGoal::ahead(32.0)
+    .unnormalized()
+    .radius(0.0)
+    .raw(false)
+    .bounds(Bounds::Unbounded);
 const RELOAD_HOLD_FRAMES: i32 = 2;
 const NO_TARGET: i32 = -1;
 const BEAM_RANGE: f32 = 420.0;
@@ -208,10 +214,10 @@ impl Player {
         let Some(position) = units::position(unit_id) else {
             return;
         };
-        let x = position.x + MOVE_REACH * command.move_x;
-        let z = position.z + MOVE_REACH * command.move_z;
-        let y = units::ground_height(x, z);
-        orders.push(Order::MoveTo(Float3 { x, y, z }));
+        let Some(goal) = STEER.goal(position, (command.move_x, command.move_z)) else {
+            return;
+        };
+        orders.push(Order::MoveTo(goal));
         self.moved_last = true;
     }
 }

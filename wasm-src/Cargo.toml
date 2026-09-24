@@ -13,3 +13,4 @@ too_many_arguments = "allow"
 spring = { git = "https://github.com/gajop/spring-rust", branch = "rust-wip", features = ["alloc"] }
 spring-addons = { git = "https://github.com/gajop/spring-rust", branch = "rust-wip" }
 springcabal = { git = "ssh://git@github.com/gajop/springcabal-rs.git" }
+springcabal-control = { git = "ssh://git@github.com/gajop/springcabal-rs.git" }
