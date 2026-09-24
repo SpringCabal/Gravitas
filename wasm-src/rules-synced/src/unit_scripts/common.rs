@@ -27,18 +27,6 @@ impl PieceResolver for EnginePieces {
     }
 }
 
-pub(super) fn unit_piece(unit: UnitId, name: &str) -> Piece {
-    spring::get_unit_piece_map(unit.0)
-        .ok()
-        .and_then(|pieces| {
-            pieces
-                .into_iter()
-                .find(|piece| piece.name == name)
-                .map(|piece| Piece(piece.piece_num - 1))
-        })
-        .unwrap_or(Piece::INVALID)
-}
-
 pub(super) fn turn(ctx: &UnitCtx, piece: Piece, axis: Axis, target: f32, speed: f32) {
     if piece == Piece::INVALID {
         return;

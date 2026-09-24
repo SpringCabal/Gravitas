@@ -12,6 +12,7 @@ mod robots;
 use spring::cus::{InitCtx, Piece, ScriptCapabilities, UnitCtx, UnitScript, WeaponId, WreckLevel};
 
 use self::gravit::GravitScript;
+use self::immobile::ImmobileScript;
 use self::robots::{RobotKind, RobotScript};
 
 pub use self::module::{GravitasCusModule, attach, call};
@@ -109,7 +110,7 @@ pub struct GravitasUnitScript {
 enum Script {
     Gravit(GravitScript),
     Robot(RobotScript),
-    Immobile(ScriptKind),
+    Immobile(ImmobileScript),
     None,
 }
 
@@ -121,7 +122,7 @@ impl UnitScript for GravitasUnitScript {
             Some(ScriptKind::Gravit) => Script::Gravit(GravitScript::new(ctx)),
             Some(kind) => match robot_kind(kind) {
                 Some(robot) => Script::Robot(RobotScript::new(ctx, robot)),
-                None => Script::Immobile(kind),
+                None => Script::Immobile(ImmobileScript::new(ctx, kind)),
             },
             None => Script::None,
         };
@@ -156,7 +157,7 @@ impl UnitScript for GravitasUnitScript {
         match &self.script {
             Script::Gravit(gravit) => gravit.activate(),
             Script::Robot(_) => {}
-            Script::Immobile(kind) => immobile::activate(ctx, *kind),
+            Script::Immobile(immobile) => immobile.activate(ctx),
             Script::None => {}
         }
     }
@@ -165,7 +166,7 @@ impl UnitScript for GravitasUnitScript {
         match &self.script {
             Script::Gravit(gravit) => gravit.deactivate(),
             Script::Robot(_) => {}
-            Script::Immobile(kind) => immobile::deactivate(ctx, *kind),
+            Script::Immobile(immobile) => immobile.deactivate(ctx),
             Script::None => {}
         }
     }
@@ -174,8 +175,8 @@ impl UnitScript for GravitasUnitScript {
         match &self.script {
             Script::Gravit(gravit) => gravit.killed(ctx),
             Script::Robot(robot) => robot.killed(ctx),
-            Script::Immobile(kind) => {
-                immobile::killed(ctx, *kind);
+            Script::Immobile(immobile) => {
+                immobile.killed(ctx);
                 WreckLevel::One
             }
             Script::None => WreckLevel::One,
