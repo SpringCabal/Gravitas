@@ -4,6 +4,7 @@ use spring::ResultExt;
 use spring::types::Float3;
 
 use crate::state::Global;
+use crate::unit_scripts::JumpCall;
 use crate::units;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -54,7 +55,7 @@ struct Flight {
     unit_id: i32,
     /// Where the unit is and which way it faces, once it has taken off.
     pose: Option<(Float3, f32)>,
-    calls: Vec<&'static str>,
+    calls: Vec<JumpCall>,
     landed: bool,
 }
 
@@ -79,7 +80,7 @@ impl Jumps {
             if jump.delay > 0 {
                 jump.delay -= 1;
                 if jump.delay == 0 {
-                    flight.calls.push("StartJump");
+                    flight.calls.push(JumpCall::StartJump);
                 }
                 flights.push(flight);
                 continue;
@@ -92,10 +93,10 @@ impl Jumps {
                 z: jump.start.z + jump.vector.z * progress,
             };
             flight.pose = Some((position, jump.heading + jump.turn * progress));
-            flight.calls.push("Jumping");
+            flight.calls.push(JumpCall::Jumping);
             if !jump.half_done && progress > 0.5 {
                 jump.half_done = true;
-                flight.calls.push("HalfJump");
+                flight.calls.push(JumpCall::HalfJump);
             }
             jump.progress += jump.step;
             flight.landed = jump.progress > 1.0;
@@ -168,7 +169,7 @@ pub fn start(global: &Global, unit_id: i32, goal_x: f32, goal_y: f32, goal_z: f3
     let heading = spring::units_info::get_unit_heading(unit_id, true).unwrap_or(0.0);
     let turn = shortest_turn(heading, vector.x.atan2(vector.z));
     units::move_ctrl(unit_id, true);
-    call_script(unit_id, "PreJump");
+    crate::unit_scripts::jump(unit_id, JumpCall::PreJump);
     global.jumps.access_mut().active.push(Jump {
         unit_id,
         start,
@@ -194,15 +195,15 @@ pub fn fly(global: &Global) -> Vec<i32> {
                 .log_err_once("moving a jumping unit");
             units::face_radians(flight.unit_id, heading);
         }
-        for name in flight.calls {
-            call_script(flight.unit_id, name);
+        for call in flight.calls {
+            crate::unit_scripts::jump(flight.unit_id, call);
         }
         if flight.landed {
             landed.push(flight.unit_id);
         }
     }
     for unit_id in &landed {
-        call_script(*unit_id, "StopJump");
+        crate::unit_scripts::jump(*unit_id, JumpCall::StopJump);
         units::move_ctrl(*unit_id, false);
     }
     landed
@@ -261,10 +262,6 @@ fn shortest_turn(from: f32, to: f32) -> f32 {
         turn += core::f32::consts::TAU;
     }
     turn
-}
-
-fn call_script(unit_id: i32, function_name: &'static str) {
-    crate::unit_scripts::call(unit_id, function_name);
 }
 
 fn length(value: Float3) -> f32 {

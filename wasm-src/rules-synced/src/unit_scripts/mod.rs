@@ -15,7 +15,17 @@ use self::gravit::GravitScript;
 use self::immobile::ImmobileScript;
 use self::robots::{RobotKind, RobotScript};
 
-pub use self::module::{GravitasCusModule, attach, attach_existing, call};
+pub use self::module::{GravitasCusModule, attach, attach_existing, jump};
+
+/// The script functions `unit_jumpjets.lua` calls during a jump.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum JumpCall {
+    PreJump,
+    StartJump,
+    Jumping,
+    HalfJump,
+    StopJump,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ScriptKind {
@@ -128,25 +138,24 @@ impl GravitasUnitScript {
     }
 }
 
+impl GravitasUnitScript {
+    /// A jump gadget call. False when the script has no jump functions.
+    fn jump(&self, ctx: &UnitCtx, call: JumpCall) -> bool {
+        match &self.script {
+            Script::Gravit(gravit) => {
+                gravit.jump(ctx, call);
+                true
+            }
+            _ => false,
+        }
+    }
+}
+
 impl UnitScript for GravitasUnitScript {
     fn new(ctx: &mut InitCtx<'_>) -> Self {
         let kind = crate::units::def_of(ctx.unit().0)
             .and_then(|def_id| crate::defs::get().unit(def_id).script);
         Self::for_kind(kind, ctx)
-    }
-
-    /// The jump gadget's calls; they return nothing.
-    fn call_named(
-        &mut self,
-        ctx: &UnitCtx,
-        name: &str,
-        _arguments: &[f32],
-        _returns: &mut [f32],
-    ) -> Option<usize> {
-        match &self.script {
-            Script::Gravit(gravit) => gravit.named_call(ctx, name).then_some(0),
-            _ => None,
-        }
     }
 
     fn create(&mut self, ctx: &UnitCtx) {

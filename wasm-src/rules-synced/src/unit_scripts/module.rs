@@ -5,7 +5,7 @@ use spring::UnitId;
 use spring::cus::host::{CusHost, UnitDefScript};
 use spring::cus::{InitCtx, ScriptCapabilities};
 
-use super::{GravitasUnitScript, capabilities};
+use super::{GravitasUnitScript, JumpCall, capabilities};
 
 /// The module exported to the engine: `CusHost` attaches, ticks and
 /// dispatches the scripts.
@@ -33,10 +33,16 @@ pub fn attach_existing() {
     crate::with_cus_module_or_defer(|host| host.attach_existing());
 }
 
-/// Run a named unit-script function, like Lua's `env.Function()`. Deferred in
-/// the same cases as [`attach`].
-pub fn call(unit: i32, function_name: &'static str) {
+/// Run one of the jump functions of a unit's script, as `unit_jumpjets.lua`
+/// does through `env`. Deferred in the same cases as [`attach`].
+pub fn jump(unit: i32, call: JumpCall) {
     crate::with_cus_module_or_defer(move |host| {
-        host.call(UnitId(unit), function_name, &[], &mut []);
+        let handled = host.with_script(UnitId(unit), |ctx, script| script.jump(ctx, call));
+        if handled != Some(true) {
+            spring::log_warning!(
+                "gravitas-wasm",
+                "unit {unit} has no script that jumps ({call:?})"
+            );
+        }
     });
 }

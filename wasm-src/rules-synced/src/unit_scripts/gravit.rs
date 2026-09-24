@@ -8,6 +8,7 @@ use spring::cus::{
     Axis, Duration, InitCtx, Piece, SfxFlags, TaskDefinition, UnitCtx, WeaponId, WreckLevel,
 };
 
+use super::JumpCall;
 use super::common::{
     SIG_AIM, SIG_IDLE, SIG_JUMP, SIG_STOP, SIG_WALK, explode, move_piece, play_unit_sound, turn,
 };
@@ -183,21 +184,24 @@ impl GravitScript {
     }
 
     /// The jump gadget's calls. Returns whether `name` is one of them.
-    pub(super) fn named_call(&self, ctx: &UnitCtx, name: &str) -> bool {
+    pub(super) fn jump(&self, ctx: &UnitCtx, call: JumpCall) {
         let state = Rc::clone(&self.state);
-        let task = match name {
-            "PreJump" => TaskDefinition::with_state("gravitas-gravit-prejump", state, prejump),
-            "StartJump" => {
+        let task = match call {
+            JumpCall::PreJump => {
+                TaskDefinition::with_state("gravitas-gravit-prejump", state, prejump)
+            }
+            JumpCall::StartJump => {
                 self.state.borrow_mut().jumping = true;
                 TaskDefinition::with_state("gravitas-gravit-startjump", state, startjump)
             }
-            "HalfJump" => TaskDefinition::with_state("gravitas-gravit-midjump", state, midjump),
-            "StopJump" => {
+            JumpCall::HalfJump => {
+                TaskDefinition::with_state("gravitas-gravit-midjump", state, midjump)
+            }
+            JumpCall::StopJump => {
                 self.state.borrow_mut().jumping = false;
                 TaskDefinition::with_state("gravitas-gravit-stopjump", state, stopjump)
             }
-            "Jumping" => return true,
-            _ => return false,
+            JumpCall::Jumping => return,
         };
         ctx.signal(SIG_IDLE);
         ctx.signal(SIG_WALK);
@@ -205,7 +209,6 @@ impl GravitScript {
         ctx.signal(SIG_AIM);
         ctx.signal(SIG_JUMP);
         ctx.spawn(task);
-        true
     }
 }
 
