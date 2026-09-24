@@ -120,7 +120,7 @@ fn is_wall_like(unit_id: i32, unit_def_id: i32) -> bool {
         return true;
     }
     crate::defs::get().unit(unit_def_id).wall
-        && spring::get_unit_rules_param_f32(unit_id, "invulnerable")
+        && spring::get_unit_rules_param_f32(unit_id, crate::effects::INVULNERABLE)
             .is_ok_and(|value| value == 0.0)
 }
 

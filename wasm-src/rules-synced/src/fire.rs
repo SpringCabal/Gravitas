@@ -68,9 +68,7 @@ impl Fires {
             };
             let reach = field.radius * FIRE_SPEED * REACH_FACTOR;
             for unit_id in units::units_in_cylinder(centre.x, centre.z, reach) {
-                if spring::get_unit_rules_param_f32(unit_id, "invulnerable")
-                    .is_ok_and(|value| value == 1.0)
-                {
+                if crate::effects::is_invulnerable(unit_id) {
                     continue;
                 }
                 let proximity = proximity_inside(unit_id, centre);

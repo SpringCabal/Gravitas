@@ -5,10 +5,10 @@ use crate::units;
 pub fn tag_on_create(unit_id: i32, unit_def_id: i32) {
     let def = crate::defs::get().unit(unit_def_id);
     if def.invulnerable {
-        set_rules_param(unit_id, "invulnerable", 1.0);
+        set_rules_param(unit_id, INVULNERABLE, 1.0);
     }
     if def.nonparalyzable {
-        set_rules_param(unit_id, "nonparalyzable", 1.0);
+        set_rules_param(unit_id, NONPARALYZABLE, 1.0);
     }
 }
 
@@ -23,12 +23,20 @@ pub fn is_respawnable(unit_id: i32) -> bool {
 }
 
 const RESPAWNABLE: &str = "respawnable";
+/// Rules params: the def's flags, which the scenario can override per unit.
+pub const INVULNERABLE: &str = "invulnerable";
+const NONPARALYZABLE: &str = "nonparalyzable";
+
+pub fn is_invulnerable(unit_id: i32) -> bool {
+    rules_flag(unit_id, INVULNERABLE)
+}
 
 pub fn blocks_damage(unit_id: i32, paralyzer: bool) -> bool {
-    if !paralyzer && rules_flag(unit_id, "invulnerable") {
-        return true;
+    if paralyzer {
+        rules_flag(unit_id, NONPARALYZABLE)
+    } else {
+        is_invulnerable(unit_id)
     }
-    paralyzer && rules_flag(unit_id, "nonparalyzable")
 }
 
 /// The blast of a barrel that was destroyed at `position`.
