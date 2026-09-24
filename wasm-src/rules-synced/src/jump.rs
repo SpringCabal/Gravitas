@@ -157,11 +157,15 @@ pub fn start(global: &Global, unit_id: i32, goal_x: f32, goal_y: f32, goal_z: f3
     let speed =
         rules_param(unit_id, SPEED_PARAM).unwrap_or(SPEED) * line_distance / flight_distance;
     let step = speed / line_distance;
+    // A jump that never advances (jumpSpeed 0) would never land.
+    if !(step > 0.0 && step.is_finite()) {
+        return Outcome::Invalid;
+    }
     if blocked(start, vector, step) {
         return Outcome::Blocked;
     }
     let heading = spring::units_info::get_unit_heading(unit_id, true).unwrap_or(0.0);
-    let turn = shortest_turn(heading, atan2(vector.x, vector.z));
+    let turn = shortest_turn(heading, vector.x.atan2(vector.z));
     units::move_ctrl(unit_id, true);
     call_script(unit_id, "PreJump");
     global.jumps.access_mut().active.push(Jump {
@@ -255,13 +259,6 @@ fn shortest_turn(from: f32, to: f32) -> f32 {
         turn += core::f32::consts::TAU;
     }
     turn
-}
-
-fn atan2(x: f32, z: f32) -> f32 {
-    if z == 0.0 && x == 0.0 {
-        return 0.0;
-    }
-    (x / z).atan() + if z < 0.0 { core::f32::consts::PI } else { 0.0 }
 }
 
 fn call_script(unit_id: i32, function_name: &'static str) {

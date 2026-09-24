@@ -51,6 +51,12 @@ impl Jumping {
         };
         self.unit_id = unit_id;
         self.origin = origin;
+        set_speed(unit_id, 0.0);
+        let still = request(global, unit_id, origin.x + REACH, origin.z);
+        set_speed(unit_id, crate::jump::SPEED);
+        if still {
+            return fail("a jump with jumpSpeed 0 was accepted");
+        }
         if request(global, unit_id, -1000.0, origin.z) {
             return fail("a jump outside the map was accepted");
         }
@@ -99,3 +105,14 @@ fn request(global: &Global, unit_id: i32, x: f32, z: f32) -> bool {
 fn request_at(global: &Global, unit_id: i32, x: f32, y: f32, z: f32) -> bool {
     crate::jump::start(global, unit_id, x, y, z) == crate::jump::Outcome::Started
 }
+
+fn set_speed(unit_id: i32, speed: f32) {
+    let _ = spring::set_unit_rules_param_f32(
+        unit_id,
+        SPEED_PARAM,
+        speed,
+        crate::units::RULES_PARAM_PRIVATE,
+    );
+}
+
+const SPEED_PARAM: &str = "jumpSpeed";
