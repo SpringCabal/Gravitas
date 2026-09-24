@@ -1,5 +1,7 @@
 use alloc::vec::Vec;
 
+use spring::consts::SQUARE_SIZE_F;
+
 use crate::units;
 
 /// Terrain levelling queued for walls and gates, flushed once a frame.
@@ -69,9 +71,8 @@ struct Pending {
     due_frame: i32,
 }
 
-const STEP: f32 = 8.0;
+const STEP: f32 = SQUARE_SIZE_F;
 const MARGIN: f32 = 2.0;
-const SQUARE_SIZE: f32 = 8.0;
 const MAX_STEPS: i32 = 256;
 
 fn adjust_wall_terrain(unit_id: i32, height: f32) {
@@ -125,9 +126,9 @@ fn is_wall_like(unit_id: i32, unit_def_id: i32) -> bool {
 }
 
 fn round_to_square(value: f32) -> f32 {
-    let remainder = value % SQUARE_SIZE;
-    if remainder > SQUARE_SIZE / 2.0 {
-        value + SQUARE_SIZE - remainder
+    let remainder = value % SQUARE_SIZE_F;
+    if remainder > SQUARE_SIZE_F / 2.0 {
+        value + SQUARE_SIZE_F - remainder
     } else {
         value - remainder
     }

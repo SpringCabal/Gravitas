@@ -113,7 +113,7 @@ impl Input {
 }
 
 pub fn mouse_press(_x: i32, _y: i32, button: i32) -> bool {
-    matches!(button, MOUSE_LEFT | MOUSE_RIGHT)
+    matches!(button, spring::mouse::LEFT | spring::mouse::RIGHT)
 }
 
 pub fn mouse_release(_x: i32, _y: i32, _button: i32) {}
@@ -129,8 +129,6 @@ const KEY_DOWN: i32 = keys::DOWN;
 const KEY_RIGHT: i32 = keys::RIGHT;
 const KEY_LEFT: i32 = keys::LEFT;
 const NO_UNIT: i32 = -1;
-const MOUSE_LEFT: i32 = 1;
-const MOUSE_RIGHT: i32 = 3;
 
 /// The mouse, or the e2e scenario's scripted pointer when it has one.
 fn pointer(global: &Global) -> Option<Pointer> {

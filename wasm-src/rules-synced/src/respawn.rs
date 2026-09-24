@@ -160,8 +160,8 @@ pub const SCAN_FRAME: i32 = 30;
 /// than [`DISPLACEMENT_THRESHOLD`] between two checks counts as not moving.
 const CHECK_INTERVAL: i32 = 30;
 
-const LONG_IDLE_FRAMES: i32 = 30 * 30;
-const SHORT_IDLE_FRAMES: i32 = 10 * 30;
+const LONG_IDLE_FRAMES: i32 = 30 * spring::consts::GAME_SPEED;
+const SHORT_IDLE_FRAMES: i32 = 10 * spring::consts::GAME_SPEED;
 const STUCK_HEIGHT: f32 = 20.0;
 const DISPLACEMENT_THRESHOLD: f32 = 1.0;
 

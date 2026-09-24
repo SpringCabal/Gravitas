@@ -128,9 +128,7 @@ pub fn mid_position(unit_id: i32) -> Option<Float3> {
 }
 
 pub fn units_in_cylinder(x: f32, z: f32, radius: f32) -> Vec<i32> {
-    let mut units = units_in_rectangle(x - radius, z - radius, x + radius, z + radius);
-    units.retain(|unit_id| within_radius(*unit_id, x, z, radius));
-    units
+    spring::get_units_in_cylinder(x, z, radius, ANY_ALLEGIANCE).unwrap_or_default()
 }
 
 pub fn units_in_rectangle(x1: f32, z1: f32, x2: f32, z2: f32) -> Vec<i32> {
@@ -165,15 +163,6 @@ pub fn face_radians(unit_id: i32, radians: f32) {
         z: front.x,
     };
     let _ = spring::set_unit_direction(unit_id, front, right);
-}
-
-fn within_radius(unit_id: i32, x: f32, z: f32, radius: f32) -> bool {
-    let Some(position) = position(unit_id) else {
-        return false;
-    };
-    let dx = position.x - x;
-    let dz = position.z - z;
-    dx * dx + dz * dz <= radius * radius
 }
 
 fn face(unit_id: i32, angle: f32) {

@@ -180,6 +180,7 @@ fn push_reload(stack: &mut BarStack, unit_id: i32, frame: i32) {
     if reload_frame <= frame as f32 {
         return;
     }
-    let progress = 1.0 - ((reload_frame - frame as f32) / 30.0) / reload_time;
+    let progress =
+        1.0 - ((reload_frame - frame as f32) * spring::consts::FRAME_SECONDS) / reload_time;
     stack.push(progress.max(0.0), bars::RELOAD);
 }
