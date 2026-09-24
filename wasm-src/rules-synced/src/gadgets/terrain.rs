@@ -2,7 +2,7 @@ use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
 use crate::state::Global;
-use crate::{probe, terrain};
+use crate::terrain;
 
 /// Levels the ground under walls: raised while a wall stands, flat once it is
 /// gone.
@@ -14,10 +14,8 @@ impl Gadget<Global> for TerrainGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
-        let global = ctx.global();
-        let due = global.terrain.access_mut().take_due(frame);
+        let due = ctx.global().terrain.access_mut().take_due(frame);
         terrain::level(due);
-        probe::report_levelled(global, frame);
     }
 
     fn unit_created(

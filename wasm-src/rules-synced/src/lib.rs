@@ -14,7 +14,6 @@ mod level;
 mod mission;
 mod plate;
 mod player;
-mod probe;
 mod respawn;
 mod restart;
 mod robots;

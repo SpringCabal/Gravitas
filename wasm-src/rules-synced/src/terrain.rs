@@ -1,4 +1,3 @@
-use alloc::string::String;
 use alloc::vec::Vec;
 
 use crate::units;
@@ -7,8 +6,6 @@ use crate::units;
 #[derive(Default)]
 pub struct Terrain {
     pending: Vec<Pending>,
-    /// How many walls of each def were levelled, for the log.
-    levelled: Vec<(String, u32)>,
 }
 
 impl Terrain {
@@ -22,34 +19,19 @@ impl Terrain {
         self.queue(unit_id, unit_def_id, height, due_frame);
     }
 
-    /// Take what is due by `frame`, counting the walls among it.
+    /// Take the walls due by `frame`.
     pub fn take_due(&mut self, frame: i32) -> Vec<(i32, f32)> {
         let mut due = Vec::new();
-        let mut walls = Vec::new();
         self.pending.retain(|entry| {
             if entry.due_frame > frame {
                 return true;
             }
             if is_wall_like(entry.unit_id, entry.unit_def_id) {
-                walls.push(entry.unit_def_id);
                 due.push((entry.unit_id, entry.height));
             }
             false
         });
-        for unit_def_id in walls {
-            self.record_levelled(unit_def_id);
-        }
         due
-    }
-
-    pub fn levelled_report(&self) -> String {
-        let mut out = String::new();
-        for (name, count) in &self.levelled {
-            out.push_str(name);
-            out.push('=');
-            out.push_str(&alloc::format!("{count} "));
-        }
-        out
     }
 
     fn queue(&mut self, unit_id: i32, unit_def_id: i32, height: f32, due_frame: i32) {
@@ -68,18 +50,6 @@ impl Terrain {
                 height,
                 due_frame,
             }),
-        }
-    }
-
-    fn record_levelled(&mut self, unit_def_id: i32) {
-        let name = &crate::defs::get().unit(unit_def_id).name;
-        match self
-            .levelled
-            .iter_mut()
-            .find(|(candidate, _)| candidate == name)
-        {
-            Some(entry) => entry.1 += 1,
-            None => self.levelled.push((name.clone(), 1)),
         }
     }
 }
@@ -150,7 +120,8 @@ fn is_wall_like(unit_id: i32, unit_def_id: i32) -> bool {
         return true;
     }
     crate::defs::get().unit(unit_def_id).wall
-        && spring::get_unit_rules_param_f32(unit_id, "invulnerable").is_ok_and(|value| value == 0.0)
+        && spring::get_unit_rules_param_f32(unit_id, "invulnerable")
+            .is_ok_and(|value| value == 0.0)
 }
 
 fn round_to_square(value: f32) -> f32 {
