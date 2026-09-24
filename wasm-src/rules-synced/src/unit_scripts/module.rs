@@ -22,27 +22,30 @@ fn instance_id(unit: UnitId) -> u32 {
 }
 
 thread_local! {
-    static PENDING_UNITS: RefCell<Vec<(i32, i32)>> = const { RefCell::new(Vec::new()) };
-    static PENDING_CALLS: RefCell<Vec<(i32, &'static str)>> = const { RefCell::new(Vec::new()) };
+    /// Attachments and calls made while the CUS state was in use further up
+    /// the stack (see [`attach`]), applied on the next Core-CUS tick. This is
+    /// the CUS module's own state, not a gadget's.
+    static DEFERRED_UNITS: RefCell<Vec<(i32, i32)>> = const { RefCell::new(Vec::new()) };
+    static DEFERRED_CALLS: RefCell<Vec<(i32, &'static str)>> = const { RefCell::new(Vec::new()) };
 }
 
-/// Queue a named unit-script call for the next Core-CUS tick.
+/// Attach the unit's script, if its def has one.
 ///
-/// The rules run inside this same module, so `call_unit_script` goes through
-/// the engine and back into a module that is still inside a gadget callin; the
-/// engine rejects that nested call (ApiError 1), so the animation never ran.
-/// Calls are applied in order on the tick, like unit attach.
-pub fn queue_call(unit: i32, function_name: &'static str) {
-    if unit >= 0 {
-        PENDING_CALLS.with(|pending| pending.borrow_mut().push((unit, function_name)));
+/// The rules run in this module, so they reach the CUS state directly. That
+/// fails only while the state is in use further up the stack (a unit created
+/// from inside a unit script) or before the engine has initialized it (units
+/// that exist when the rules load); those units are attached on the next tick.
+pub fn attach(unit: i32, def: i32) {
+    if unit >= 0 && crate::with_cus_module(|module| module.attach(unit, def)).is_none() {
+        DEFERRED_UNITS.with(|deferred| deferred.borrow_mut().push((unit, def)));
     }
 }
 
-/// Queue a unit for script attachment on the next Core-CUS tick, so a gadget
-/// callin never attaches a script from inside the module.
-pub fn queue_unit_created(unit: i32, def: i32) {
-    if unit >= 0 {
-        PENDING_UNITS.with(|pending| pending.borrow_mut().push((unit, def)));
+/// Run a named unit-script function, like Lua's `env.Function()`. Deferred to
+/// the next tick in the same cases as [`attach`].
+pub fn call(unit: i32, function_name: &'static str) {
+    if unit >= 0 && crate::with_cus_module(|module| module.call(unit, function_name)).is_none() {
+        DEFERRED_CALLS.with(|deferred| deferred.borrow_mut().push((unit, function_name)));
     }
 }
 
@@ -53,49 +56,66 @@ pub struct GravitasCusModule {
 }
 
 impl GravitasCusModule {
-    fn attach_pending(&mut self) {
-        let pending = PENDING_UNITS.with(|units| core::mem::take(&mut *units.borrow_mut()));
-        for (unit_id, def) in pending {
-            let Some(kind) = crate::defs::get().unit(def).script else {
-                continue;
-            };
-            let unit = UnitId(unit_id);
-            let instance = instance_id(unit);
-            if self.handles.contains_key(&instance) {
-                continue;
+    fn attach(&mut self, unit_id: i32, def: i32) {
+        let Some(kind) = crate::defs::get().unit(def).script else {
+            return;
+        };
+        let unit = UnitId(unit_id);
+        let instance = instance_id(unit);
+        if self.handles.contains_key(&instance) {
+            return;
+        }
+        let map = match spring::get_unit_piece_map(unit_id) {
+            Ok(map) => map,
+            Err(error) => {
+                crate::diagnostics::warning(&alloc::format!(
+                    "no unit script for unit {unit_id}: piece map failed: {error:?}"
+                ));
+                return;
             }
-            let Ok(map) = spring::get_unit_piece_map(unit_id) else {
-                continue;
-            };
-            let root = spring::get_unit_root_piece(unit_id)
-                .ok()
-                .and_then(|piece| piece.checked_sub(1))
-                .map(Piece)
-                .unwrap_or(Piece::INVALID);
-            let resolver = EnginePieces { map, root };
-            let host = WasmCus::new(unit, instance);
-            let engine = Rc::new(RefCell::new(host.engine()));
-            let instance_state = CusInstance::construct(unit, &resolver, engine);
-            let handle = self.registry.attach(instance_state);
-            if WasmCus::attach(unit, instance, capabilities(kind)).is_ok() {
+        };
+        let root = spring::get_unit_root_piece(unit_id)
+            .ok()
+            .and_then(|piece| piece.checked_sub(1))
+            .map(Piece)
+            .unwrap_or(Piece::INVALID);
+        let resolver = EnginePieces { map, root };
+        let host = WasmCus::new(unit, instance);
+        let engine = Rc::new(RefCell::new(host.engine()));
+        let instance_state = CusInstance::construct(unit, &resolver, engine);
+        let handle = self.registry.attach(instance_state);
+        match WasmCus::attach(unit, instance, capabilities(kind)) {
+            Ok(_) => {
                 self.handles.insert(instance, handle);
-            } else {
+            }
+            Err(error) => {
+                crate::diagnostics::warning(&alloc::format!(
+                    "no unit script for unit {unit_id}: attach failed: {error:?}"
+                ));
                 let _ = self.registry.detach(handle);
             }
         }
     }
 
-    fn apply_pending_calls(&mut self) {
-        let pending = PENDING_CALLS.with(|calls| core::mem::take(&mut *calls.borrow_mut()));
-        for (unit_id, function_name) in pending {
-            let Some(handle) = self.handles.get(&instance_id(UnitId(unit_id))).copied() else {
-                continue;
-            };
-            self.sync_instance_frame(handle);
-            let _ = self.registry.with(handle, |instance| {
-                let ctx = instance.context();
-                instance.with_state(|script| script.named_call(&ctx, function_name))
-            });
+    fn call(&mut self, unit_id: i32, function_name: &str) {
+        let Some(handle) = self.handles.get(&instance_id(UnitId(unit_id))).copied() else {
+            return;
+        };
+        self.sync_instance_frame(handle);
+        let _ = self.registry.with(handle, |instance| {
+            let ctx = instance.context();
+            instance.with_state(|script| script.named_call(&ctx, function_name))
+        });
+    }
+
+    fn apply_deferred(&mut self) {
+        let units = DEFERRED_UNITS.with(|deferred| core::mem::take(&mut *deferred.borrow_mut()));
+        for (unit_id, def) in units {
+            self.attach(unit_id, def);
+        }
+        let calls = DEFERRED_CALLS.with(|deferred| core::mem::take(&mut *deferred.borrow_mut()));
+        for (unit_id, function_name) in calls {
+            self.call(unit_id, function_name);
         }
     }
 
@@ -172,8 +192,7 @@ impl CoreCusModule for GravitasCusModule {
     }
 
     fn cus_tick(&mut self, frame: u32) {
-        self.attach_pending();
-        self.apply_pending_calls();
+        self.apply_deferred();
         self.registry.tick(frame as u64);
     }
 

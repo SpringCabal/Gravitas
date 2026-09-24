@@ -14,7 +14,7 @@ use spring::cus::{InitCtx, Piece, ScriptCapabilities, UnitCtx, UnitScript, Weapo
 use self::gravit::GravitScript;
 use self::robots::{RobotKind, RobotScript};
 
-pub use self::module::{GravitasCusModule, queue_call, queue_unit_created};
+pub use self::module::{GravitasCusModule, attach, call};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ScriptKind {

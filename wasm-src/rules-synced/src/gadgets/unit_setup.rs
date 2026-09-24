@@ -4,8 +4,7 @@ use spring_addons::rules::Gadget;
 use crate::state::Global;
 use crate::{effects, shapes, unit_scripts, walls};
 
-/// Gives each new unit its rules params, shape and blocking, and queues its
-/// unit script.
+/// Gives each new unit its unit script, rules params, shape and blocking.
 pub struct UnitSetupGadget;
 
 impl Gadget<Global> for UnitSetupGadget {
@@ -17,7 +16,7 @@ impl Gadget<Global> for UnitSetupGadget {
     fn init(&self, _ctx: &AddonContext<'_, Global>) {
         for unit_id in spring::get_all_units().unwrap_or_default() {
             if let Ok(def) = spring::get_unit_def_id(unit_id) {
-                unit_scripts::queue_unit_created(unit_id, def.0);
+                unit_scripts::attach(unit_id, def.0);
             }
         }
     }
@@ -30,7 +29,7 @@ impl Gadget<Global> for UnitSetupGadget {
         _team: i32,
         _builder: i32,
     ) {
-        unit_scripts::queue_unit_created(unit_id, unit_def_id);
+        unit_scripts::attach(unit_id, unit_def_id);
         effects::tag_on_create(unit_id, unit_def_id);
         walls::configure(unit_id, unit_def_id);
         shapes::apply(unit_id, unit_def_id);
