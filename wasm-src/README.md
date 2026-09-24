@@ -20,6 +20,10 @@ Two guest crates, both compiled to `wasm32-unknown-unknown` and loaded through
   - `level.rs` and `unit_scripts/gravit_animation_data.rs` are data: the
     scenario's units, areas and plate links, and the Gravit keyframes.
   - `tests/`: the in-game e2e cases, built only with the `e2e` feature.
+    They run in an arena that replaces the level, then the last case
+    restarts into the real level and checks it. Input, restarts and
+    screenshots go through the ui module (`ui/src/shots.rs`), which the
+    headless run loads too.
 - `ui`: the widgets (HUD, camera, input, healthbars, fire particles, map
   edge, music). Each owns its state; `state.rs` holds the player unit and
   the HUD, and the fire particle state.
@@ -27,6 +31,22 @@ Two guest crates, both compiled to `wasm32-unknown-unknown` and loaded through
 The rules send the HUD status (`GRAVITAS_STATUS|...`) when it changes and
 effect messages (`GRAVITAS_FX|...`); the ui sends the player's input when it
 changes.
+
+## Differences from the Lua version
+
+- There is a restart (HUD button after the game ends): the Lua game had
+  none. Units destroyed by a restart die without explosions, respawns or a
+  game over.
+- The fire and electric-field effects are drawn by the ui module; the Lua
+  game used LUPS. The HUD is RmlUi instead of Chili.
+- A robot deciding whether to flee measures its distance to the hazard in
+  3D. `unit_robots.lua` has a typo (`(y-ax)*(y-ay)`) in that distance; it
+  only changes how far the robot looks for other hazards.
+- The robots' escape search reads an electric field's `elecSize`;
+  `unit_robots.lua` drops that value and uses 100. The level's fields are
+  all size 100, so this changes nothing in play.
+- A jump with `jumpSpeed` 0 is refused; in Lua (5.1) its wall check loops
+  forever and the game hangs.
 
 ## Commands
 
