@@ -96,7 +96,7 @@ impl Runner {
                 "E2E summary passed={passed} failed={failed}"
             ));
         }
-        let _ = spring::send_to_unsynced("GRAVITAS_SHOT|done");
+        crate::tests::harness::send_to_ui(gravitas_shared::e2e::Request::Done);
     }
 }
 

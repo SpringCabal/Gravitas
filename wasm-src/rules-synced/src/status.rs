@@ -1,21 +1,23 @@
 use alloc::string::String;
 
-use springcabal::message::Encoder;
+use gravitas_shared::Status;
 
 use crate::state::Global;
 use crate::units;
 
 /// What the HUD shows: the player unit, its health and which gun is loaded.
 pub fn message(global: &Global, frame: i32) -> String {
-    let player = global.player_unit.get().unwrap_or(-1);
+    let player_unit = global.player_unit.get();
+    let player = player_unit.unwrap_or(-1);
     let (health, max_health) = health(player);
-    Encoder::new("GRAVITAS_STATUS")
-        .kv("playerUnit", player)
-        .kv("health", health)
-        .kv("maxHealth", max_health)
-        .kv_flag("push", reload_ready(player, units::WEAPON_PUSH, frame))
-        .kv_flag("pull", reload_ready(player, units::WEAPON_PULL, frame))
-        .finish()
+    Status {
+        player_unit,
+        health,
+        max_health,
+        push_ready: reload_ready(player, units::WEAPON_PUSH, frame),
+        pull_ready: reload_ready(player, units::WEAPON_PULL, frame),
+    }
+    .encode()
 }
 
 fn health(unit_id: i32) -> (i32, i32) {

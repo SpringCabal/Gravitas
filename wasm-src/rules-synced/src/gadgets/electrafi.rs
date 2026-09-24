@@ -2,7 +2,9 @@ use spring::ResultExt;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
-use crate::effects::send_fx;
+use gravitas_shared::EffectKind;
+
+use crate::effects::send_effect;
 use crate::electrafi::Electrafi;
 use crate::state::{Global, PerLevel};
 use crate::units;
@@ -61,7 +63,7 @@ impl Gadget<Global> for ElectrafiGadget {
             crate::tests::note_spark(ctx.global(), shock.unit_id, shock.damage.is_some());
         }
         for arc in arcs {
-            send_fx("arc", arc.position, &[arc.radius]);
+            send_effect(arc.position, EffectKind::Arc { radius: arc.radius });
         }
     }
 }
@@ -75,9 +77,12 @@ fn emit_spark(unit_id: i32, intensity: f32) {
     };
     let spread = spring::units_info::get_unit_radius(unit_id).unwrap_or(0.0) * 0.5;
     let velocity = spring::units_info::get_unit_velocity(unit_id).unwrap_or_default();
-    send_fx(
-        "spark",
+    send_effect(
         position,
-        &[intensity, velocity.x, velocity.z, spread],
+        EffectKind::Spark {
+            intensity,
+            velocity: [velocity.x, velocity.z],
+            spread,
+        },
     );
 }

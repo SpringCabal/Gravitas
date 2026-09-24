@@ -50,13 +50,12 @@ pub fn hazard_size_at_creation(global: &Global, unit_id: i32) -> Option<Option<f
         .map(|(_, size)| *size)
 }
 
-/// A message from the ui module: `gravitas_e2e|shot|<name>` once it took a
-/// screenshot.
+/// A message from the ui module: it took the screenshot `name`.
 pub fn note_message(global: &Global, data: &[u8]) {
-    let Some(name) = data.strip_prefix(b"gravitas_e2e|shot|") else {
-        return;
-    };
-    let Ok(name) = core::str::from_utf8(name) else {
+    let Some(name) = core::str::from_utf8(data)
+        .ok()
+        .and_then(gravitas_shared::e2e::parse_shot_taken)
+    else {
         return;
     };
     global

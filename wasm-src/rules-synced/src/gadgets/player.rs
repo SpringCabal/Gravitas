@@ -9,7 +9,6 @@ use crate::player::{self, Player};
 use crate::state::Global;
 use crate::{diagnostics, jump, mission};
 
-const RESTART_MESSAGE: &[u8] = b"gravitas_restart";
 const ENEMY_ALLY_TEAM: i32 = 1;
 
 /// Takes the ui module's input and drives the player unit with it: moving,
@@ -35,7 +34,7 @@ impl Gadget<Global> for PlayerGadget {
         data: &[u8],
     ) {
         let global = ctx.global();
-        if data == RESTART_MESSAGE {
+        if data == gravitas_shared::RESTART.as_bytes() {
             global.restart.request();
             return;
         }

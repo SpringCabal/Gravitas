@@ -1,5 +1,5 @@
+use gravitas_shared::{Effect, EffectKind};
 use spring::ResultExt;
-use springcabal::message::Encoder;
 
 use crate::units;
 
@@ -57,7 +57,12 @@ pub fn explode_barrel(barrel: i32, position: spring::types::Float3) {
         0.0,
         0.0,
     );
-    send_fx("flame", position, &[EXPLOSION_RADIUS]);
+    send_effect(
+        position,
+        EffectKind::Flame {
+            radius: EXPLOSION_RADIUS,
+        },
+    );
     for nearby in units::units_in_cylinder(position.x, position.z, EXPLOSION_RADIUS) {
         // An earlier hit may have set off another barrel that killed it.
         if !units::valid(nearby) {
@@ -130,16 +135,11 @@ fn rules_flag(unit_id: i32, name: &str) -> bool {
     spring::get_unit_rules_param_f32(unit_id, name).unwrap_or(0.0) >= 1.0
 }
 
-/// Ask the ui module for a fire or electric effect at `position`:
-/// `GRAVITAS_FX|kind|x|y|z|values...`.
-pub fn send_fx(kind: &str, position: spring::types::Float3, values: &[f32]) {
-    let message = values.iter().fold(
-        Encoder::new("GRAVITAS_FX")
-            .field(kind)
-            .field(position.x)
-            .field(position.y)
-            .field(position.z),
-        |message, value| message.field(value),
-    );
-    spring::send_to_unsynced(&message.finish()).log_err_once("fire or electric effect message");
+/// Ask the ui module to draw a fire or electric effect at `position`.
+pub fn send_effect(position: spring::types::Float3, kind: EffectKind) {
+    let effect = Effect {
+        position: [position.x, position.y, position.z],
+        kind,
+    };
+    spring::send_to_unsynced(&effect.encode()).log_err_once("fire or electric effect message");
 }

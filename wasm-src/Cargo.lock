@@ -6,6 +6,7 @@ version = 4
 name = "gravitas-rules-wasm"
 version = "0.1.0"
 dependencies = [
+ "gravitas-shared",
  "spring",
  "spring-addons",
  "springcabal",
@@ -13,11 +14,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "gravitas-shared"
+version = "0.1.0"
+dependencies = [
+ "springcabal",
+]
+
+[[package]]
 name = "gravitas-ui-wasm"
 version = "0.1.0"
 dependencies = [
+ "gravitas-shared",
  "spring",
  "spring-addons",
+ "springcabal",
+ "springcabal-control",
 ]
 
 [[package]]

@@ -1,7 +1,7 @@
 use alloc::string::String;
 
+use gravitas_shared::e2e::Request;
 use spring::types::Float3;
-use springcabal::message::Encoder;
 
 use crate::state::Global;
 use crate::tests::arena::Arena;
@@ -27,13 +27,11 @@ pub fn arena<R>(global: &Global, function: impl FnOnce(&Arena) -> R) -> Option<R
 }
 
 pub fn look(position: Float3, height: f32) {
-    let message = Encoder::new("GRAVITAS_SHOT")
-        .field("look")
-        .field(position.x)
-        .field(position.z)
-        .field(height)
-        .finish();
-    let _ = spring::send_to_unsynced(&message);
+    send_to_ui(Request::Look {
+        x: position.x,
+        z: position.z,
+        height: Some(height),
+    });
 }
 
 // Input goes through the ui module, which the headless run also loads: it
@@ -45,30 +43,30 @@ pub fn press_jump(x: f32, z: f32) {
     // The height matters: a jump is refused as TooHigh unless the goal sits at
     // the terrain, which is what the ui module's cursor trace supplies.
     let y = units::ground_height(x, z);
-    send_to_ui(&alloc::format!("GRAVITAS_E2E|pointer|{x}|{y}|{z}|1"));
+    send_to_ui(Request::Pointer {
+        target: [x, y, z],
+        jump: true,
+    });
 }
 
 /// Give the mouse back to the ui module.
 pub fn release_pointer() {
-    send_to_ui("GRAVITAS_E2E|pointer|off");
+    send_to_ui(Request::PointerOff);
 }
 
 pub fn press_restart() {
-    send_to_ui("GRAVITAS_E2E|restart");
+    send_to_ui(Request::Restart);
 }
 
-fn send_to_ui(message: &str) {
-    if spring::send_to_unsynced(message).is_err() {
+pub fn send_to_ui(request: Request<'_>) {
+    let message = request.encode();
+    if spring::send_to_unsynced(&message).is_err() {
         crate::diagnostics::warning(&alloc::format!("E2E request not sent: {message}"));
     }
 }
 
 pub fn capture(name: &str) {
-    let message = Encoder::new("GRAVITAS_SHOT")
-        .field("shot")
-        .field(name)
-        .finish();
-    let _ = spring::send_to_unsynced(&message);
+    send_to_ui(Request::Shot(name));
 }
 
 pub fn health(unit_id: i32) -> Option<f32> {
