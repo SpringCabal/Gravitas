@@ -33,6 +33,11 @@ pub fn attach_existing() {
     crate::with_cus_module_or_defer(|host| host.attach_existing());
 }
 
+/// Wake the scripts' sleeping tasks for `frame`.
+pub fn game_frame(frame: i32) {
+    crate::with_cus_module_or_defer(move |host| host.game_frame(frame));
+}
+
 /// Run one of the jump functions of a unit's script, as `unit_jumpjets.lua`
 /// does through `env`. Deferred in the same cases as [`attach`].
 pub fn jump(unit: i32, call: JumpCall) {

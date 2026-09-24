@@ -15,7 +15,7 @@ use self::gravit::GravitScript;
 use self::immobile::ImmobileScript;
 use self::robots::{RobotKind, RobotScript};
 
-pub use self::module::{GravitasCusModule, attach, attach_existing, jump};
+pub use self::module::{GravitasCusModule, attach, attach_existing, game_frame, jump};
 
 /// The script functions `unit_jumpjets.lua` calls during a jump.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

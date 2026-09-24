@@ -15,8 +15,15 @@ impl Gadget<Global> for UnitSetupGadget {
     }
 
     /// Units that already exist when the rules load (after a rules reload).
+    /// A new game has none: the level is spawned on the first frame.
     fn init(&self, _ctx: &AddonContext<'_, Global>) {
         unit_scripts::attach_existing();
+    }
+
+    /// Wake the scripts' sleeping tasks where Lua does: in `GameFrame`,
+    /// before the units update and aim.
+    fn game_frame(&self, _ctx: &AddonContext<'_, Global>, frame: i32) {
+        unit_scripts::game_frame(frame);
     }
 
     fn unit_created(
