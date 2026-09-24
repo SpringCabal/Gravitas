@@ -31,7 +31,6 @@ pub struct UnitDef {
     pub wall: bool,
     pub gate: bool,
     pub plate_toggler: bool,
-    pub respawnable: bool,
     /// customParams `invulnerable == 1`.
     pub invulnerable: bool,
     /// customParams `nonparalyzable == 1`.
@@ -54,7 +53,6 @@ static NO_DEF: UnitDef = UnitDef {
     wall: false,
     gate: false,
     plate_toggler: false,
-    respawnable: false,
     invulnerable: false,
     nonparalyzable: false,
     radius: None,
@@ -157,7 +155,6 @@ impl UnitDef {
             wall: has("wall"),
             gate: has("gate"),
             plate_toggler: has("plate_toggler"),
-            respawnable: has("respawnable"),
             invulnerable: number("invulnerable") == Some(1.0),
             nonparalyzable: number("nonparalyzable") == Some(1.0),
             radius: number("radius"),

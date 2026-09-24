@@ -2,11 +2,13 @@ use alloc::vec::Vec;
 
 use spring::types::Float3;
 
-use crate::units;
+use crate::{diagnostics, effects, units};
 
 #[derive(Default)]
 pub struct Respawns {
     watched: Vec<Watched>,
+    /// Watched units that died, to bring back on the next frame.
+    dead: Vec<Rebirth>,
 }
 
 struct Watched {
@@ -31,7 +33,7 @@ impl Respawns {
             return;
         };
         for unit_id in units {
-            if !is_respawnable(unit_id) {
+            if !effects::is_respawnable(unit_id) {
                 continue;
             }
             let (Some(unit_def_id), Ok(team_id)) = (
@@ -65,7 +67,17 @@ impl Respawns {
         });
     }
 
-    pub fn destroyed(&mut self, unit_id: i32) -> Option<Rebirth> {
+    /// A unit died: a watched one comes back on the next frame, unless the
+    /// level is being wiped.
+    pub fn destroyed(&mut self, unit_id: i32, wiping: bool) {
+        if let Some(rebirth) = self.unwatch(unit_id)
+            && !wiping
+        {
+            self.dead.push(rebirth);
+        }
+    }
+
+    fn unwatch(&mut self, unit_id: i32) -> Option<Rebirth> {
         let index = self
             .watched
             .iter()
@@ -79,7 +91,13 @@ impl Respawns {
         })
     }
 
+    /// The units to bring back this frame: those that died, and every
+    /// [`CHECK_INTERVAL`] frames those that got stuck.
     pub fn update(&mut self, frame: i32) -> Vec<Rebirth> {
+        let mut due = core::mem::take(&mut self.dead);
+        if frame % CHECK_INTERVAL != 0 {
+            return due;
+        }
         let mut stuck = Vec::new();
         for watched in &mut self.watched {
             let Some(position) = units::position(watched.unit_id) else {
@@ -101,13 +119,17 @@ impl Respawns {
                 stuck.push(watched.unit_id);
             }
         }
-        stuck
-            .into_iter()
-            .filter_map(|unit_id| self.destroyed(unit_id))
-            .collect()
+        due.extend(
+            stuck
+                .into_iter()
+                .filter_map(|unit_id| self.unwatch(unit_id)),
+        );
+        due
     }
 }
 
+/// Replace the unit with a new one where it started. The new unit is
+/// respawnable too. Returns its id.
 pub fn rebirth(rebirth: &Rebirth) -> Option<i32> {
     if units::valid(rebirth.unit_id) {
         let _ = spring::destroy_unit(
@@ -120,21 +142,28 @@ pub fn rebirth(rebirth: &Rebirth) -> Option<i32> {
             },
         );
     }
-    units::create(rebirth.unit_def_id, rebirth.origin, rebirth.team_id)
+    let Some(unit_id) = units::create(rebirth.unit_def_id, rebirth.origin, rebirth.team_id) else {
+        diagnostics::warning(&alloc::format!(
+            "respawn failed: unit def {} at {} {}",
+            rebirth.unit_def_id,
+            rebirth.origin.x,
+            rebirth.origin.z
+        ));
+        return None;
+    };
+    effects::mark_respawnable(unit_id);
+    Some(unit_id)
 }
 
 pub const SCAN_FRAME: i32 = 30;
+/// How often stuck units are looked for, as in the Lua gadget: moving less
+/// than [`DISPLACEMENT_THRESHOLD`] between two checks counts as not moving.
+const CHECK_INTERVAL: i32 = 30;
 
 const LONG_IDLE_FRAMES: i32 = 30 * 30;
 const SHORT_IDLE_FRAMES: i32 = 10 * 30;
 const STUCK_HEIGHT: f32 = 20.0;
 const DISPLACEMENT_THRESHOLD: f32 = 1.0;
-
-fn is_respawnable(unit_id: i32) -> bool {
-    spring::get_unit_rules_param_f32(unit_id, RESPAWNABLE).is_ok_and(|value| value == 1.0)
-}
-
-const RESPAWNABLE: &str = "respawnable";
 
 fn displaced(from: Float3, to: Float3) -> bool {
     (from.x - to.x).abs() + (from.y - to.y).abs() + (from.z - to.z).abs() > DISPLACEMENT_THRESHOLD

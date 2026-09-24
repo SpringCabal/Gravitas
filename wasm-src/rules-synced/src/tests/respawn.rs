@@ -64,9 +64,12 @@ impl Respawning {
         }
         let reborn = units::units_in_cylinder(self.origin.x, self.origin.z, REBORN_RANGE)
             .into_iter()
-            .any(|unit_id| units::def_of(unit_id) == crate::defs::get().id(ROBOT));
-        if !reborn {
+            .find(|unit_id| units::def_of(*unit_id) == crate::defs::get().id(ROBOT));
+        let Some(reborn) = reborn else {
             return fail("a respawnable unit did not come back");
+        };
+        if !crate::effects::is_respawnable(reborn) {
+            return fail("the respawned unit is not respawnable");
         }
         Step::Pass
     }

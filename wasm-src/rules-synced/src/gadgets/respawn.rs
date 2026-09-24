@@ -33,28 +33,31 @@ impl Gadget<Global> for RespawnGadget {
 
     fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
         let global = ctx.global();
-        let rebirth = self.respawns.get(global).destroyed(event.unit_id);
-        if let Some(rebirth) = rebirth
-            && !global.restart.wiping()
-        {
-            // Not from inside UnitDestroyed: the new unit's UnitCreated would
-            // run while the engine is still removing the old one.
-            ctx.delay(move |_| {
-                respawn::rebirth(&rebirth);
-            });
-        }
+        self.respawns
+            .get(global)
+            .destroyed(event.unit_id, global.restart.wiping());
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
-        let rebirths = {
-            let mut respawns = self.respawns.get(ctx.global());
+        let global = ctx.global();
+        let due = {
+            let mut respawns = self.respawns.get(global);
             if frame == respawn::SCAN_FRAME {
                 respawns.scan(frame);
             }
             respawns.update(frame)
         };
-        for rebirth in &rebirths {
-            respawn::rebirth(rebirth);
+        // Destroying and creating units raises UnitDestroyed and UnitCreated,
+        // which borrow the respawns: none is held here.
+        for rebirth in &due {
+            if let Some(unit_id) = respawn::rebirth(rebirth) {
+                self.respawns.get(global).adopt(
+                    unit_id,
+                    rebirth.unit_def_id,
+                    rebirth.team_id,
+                    frame,
+                );
+            }
         }
     }
 }

@@ -8,14 +8,19 @@ pub fn tag_on_create(unit_id: i32, unit_def_id: i32) {
     if def.nonparalyzable {
         set_rules_param(unit_id, "nonparalyzable", 1.0);
     }
-    if def.respawnable {
-        set_rules_param(unit_id, "respawnable", 1.0);
-    }
+}
+
+/// Respawnable units come back when they die or get stuck. No def is; the
+/// scenario marks units with this rules param.
+pub fn mark_respawnable(unit_id: i32) {
+    set_rules_param(unit_id, RESPAWNABLE, 1.0);
 }
 
 pub fn is_respawnable(unit_id: i32) -> bool {
-    rules_flag(unit_id, "respawnable")
+    rules_flag(unit_id, RESPAWNABLE)
 }
+
+const RESPAWNABLE: &str = "respawnable";
 
 pub fn blocks_damage(unit_id: i32, paralyzer: bool) -> bool {
     if !paralyzer && rules_flag(unit_id, "invulnerable") {
