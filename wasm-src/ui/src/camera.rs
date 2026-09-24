@@ -38,37 +38,14 @@ impl Camera {
         };
         let initial = self.initial_updates.get() < INITIAL_CAMERA_UPDATES;
         let speed = game_speed();
-        let camera = spring::CameraState {
-            name: "ta",
-            position: spring::types::Float3 {
+        let camera = camera_state(
+            spring::types::Float3 {
                 x: position.x + LEAD * speed * velocity.x,
                 y: 0.0,
                 z: position.z + LEAD * speed * velocity.z,
             },
-            direction: spring::types::Float3 {
-                x: 0.0,
-                y: PITCH_Y,
-                z: PITCH_Z,
-            },
-            up: spring::types::Float3 {
-                x: 0.0,
-                y: -PITCH_Z,
-                z: PITCH_Y,
-            },
-            right: spring::types::Float3 {
-                x: 1.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            fov: FIELD_OF_VIEW,
-            rx: 0.0,
-            ry: 0.0,
-            rz: 0.0,
-            dist: 0.0,
             height,
-            angle: TILT,
-            mode: CAMERA_MODE,
-        };
+        );
         let transition = if initial { INSTANT } else { transition };
         // The native camera applies a zero-length transition on its next update.
         // Keep issuing the instant state for a few updates so the first rendered
@@ -91,6 +68,49 @@ impl Camera {
             return Some((position, spring::types::Float3::default(), INSTANT, height));
         }
         follow_target(global)
+    }
+}
+
+/// Point the camera straight at `(x, z)` from `height`, at once. For the fire
+/// comparison probe, which runs without the follow camera.
+#[cfg(feature = "fire-probe")]
+pub fn look_at(x: f32, z: f32, height: Option<f32>) {
+    let position = spring::types::Float3 { x, y: 0.0, z };
+    let _ = spring::set_camera_state(
+        camera_state(position, height.unwrap_or(HEIGHT)),
+        INSTANT,
+        1.0,
+        1.0,
+    );
+}
+
+fn camera_state(position: spring::types::Float3, height: f32) -> spring::CameraState<'static> {
+    spring::CameraState {
+        name: "ta",
+        position,
+        direction: spring::types::Float3 {
+            x: 0.0,
+            y: PITCH_Y,
+            z: PITCH_Z,
+        },
+        up: spring::types::Float3 {
+            x: 0.0,
+            y: -PITCH_Z,
+            z: PITCH_Y,
+        },
+        right: spring::types::Float3 {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        },
+        fov: FIELD_OF_VIEW,
+        rx: 0.0,
+        ry: 0.0,
+        rz: 0.0,
+        dist: 0.0,
+        height,
+        angle: TILT,
+        mode: CAMERA_MODE,
     }
 }
 
