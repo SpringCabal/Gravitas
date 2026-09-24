@@ -124,7 +124,7 @@ impl GravitasCusModule {
 
     fn sync_instance_frame(&mut self, handle: CusHandle) {
         let _ = self.registry.with(handle, |instance| {
-            instance.tick(crate::units::game_frame() as u64)
+            instance.tick(spring::game::current_frame() as u64)
         });
     }
 }

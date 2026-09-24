@@ -149,10 +149,6 @@ pub fn def_of(unit_id: i32) -> Option<i32> {
     spring::units_info::get_unit_def_id(unit_id).ok()
 }
 
-pub fn game_frame() -> i32 {
-    spring::game::frame().map_or(0, |frame| frame as i32)
-}
-
 pub fn valid(unit_id: i32) -> bool {
     spring::valid_unit_id(unit_id).unwrap_or(false)
 }

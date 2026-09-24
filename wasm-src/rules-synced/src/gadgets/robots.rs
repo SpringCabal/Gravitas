@@ -3,7 +3,6 @@ use spring_addons::rules::{CommandEvent, Gadget, UnitDestroyedEvent, UnitPreDama
 
 use crate::robots::{self, Robots};
 use crate::state::{Global, PerLevel};
-use crate::units;
 
 /// Robots don't hurt each other, and step out of fire and electric fields.
 #[derive(Default)]
@@ -26,7 +25,7 @@ impl Gadget<Global> for RobotsGadget {
             event.unit_def_id,
             event.attacker_id,
             event.attacker_def_id,
-            units::game_frame(),
+            spring::game::current_frame(),
         );
         if let Some(avoidance) = avoidance {
             let unit_id = avoidance.unit_id;
@@ -35,7 +34,7 @@ impl Gadget<Global> for RobotsGadget {
             // command, and UnitCmdDone would forget a mark made before.
             self.robots
                 .get(ctx.global())
-                .mark(unit_id, units::game_frame());
+                .mark(unit_id, spring::game::current_frame());
         }
         let same_team = event.unit_team == event.attacker_team;
         robots::is_friendly_fire(event.unit_def_id, event.attacker_def_id, same_team)

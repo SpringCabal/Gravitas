@@ -1,9 +1,9 @@
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
+use crate::effects;
 use crate::respawn::{self, Respawns};
 use crate::state::{Global, PerLevel};
-use crate::{effects, units};
 
 /// Respawnable units come back where they started when they die or get stuck.
 #[derive(Default)]
@@ -25,9 +25,12 @@ impl Gadget<Global> for RespawnGadget {
         _builder: i32,
     ) {
         if effects::is_respawnable(unit_id) {
-            self.respawns
-                .get(ctx.global())
-                .adopt(unit_id, unit_def_id, team, units::game_frame());
+            self.respawns.get(ctx.global()).adopt(
+                unit_id,
+                unit_def_id,
+                team,
+                spring::game::current_frame(),
+            );
         }
     }
 

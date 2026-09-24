@@ -2,7 +2,7 @@ use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitPreDamagedEvent};
 
 use crate::state::Global;
-use crate::{effects, falldamage, units};
+use crate::{effects, falldamage};
 
 /// Units bounce off the ground and take damage from hard landings; objects
 /// don't hurt each other on collision; units that fall off the map die.
@@ -29,7 +29,7 @@ impl Gadget<Global> for FallDamageGadget {
                     .global()
                     .fall_immunity
                     .access()
-                    .is_immune(event.unit_id, units::game_frame());
+                    .is_immune(event.unit_id, spring::game::current_frame());
                 let damage = if immune {
                     0.0
                 } else {

@@ -17,7 +17,7 @@ pub fn draw(seconds: f32) {
         return;
     }
     let blink = (seconds % 1.0) < 0.5;
-    let frame = spring::game::frame().map_or(0, |frame| frame as i32);
+    let frame = spring::game::current_frame();
     begin();
     for unit_id in units {
         draw_unit(unit_id, camera, blink, frame);

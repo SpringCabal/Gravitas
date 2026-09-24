@@ -2,6 +2,7 @@ use alloc::format;
 use core::cell::Cell;
 
 use spring::types::Float3;
+use spring_addons::keys;
 
 use crate::state::Global;
 
@@ -123,11 +124,10 @@ const KEY_S: i32 = 115;
 const KEY_D: i32 = 100;
 const KEY_E: i32 = 101;
 const KEY_SPACE: i32 = 32;
-const KEY_UP: i32 = 273;
-const KEY_DOWN: i32 = 274;
-const KEY_RIGHT: i32 = 275;
-const KEY_LEFT: i32 = 276;
-const HIT_UNIT: i32 = 1;
+const KEY_UP: i32 = keys::UP;
+const KEY_DOWN: i32 = keys::DOWN;
+const KEY_RIGHT: i32 = keys::RIGHT;
+const KEY_LEFT: i32 = keys::LEFT;
 const NO_UNIT: i32 = -1;
 const MOUSE_LEFT: i32 = 1;
 const MOUSE_RIGHT: i32 = 3;
@@ -158,33 +158,7 @@ fn pointer(global: &Global) -> Option<Pointer> {
 }
 
 fn trace(x: f32, y: f32) -> (Float3, i32) {
-    let ground = spring::camera::trace_screen_ray(
-        x,
-        y,
-        spring::camera::TraceScreenRayOptions {
-            only_coords: true,
-            use_minimap: false,
-            include_sky: false,
-            ignore_water: false,
-            height_offset: 0.0,
-        },
-    );
-    let unit = spring::camera::trace_screen_ray(
-        x,
-        y,
-        spring::camera::TraceScreenRayOptions {
-            only_coords: false,
-            use_minimap: false,
-            include_sky: false,
-            ignore_water: false,
-            height_offset: 0.0,
-        },
-    );
-    let position = ground.map(|value| value.hit_pos).unwrap_or_default();
-    let target_unit = unit
-        .ok()
-        .filter(|value| value.hit_type == HIT_UNIT)
-        .map(|value| value.hit_id)
-        .unwrap_or(NO_UNIT);
+    let position = spring::pick::ground_at(x, y).unwrap_or_default();
+    let target_unit = spring::pick::unit_at(x, y).unwrap_or(NO_UNIT);
     (position, target_unit)
 }
