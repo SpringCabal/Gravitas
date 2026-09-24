@@ -132,6 +132,7 @@ fn cases() -> Vec<Entry> {
         Box::new(crate::tests::jump::Jumping::new()),
         Box::new(crate::tests::input::Input::new()),
         Box::new(crate::tests::falling::Falling::new()),
+        Box::new(crate::tests::collision::Collision::new()),
         Box::new(crate::tests::barrel::Barrel::new()),
         Box::new(crate::tests::terrain::Terrain::new()),
         Box::new(crate::tests::respawn::Respawning::new()),

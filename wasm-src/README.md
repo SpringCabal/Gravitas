@@ -45,6 +45,9 @@ changes.
 - The robots' escape search reads an electric field's `elecSize`;
   `unit_robots.lua` drops that value and uses 100. The level's fields are
   all size 100, so this changes nothing in play.
+- `game_fall_damage.lua` pairs up collisions that have no attacker by their
+  damage. On this engine only feature collisions lack one, so the port
+  skips the pairing and gives each the 2.5× damage Lua gives an unmatched one.
 - A jump with `jumpSpeed` 0 is refused; in Lua (5.1) its wall check loops
   forever and the game hangs.
 

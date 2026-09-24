@@ -20,6 +20,8 @@ pub struct Arena {
     pub vaulter: i32,
     pub dropped: i32,
     pub cushioned: i32,
+    pub thrown: i32,
+    pub anvil: i32,
     pub barrel: i32,
     pub bystander: i32,
     pub revivable: i32,
@@ -46,6 +48,8 @@ pub fn build() -> Option<Arena> {
         vaulter: spawn(GRAVIT, centre, RIG_JUMP, 0.0, 0.0),
         dropped: spawn(ROBOT, centre, RIG_FALL, -PARK_OFFSET, 0.0),
         cushioned: spawn(ROBOT, centre, RIG_FALL, PARK_OFFSET, 0.0),
+        thrown: spawn(ROBOT, centre, RIG_FALL, THROW_DISTANCE, COLLISION_OFFSET),
+        anvil: spawn(CRATE, centre, RIG_FALL, 0.0, COLLISION_OFFSET),
         barrel: spawn(BARREL, centre, RIG_BARREL, 0.0, 0.0),
         bystander: spawn(ROBOT, centre, RIG_BARREL, BARREL_REACH, 0.0),
         revivable: spawn(ROBOT, centre, RIG_RESPAWN, 0.0, 0.0),
@@ -71,7 +75,7 @@ pub fn build() -> Option<Arena> {
 }
 
 impl Arena {
-    pub fn units(&self) -> [i32; 21] {
+    pub fn units(&self) -> [i32; 23] {
         [
             self.plate,
             self.gate,
@@ -88,6 +92,8 @@ impl Arena {
             self.vaulter,
             self.dropped,
             self.cushioned,
+            self.thrown,
+            self.anvil,
             self.barrel,
             self.bystander,
             self.revivable,
@@ -118,6 +124,9 @@ const RIG_COLUMNS: usize = 4;
 const PARK_OFFSET: f32 = 90.0;
 const PUSH_SEPARATION: f32 = 120.0;
 const TARGET_OFFSET: f32 = 200.0;
+/// The collision case shares the fall rig, clear of its two robots.
+const COLLISION_OFFSET: f32 = -150.0;
+const THROW_DISTANCE: f32 = 70.0;
 
 const PLATE: &str = "plate";
 const GATE: &str = "gate";

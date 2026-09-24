@@ -39,7 +39,7 @@ pub fn setup(handler: &mut GadgetHandler<Global>) {
             // damage the one before returned.
             impulse::ImpulseGadget,
             robots::RobotsGadget::default(),
-            fall::FallDamageGadget,
+            fall::FallDamageGadget::default(),
             invulnerable::InvulnerableGadget,
             electrafi::ElectrafiGadget::default(),
             fire::FireGadget::default(),

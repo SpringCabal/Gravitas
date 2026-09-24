@@ -67,6 +67,10 @@ pub fn ground_collision(unit_id: i32, unit_def_id: i32) -> f32 {
 
 pub const GROUND_COLLISION: i32 = -2;
 pub const OBJECT_COLLISION: i32 = -3;
+/// The weapon id `game_fall_damage.lua` gives the damage of a collision
+/// without an attacker, and the factor it scales the engine's damage by.
+pub const DEBRIS_DAMAGE: i32 = -7;
+pub const DEBRIS_DAMAGE_MULTIPLIER: f32 = 2.5;
 
 const TANGENT_DAMAGE: f32 = 0.5;
 const VELOCITY_DAMAGE_THRESHOLD: f32 = 3.0;
