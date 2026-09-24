@@ -1,7 +1,5 @@
 use spring::gl;
 
-use crate::state;
-
 use super::bars::{self, BarStack};
 
 pub fn draw(seconds: f32) {
@@ -19,7 +17,7 @@ pub fn draw(seconds: f32) {
         return;
     }
     let blink = (seconds % 1.0) < 0.5;
-    let frame = state::with_state(|ui| ui.game_frame).unwrap_or(0);
+    let frame = spring::game::frame().map_or(0, |frame| frame as i32);
     begin();
     for unit_id in units {
         draw_unit(unit_id, camera, blink, frame);

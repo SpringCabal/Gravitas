@@ -11,7 +11,6 @@ const GRID_RANGE: f32 = 512.0;
 pub struct MapEdge {
     list: Cell<u32>,
     setup_failed: Cell<bool>,
-    border_hidden: Cell<bool>,
 }
 
 impl MapEdge {
@@ -19,9 +18,6 @@ impl MapEdge {
         let Some(list_id) = self.list() else {
             return;
         };
-        if !self.border_hidden.replace(true) {
-            let _ = spring::send_commands("mapborder", "0");
-        }
         let _ = spring::gfx::push_attrib(gl::ALL_ATTRIB_BITS);
         let _ = spring::gfx::depth_test(spring::gfx::GfxDepthTestOptions {
             enable: true,

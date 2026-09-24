@@ -39,31 +39,6 @@ pub fn initialize(hud: &mut Hud) {
     diagnostics::info("Gravitas RmlUi HUD initialized");
 }
 
-pub fn hide_default_layout(hud: &mut Hud) {
-    if hud.default_layout_hidden {
-        return;
-    }
-    let commands = [
-        "Console 0",
-        "ResBar 0",
-        "ToolTip 0",
-        "Clock 0",
-        "Info 0",
-        "showhealthbars 0",
-        "showrezbars 0",
-        "disticon 99999",
-        "endgraph 0",
-    ];
-    let commands_hidden = commands
-        .into_iter()
-        .all(|command| spring::send_commands(command, "").is_ok());
-    let minimap_hidden =
-        spring::slave_mini_map(true).is_ok() && spring::config_mini_map(-1, -1, -1, -1).is_ok();
-    if commands_hidden && minimap_hidden {
-        hud.default_layout_hidden = true;
-    }
-}
-
 /// Replace the engine's key bindings with the few the game keeps.
 pub fn apply_bindings(hud: &mut Hud) {
     if hud.keys_bound {

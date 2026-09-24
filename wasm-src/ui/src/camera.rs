@@ -7,16 +7,33 @@ use crate::state::Global;
 pub struct Camera {
     /// Updates that have set the first camera state so far.
     initial_updates: Cell<u8>,
-}
-
-#[cfg(feature = "e2e")]
-pub fn look_at(global: &Global, x: f32, z: f32, height: Option<f32>) {
-    global.scripted.access_mut().camera = Some((x, z, height.unwrap_or(HEIGHT)));
+    /// Where the e2e scenario points the camera instead: x, z and height.
+    scripted: Cell<Option<(f32, f32, f32)>>,
 }
 
 impl Camera {
+    /// Point the camera where the e2e scenario asks
+    /// (`GRAVITAS_SHOT|look|x|z[|height]`).
+    #[cfg(feature = "e2e")]
+    pub fn handle_shot_message(&self, message: &str) {
+        let mut fields = message.split('|').skip(1);
+        if fields.next() != Some("look") {
+            return;
+        }
+        let mut number = || {
+            fields
+                .next()
+                .and_then(|value| value.parse::<f32>().ok())
+                .filter(|value| value.is_finite())
+        };
+        if let (Some(x), Some(z)) = (number(), number()) {
+            let height = number().unwrap_or(HEIGHT);
+            self.scripted.set(Some((x, z, height)));
+        }
+    }
+
     pub fn follow(&self, global: &Global) {
-        let Some((position, velocity, transition, height)) = target(global) else {
+        let Some((position, velocity, transition, height)) = self.target(global) else {
             return;
         };
         let initial = self.initial_updates.get() < INITIAL_CAMERA_UPDATES;
@@ -64,12 +81,22 @@ impl Camera {
     }
 }
 
-fn target(global: &Global) -> Option<(spring::types::Float3, spring::types::Float3, f32, f32)> {
-    let scripted = global.scripted.access().camera;
-    if let Some((x, z, height)) = scripted {
-        let position = spring::types::Float3 { x, y: 0.0, z };
-        return Some((position, spring::types::Float3::default(), INSTANT, height));
+impl Camera {
+    fn target(
+        &self,
+        global: &Global,
+    ) -> Option<(spring::types::Float3, spring::types::Float3, f32, f32)> {
+        if let Some((x, z, height)) = self.scripted.get() {
+            let position = spring::types::Float3 { x, y: 0.0, z };
+            return Some((position, spring::types::Float3::default(), INSTANT, height));
+        }
+        follow_target(global)
     }
+}
+
+fn follow_target(
+    global: &Global,
+) -> Option<(spring::types::Float3, spring::types::Float3, f32, f32)> {
     let unit_id = player_unit(global)?;
     let position = spring::units_info::get_unit_position(
         unit_id,

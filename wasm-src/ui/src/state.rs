@@ -14,18 +14,10 @@ pub struct Global {
     pub player_unit: Cell<Option<i32>>,
     /// The RmlUi HUD, also used by its event callbacks.
     pub hud: Resource<Hud>,
-    /// Input and camera the e2e scenario drives instead of the player.
-    pub scripted: Resource<Scripted>,
 }
 
-#[derive(Default)]
-pub struct Scripted {
-    pub camera: Option<(f32, f32, f32)>,
-    pub target: Option<(f32, f32)>,
-    pub jump: bool,
-}
-
-/// The particle state and the game clock the fire effects read.
+/// The fire module's particle state, and the game clock it advances with
+/// (written by the GameClock widget).
 pub struct UiState {
     /// The game frame at the start of this Update.
     pub game_frame: i32,

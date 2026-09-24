@@ -57,19 +57,8 @@ fn number<'a>(fields: &mut impl Iterator<Item = &'a str>) -> Option<f32> {
         .filter(|value| value.is_finite())
 }
 
-thread_local! {
-    static SEED: core::cell::Cell<u32> = const { core::cell::Cell::new(0x9E37_79B9) };
-}
-
-/// A value in [-1, 1) from a local xorshift: the scatter is only drawn, never
+/// A value in [-1, 1) from the unsynced RNG: the scatter is only drawn, never
 /// part of the game state.
 fn signed_random() -> f32 {
-    SEED.with(|seed| {
-        let mut x = seed.get();
-        x ^= x << 13;
-        x ^= x >> 17;
-        x ^= x << 5;
-        seed.set(x);
-        (x >> 8) as f32 / (1u32 << 23) as f32 - 1.0
-    })
+    spring::random::unsynced::range(-1.0, 1.0)
 }

@@ -15,7 +15,6 @@ impl Widget<Global> for GuiHudWidget {
     fn update(&self, ctx: &AddonContext<'_, Global>, _dt: f32) {
         let mut hud = ctx.global().hud.access_mut();
         hud::initialize(&mut hud);
-        hud::hide_default_layout(&mut hud);
         hud::apply_bindings(&mut hud);
         if let Ok(geometry) = spring::display::get_view_geometry(0) {
             hud::render(&hud, geometry.view_size_x, geometry.view_size_y);

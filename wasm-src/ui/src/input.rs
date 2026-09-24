@@ -27,22 +27,8 @@ impl Input {
         let Ok(mouse) = spring::input::get_mouse_state(0) else {
             return;
         };
-        let (scripted_target, scripted_jump) = {
-            let scripted = global.scripted.access();
-            (scripted.target, scripted.jump)
-        };
-        let (target, target_unit) = match scripted_target {
-            Some((x, z)) => (
-                spring::types::Float3 {
-                    x,
-                    y: spring::get_ground_height(x, z).unwrap_or(0.0),
-                    z,
-                },
-                NO_UNIT,
-            ),
-            None => trace(mouse.x, mouse.y),
-        };
-        let jump = self.jump.get() || scripted_jump || mouse.middle;
+        let (target, target_unit) = trace(mouse.x, mouse.y);
+        let jump = self.jump.get() || mouse.middle;
         let message = format!(
             "gravitas|{move_x}|{move_z}|{}|{}|{}|{target_unit}|{}|{}|{}",
             target.x,
@@ -101,7 +87,6 @@ const KEY_DOWN: i32 = 274;
 const KEY_RIGHT: i32 = 275;
 const KEY_LEFT: i32 = 276;
 const HIT_UNIT: i32 = 1;
-const NO_UNIT: i32 = -1;
 const MOUSE_LEFT: i32 = 1;
 const MOUSE_RIGHT: i32 = 3;
 

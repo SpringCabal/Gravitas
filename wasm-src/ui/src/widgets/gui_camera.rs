@@ -30,5 +30,11 @@ impl Widget<Global> for GuiCameraWidget {
         if message.starts_with(b"GRAVITAS_STATUS|") {
             self.camera.follow(ctx.global());
         }
+        #[cfg(feature = "e2e")]
+        if message.starts_with(b"GRAVITAS_SHOT|")
+            && let Ok(text) = core::str::from_utf8(message)
+        {
+            self.camera.handle_shot_message(text);
+        }
     }
 }

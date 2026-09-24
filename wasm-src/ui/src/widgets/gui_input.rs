@@ -1,14 +1,18 @@
 use spring_addons::event::{EventResult, KeyEvent};
 use spring_addons::ui::Widget;
 
+use core::cell::Cell;
+
 use crate::input::{self, Input};
-use crate::state::{self, Global};
+use crate::state::Global;
 
 /// Keyboard and mouse: movement, aiming, shooting and jumping go to the rules
 /// module; F11/F12 take screenshots; Ctrl+Q leaves.
 #[derive(Default)]
 pub struct GuiInputWidget {
     input: Input,
+    /// The game frame input was last polled on.
+    polled_frame: Cell<Option<u32>>,
 }
 
 impl Widget<Global> for GuiInputWidget {
@@ -16,9 +20,10 @@ impl Widget<Global> for GuiInputWidget {
         "GuiInput"
     }
 
+    /// Poll once per game frame: the rules read the input in GameFrame.
     fn update(&self, ctx: &spring_addons::AddonContext<'_, Global>, _dt: f32) {
-        let frames = state::with_state(|ui| ui.frames_this_update).unwrap_or(0);
-        if frames > 0 {
+        let frame = spring::game::frame().ok();
+        if frame.is_some() && self.polled_frame.replace(frame) != frame {
             self.input.poll(ctx.global());
         }
     }
