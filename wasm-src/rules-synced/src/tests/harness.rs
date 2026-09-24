@@ -36,8 +36,9 @@ pub fn look(position: Float3, height: f32) {
 }
 
 // Input is simulated on the synced side, because a headless run has no ui
-// module. The PlayerCommand is the one the ui module's message would produce.
-pub fn hold_jump(global: &Global, x: f32, z: f32) {
+// module. The PlayerCommand is the one the ui module's message would produce:
+// sent when it changes, with `jump` set on the message where the key went down.
+pub fn press_jump(global: &Global, x: f32, z: f32) {
     // The height matters: a jump is refused as TooHigh unless the goal sits at
     // the terrain, which is what the ui module's cursor trace supplies.
     let command = PlayerCommand {
@@ -47,28 +48,11 @@ pub fn hold_jump(global: &Global, x: f32, z: f32) {
         jump: true,
         ..PlayerCommand::default()
     };
-    HELD.with(|held| held.set(Some(command)));
     player_command(global, command);
 }
 
 pub fn release_jump(global: &Global) {
-    HELD.with(|held| held.set(None));
     player_command(global, PlayerCommand::default());
-}
-
-/// Re-issues a held command every frame, like the ui module's per-frame poll.
-/// `Player::update` consumes `pending` each frame, so a single accept
-/// would only ever be one frame of input.
-pub fn pump_held_input(global: &Global) {
-    let Some(command) = HELD.with(|held| held.get()) else {
-        return;
-    };
-    player_command(global, command);
-}
-
-thread_local! {
-    static HELD: core::cell::Cell<Option<PlayerCommand>> =
-        const { core::cell::Cell::new(None) };
 }
 
 pub fn press_restart(global: &Global) {

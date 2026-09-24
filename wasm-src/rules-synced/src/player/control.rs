@@ -15,6 +15,7 @@ pub struct PlayerCommand {
     pub target_unit: i32,
     pub push: bool,
     pub pull: bool,
+    /// Jump was pressed: set only on the message sent when the key went down.
     pub jump: bool,
 }
 
@@ -42,9 +43,9 @@ pub enum Order {
 /// Queue the ui module's latest input for the player gadget. A jump press
 /// sticks until the gadget has seen it.
 pub fn accept(pending: &Cell<Option<PlayerCommand>>, command: PlayerCommand) {
-    let held = pending.get().is_some_and(|pending| pending.jump);
+    let unseen_press = pending.get().is_some_and(|pending| pending.jump);
     pending.set(Some(PlayerCommand {
-        jump: command.jump || held,
+        jump: command.jump || unseen_press,
         ..command
     }));
 }

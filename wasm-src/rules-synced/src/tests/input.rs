@@ -24,20 +24,20 @@ impl Case for Input {
 
     fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
-            HOLD_FRAME => self.hold(global),
+            PRESS_FRAME => self.press(global),
             VERDICT_FRAME => self.check(global),
             _ => Step::Wait,
         }
     }
 }
 
-const HOLD_FRAME: i32 = 4;
+const PRESS_FRAME: i32 = 4;
 const VERDICT_FRAME: i32 = 120;
 const REACH: f32 = 300.0;
 const TOLERANCE: f32 = 60.0;
 
 impl Input {
-    fn hold(&mut self, global: &Global) -> Step {
+    fn press(&mut self, global: &Global) -> Step {
         let Some(unit_id) = harness::arena(|arena| arena.jumper) else {
             return fail("no arena");
         };
@@ -46,7 +46,7 @@ impl Input {
         };
         self.unit_id = unit_id;
         self.origin = origin;
-        harness::hold_jump(global, origin.x + REACH, origin.z);
+        harness::press_jump(global, origin.x + REACH, origin.z);
         Step::Wait
     }
 
@@ -58,7 +58,7 @@ impl Input {
         let travelled = harness::planar_distance(self.origin, position);
         if travelled < REACH - TOLERANCE {
             return Step::Fail(alloc::format!(
-                "holding jump moved the player {travelled} of {REACH}"
+                "pressing jump moved the player {travelled} of {REACH}"
             ));
         }
         Step::Pass

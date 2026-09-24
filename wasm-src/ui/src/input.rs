@@ -12,12 +12,15 @@ pub struct Input {
     west: Cell<bool>,
     east: Cell<bool>,
     jump: Cell<bool>,
+    /// Whether jump was held at the previous poll.
+    jump_held: Cell<bool>,
     last_sent: RefCell<String>,
 }
 
 impl Input {
-    /// Send the player's input to the rules module when it changed. A held
-    /// jump is re-sent every frame: the rules retry it after each landing.
+    /// Send the player's input to the rules module when it changed. A jump is
+    /// sent once, when the key or the middle button goes down, as in the Lua
+    /// game.
     pub fn poll(&self, global: &Global) {
         let Some(player_unit) = global.player_unit.get() else {
             return;
@@ -28,7 +31,8 @@ impl Input {
             return;
         };
         let (target, target_unit) = trace(mouse.x, mouse.y);
-        let jump = self.jump.get() || mouse.middle;
+        let held = self.jump.get() || mouse.middle;
+        let jump = held && !self.jump_held.replace(held);
         let message = format!(
             "gravitas|{move_x}|{move_z}|{}|{}|{}|{target_unit}|{}|{}|{}",
             target.x,
@@ -41,7 +45,7 @@ impl Input {
         let mut last_sent = self.last_sent.borrow_mut();
         // The player unit is part of the key: a new unit needs the input again.
         let key = format!("{player_unit}|{message}");
-        if !jump && *last_sent == key {
+        if *last_sent == key {
             return;
         }
         *last_sent = key;

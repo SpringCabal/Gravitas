@@ -35,7 +35,6 @@ pub fn game_frame(global: &Global, frame: i32) {
     let Some(local) = begin(frame) else {
         return;
     };
-    super::harness::pump_held_input(global);
     let mut cases = take_cases();
     for case in &mut cases {
         step(case, global, local);
