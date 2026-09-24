@@ -111,7 +111,10 @@ impl GravitasCusModule {
     fn apply_deferred(&mut self) {
         let units = DEFERRED_UNITS.with(|deferred| core::mem::take(&mut *deferred.borrow_mut()));
         for (unit_id, def) in units {
-            self.attach(unit_id, def);
+            // A unit that died meanwhile may have handed its id to a new one.
+            if crate::units::def_of(unit_id) == Some(def) {
+                self.attach(unit_id, def);
+            }
         }
         let calls = DEFERRED_CALLS.with(|deferred| core::mem::take(&mut *deferred.borrow_mut()));
         for (unit_id, function_name) in calls {
