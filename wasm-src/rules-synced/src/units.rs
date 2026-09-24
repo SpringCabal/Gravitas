@@ -43,22 +43,13 @@ pub fn spawn(spawn: &Spawn) -> Option<i32> {
     }
     face(unit_id, spawn.angle);
     for (name, value) in spawn.rules {
-        let _ = spring::set_unit_rules_param_f32(unit_id, name, *value, RULES_PARAM_PRIVATE);
+        crate::diagnostics::check(
+            spring::set_unit_rules_param_f32(unit_id, name, *value, RULES_PARAM_PRIVATE),
+            || alloc::format!("rules param {name} for unit {unit_id}"),
+        );
     }
-    let _ = spring::give_order_to_unit(
-        unit_id,
-        spring::cmd::FIRE_STATE,
-        &[spawn.fire_state as f32],
-        0,
-        0,
-    );
-    let _ = spring::give_order_to_unit(
-        unit_id,
-        spring::cmd::MOVE_STATE,
-        &[spawn.move_state as f32],
-        0,
-        0,
-    );
+    order(unit_id, spring::cmd::FIRE_STATE, &[spawn.fire_state as f32]);
+    order(unit_id, spring::cmd::MOVE_STATE, &[spawn.move_state as f32]);
     Some(unit_id)
 }
 
@@ -76,6 +67,21 @@ pub fn create(def_id: i32, position: Float3, team: i32) -> Option<i32> {
     let unit_id =
         unit_control::create_unit(&unit_def, position, DEFAULT_FACING, team, options).ok()?;
     (unit_id >= 0).then_some(unit_id)
+}
+
+/// Give `unit_id` an order. The engine refusing one is logged.
+pub fn order(unit_id: i32, command: i32, params: &[f32]) {
+    crate::diagnostics::check(
+        spring::give_order_to_unit(unit_id, command, params, 0, 0),
+        || alloc::format!("order {command} {params:?} for unit {unit_id}"),
+    );
+}
+
+/// Switch the engine's movement of `unit_id` off (`enable`) or back on.
+pub fn move_ctrl(unit_id: i32, enable: bool) {
+    crate::diagnostics::check(spring::move_ctrl::move_ctrl(unit_id, enable), || {
+        alloc::format!("move_ctrl({enable}) for unit {unit_id}")
+    });
 }
 
 pub fn position(unit_id: i32) -> Option<Float3> {

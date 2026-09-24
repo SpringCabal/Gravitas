@@ -16,7 +16,7 @@ pub fn configure(unit_id: i32, unit_def_id: i32) {
         },
     );
     let _ = spring::set_unit_neutral(unit_id, true);
-    let _ = spring::move_ctrl::move_ctrl(unit_id, true);
+    crate::units::move_ctrl(unit_id, true);
     let _ = spring::move_ctrl::set_no_blocking(unit_id, true);
     let _ = spring::move_ctrl::set_move_ctrl_gravity(unit_id, 0.0);
 }

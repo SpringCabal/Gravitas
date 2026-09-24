@@ -86,6 +86,8 @@ pub fn reload() {
 }
 
 fn restart(global: &Global) {
-    let _ = spring::send_lua_rules_msg(RESTART_MESSAGE);
+    if let Err(error) = spring::send_lua_rules_msg(RESTART_MESSAGE) {
+        crate::diagnostics::warning(&alloc::format!("restart not sent (error {})", error.code));
+    }
     super::overlays::hide_game_over(&mut global.hud.access_mut());
 }

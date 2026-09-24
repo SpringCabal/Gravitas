@@ -48,8 +48,14 @@ impl Input {
         if *last_sent == key {
             return;
         }
-        *last_sent = key;
-        let _ = spring::send_lua_rules_msg(&message);
+        match spring::send_lua_rules_msg(&message) {
+            Ok(_) => *last_sent = key,
+            // Not recorded as sent, so the next poll tries again.
+            Err(error) => crate::diagnostics::warning(&format!(
+                "player input not sent (error {}): {message}",
+                error.code
+            )),
+        }
     }
 
     pub fn key_press(&self, key_code: i32) -> bool {

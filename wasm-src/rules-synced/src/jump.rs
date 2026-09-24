@@ -138,7 +138,10 @@ pub fn start(global: &Global, unit_id: i32, goal_x: f32, goal_y: f32, goal_z: f3
     let range = rules_param(unit_id, RANGE_PARAM).unwrap_or(RANGE);
     let planar_distance = (vector.x * vector.x + vector.z * vector.z).sqrt();
     if planar_distance > range {
-        let _ = spring::set_unit_move_goal(unit_id, goal, range, 0.0, false);
+        crate::diagnostics::check(
+            spring::set_unit_move_goal(unit_id, goal, range, 0.0, false),
+            || alloc::format!("move goal towards a jump for unit {unit_id}"),
+        );
         return Outcome::OutOfRange;
     }
     let line_distance = length(vector).max(MINIMUM_DISTANCE);
@@ -159,7 +162,7 @@ pub fn start(global: &Global, unit_id: i32, goal_x: f32, goal_y: f32, goal_z: f3
     }
     let heading = spring::units_info::get_unit_heading(unit_id, true).unwrap_or(0.0);
     let turn = shortest_turn(heading, atan2(vector.x, vector.z));
-    let _ = spring::move_ctrl::move_ctrl(unit_id, true);
+    units::move_ctrl(unit_id, true);
     call_script(unit_id, "PreJump");
     global.jumps.access_mut().active.push(Jump {
         unit_id,
@@ -194,7 +197,7 @@ pub fn fly(global: &Global) -> Vec<i32> {
     }
     for unit_id in &landed {
         call_script(*unit_id, "StopJump");
-        let _ = spring::move_ctrl::move_ctrl(*unit_id, false);
+        units::move_ctrl(*unit_id, false);
     }
     landed
 }

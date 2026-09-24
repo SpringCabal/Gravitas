@@ -61,15 +61,13 @@ pub fn is_friendly_fire(unit_def_id: i32, attacker_def_id: i32, same_team: bool)
 /// Walk out of the way, replacing the previous escape if there was one.
 pub fn move_away(avoidance: Avoidance) {
     if avoidance.replace_order {
-        let _ = spring::give_order_to_unit(avoidance.unit_id, spring::cmd::STOP, &[], 0, 0);
+        units::order(avoidance.unit_id, spring::cmd::STOP, &[]);
     }
     let goal = avoidance.goal;
-    let _ = spring::give_order_to_unit(
+    units::order(
         avoidance.unit_id,
         spring::cmd::MOVE,
         &[goal.x, goal.y, goal.z],
-        0,
-        0,
     );
 }
 

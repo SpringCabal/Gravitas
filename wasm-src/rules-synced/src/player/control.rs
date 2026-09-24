@@ -128,10 +128,13 @@ pub fn apply(unit_id: i32, orders: Vec<Order>, frame: i32) {
             }
             Order::HoldWeapon(weapon) => hold_weapon(unit_id, weapon, frame),
             Order::Stop => {
-                let _ = spring::give_order_to_unit(unit_id, spring::cmd::STOP, &[], 0, 0);
+                units::order(unit_id, spring::cmd::STOP, &[]);
             }
             Order::MoveTo(goal) => {
-                let _ = spring::set_unit_move_goal(unit_id, goal, 0.0, 0.0, false);
+                crate::diagnostics::check(
+                    spring::set_unit_move_goal(unit_id, goal, 0.0, 0.0, false),
+                    || alloc::format!("move goal for the player unit {unit_id}"),
+                );
             }
         }
     }
@@ -139,7 +142,7 @@ pub fn apply(unit_id: i32, orders: Vec<Order>, frame: i32) {
 
 /// The player unit holds fire until the player shoots.
 pub fn disable_auto_fire(unit_id: i32) {
-    let _ = spring::give_order_to_unit(unit_id, spring::cmd::FIRE_STATE, &[FIRE_STATE_HOLD], 0, 0);
+    units::order(unit_id, spring::cmd::FIRE_STATE, &[FIRE_STATE_HOLD]);
 }
 
 const PLAYER_TEAM: i32 = 0;

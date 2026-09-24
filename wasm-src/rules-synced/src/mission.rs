@@ -75,16 +75,11 @@ pub fn stun_electrafi_proximity() {
 
 pub fn issue_assault(assault: &Assault) {
     for unit_id in &assault.units {
-        let _ = spring::give_order_to_unit(
+        let target_y = units::ground_height(assault.target_x, assault.target_z);
+        units::order(
             *unit_id,
             spring::cmd::FIGHT,
-            &[
-                assault.target_x,
-                units::ground_height(assault.target_x, assault.target_z),
-                assault.target_z,
-            ],
-            0,
-            0,
+            &[assault.target_x, target_y, assault.target_z],
         );
     }
 }
