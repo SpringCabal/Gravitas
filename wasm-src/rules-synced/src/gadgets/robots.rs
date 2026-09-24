@@ -29,7 +29,13 @@ impl Gadget<Global> for RobotsGadget {
             units::game_frame(),
         );
         if let Some(avoidance) = avoidance {
+            let unit_id = avoidance.unit_id;
             robots::move_away(avoidance);
+            // After the orders: inserting the escape finishes the current
+            // command, and UnitCmdDone would forget a mark made before.
+            self.robots
+                .get(ctx.global())
+                .mark(unit_id, units::game_frame());
         }
         let same_team = event.unit_team == event.attacker_team;
         robots::is_friendly_fire(event.unit_def_id, event.attacker_def_id, same_team)

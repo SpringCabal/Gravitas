@@ -9,6 +9,8 @@ mod falling;
 #[cfg(feature = "e2e")]
 mod fire;
 #[cfg(feature = "e2e")]
+mod flee;
+#[cfg(feature = "e2e")]
 mod harness;
 #[cfg(feature = "e2e")]
 mod impulse;

@@ -71,8 +71,13 @@ pub fn create(def_id: i32, position: Float3, team: i32) -> Option<i32> {
 
 /// Give `unit_id` an order. The engine refusing one is logged.
 pub fn order(unit_id: i32, command: i32, params: &[f32]) {
+    order_with(unit_id, command, params, 0);
+}
+
+/// [`order`] with option bits (`spring::cmd::options`).
+pub fn order_with(unit_id: i32, command: i32, params: &[f32], options: u32) {
     crate::diagnostics::check(
-        spring::give_order_to_unit(unit_id, command, params, 0, 0),
+        spring::give_order_to_unit(unit_id, command, params, options, 0),
         || alloc::format!("order {command} {params:?} for unit {unit_id}"),
     );
 }

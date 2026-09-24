@@ -41,12 +41,20 @@ impl Robots {
         let velocity = spring::units_info::get_unit_velocity(unit_id).unwrap_or_default();
         let goal = safest_location(position, &hazards, velocity)?;
         let replace_order = self.is_tracked(unit_id);
-        self.mark(unit_id, frame);
         Some(Avoidance {
             unit_id,
             goal,
             replace_order,
         })
+    }
+
+    /// Remember that `unit_id` is on its way out since `frame`.
+    pub fn mark(&mut self, unit_id: i32, frame: i32) {
+        if let Some(entry) = self.moving_away.iter_mut().find(|(id, _)| *id == unit_id) {
+            entry.1 = frame;
+            return;
+        }
+        self.moving_away.push((unit_id, frame));
     }
 
     pub fn command_done(&mut self, unit_id: i32) {
@@ -58,18 +66,37 @@ pub fn is_friendly_fire(unit_def_id: i32, attacker_def_id: i32, same_team: bool)
     same_team && is_robot(unit_def_id) && is_robot(attacker_def_id)
 }
 
-/// Walk out of the way, replacing the previous escape if there was one.
+/// Walk out of the way before carrying on with the queue (an assault's FIGHT
+/// order stays behind the escape). A robot still on its previous escape drops
+/// that one first, as `unit_robots.lua` does.
 pub fn move_away(avoidance: Avoidance) {
-    if avoidance.replace_order {
-        units::order(avoidance.unit_id, spring::cmd::STOP, &[]);
+    let unit_id = avoidance.unit_id;
+    if avoidance.replace_order
+        && let Some(previous) = spring::get_unit_commands(unit_id, 1)
+            .ok()
+            .and_then(|queue| queue.into_iter().next())
+    {
+        units::order(unit_id, spring::cmd::REMOVE, &[previous.tag as f32]);
     }
     let goal = avoidance.goal;
-    units::order(
-        avoidance.unit_id,
-        spring::cmd::MOVE,
-        &[goal.x, goal.y, goal.z],
+    // INSERT with ALT: the first parameter is a queue position, not a tag.
+    units::order_with(
+        unit_id,
+        spring::cmd::INSERT,
+        &[
+            FRONT_OF_QUEUE,
+            spring::cmd::MOVE as f32,
+            NO_OPTIONS,
+            goal.x,
+            goal.y,
+            goal.z,
+        ],
+        spring::cmd::options::ALT_KEY,
     );
 }
+
+const FRONT_OF_QUEUE: f32 = 0.0;
+const NO_OPTIONS: f32 = 0.0;
 
 pub struct Hazard {
     position: Float3,
@@ -97,14 +124,6 @@ impl Robots {
 
     fn is_tracked(&self, unit_id: i32) -> bool {
         self.moving_away.iter().any(|(id, _)| *id == unit_id)
-    }
-
-    fn mark(&mut self, unit_id: i32, frame: i32) {
-        if let Some(entry) = self.moving_away.iter_mut().find(|(id, _)| *id == unit_id) {
-            entry.1 = frame;
-            return;
-        }
-        self.moving_away.push((unit_id, frame));
     }
 }
 
