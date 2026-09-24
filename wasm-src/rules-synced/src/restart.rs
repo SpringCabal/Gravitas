@@ -1,4 +1,4 @@
-use crate::state::{Global, Level};
+use crate::state::Global;
 
 /// Remove the level and everything in it; the level gadget spawns it again
 /// on the next frame.
@@ -16,13 +16,35 @@ pub fn perform(global: &Global) {
         );
     }
     global.restart.finish_wipe();
-    *global.level.access_mut() = Level::default();
-    *global.plates.access_mut() = Default::default();
-    *global.jumps.access_mut() = Default::default();
-    *global.fall_immunity.access_mut() = Default::default();
-    *global.impulses.access_mut() = Default::default();
-    *global.terrain.access_mut() = Default::default();
-    global.player_input.set(None);
-    global.player_unit.set(None);
-    global.outcome.set(None);
+    reset(global);
+}
+
+/// Put every part of `Global` that belongs to a level back to its default.
+/// The pattern names every field, so a new one has to be sorted here.
+fn reset(global: &Global) {
+    let Global {
+        level,
+        player_unit,
+        pending_rules: _,
+        player_input,
+        jumps,
+        fall_immunity,
+        impulses,
+        plates,
+        terrain,
+        // Counts restarts; gadget state in `PerLevel` resets from it.
+        restart: _,
+        outcome,
+        // The e2e cases span restarts.
+        tests: _,
+    } = global;
+    *level.access_mut() = Default::default();
+    *jumps.access_mut() = Default::default();
+    *fall_immunity.access_mut() = Default::default();
+    *impulses.access_mut() = Default::default();
+    *plates.access_mut() = Default::default();
+    *terrain.access_mut() = Default::default();
+    player_unit.set(None);
+    player_input.set(None);
+    outcome.set(None);
 }
