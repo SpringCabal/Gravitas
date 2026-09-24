@@ -11,32 +11,49 @@ pub fn update(frames: f32) {
 
 pub fn burn(position: Float3, radius: f32, size_mult: f32, velocity: [f32; 2]) {
     let seed = seed_of(position);
+    raw_burn(position, radius, size_mult, velocity, seed);
+}
+
+pub(super) fn raw_burn(
+    position: Float3,
+    radius: f32,
+    size_mult: f32,
+    velocity: [f32; 2],
+    seed: u64,
+) {
+    let mut random = Random(seed as u32 ^ (seed >> 32) as u32);
+    // Preserve onFireUnit's random sequence (its first two values are unused).
+    random.sample();
+    random.sample();
     let mut flame = effects::UNITS_ON_FIRE;
     flame.size = radius * effects::ON_FIRE_SIZE_SCALE * size_mult;
     flame.life *= size_mult;
     flame.start_radius = radius * effects::ON_FIRE_DISC_SCALE;
     flame.force = [
         velocity[0] * effects::ON_FIRE_DRIFT,
-        effects::ON_FIRE_LIFT + effects::ON_FIRE_LIFT_SPREAD * unit_float(seed),
+        effects::ON_FIRE_LIFT + effects::ON_FIRE_LIFT_SPREAD * random.sample(),
         velocity[1] * effects::ON_FIRE_DRIFT,
     ];
     let mut smoke = effects::UNITS_ON_FIRE_SMOKE;
     smoke.size = flame.size * size_mult;
     smoke.life *= size_mult;
     smoke.start_radius = flame.start_radius;
-    smoke.force = flame.force;
-    emit_effect(&flame, position, seed);
-    emit_effect(&smoke, position, next(seed));
+    // onFireUnit never assigns smokeFX.force; LUPS supplies its zero default.
+    emit_effect(&flame, position, seed.wrapping_add(1));
+    emit_effect(&smoke, position, seed.wrapping_add(2));
 }
 
 pub fn flame(position: Float3, radius: f32) {
     let seed = seed_of(position);
     // unit_fire.lua's SpawnFire keeps the gameplay radius authoritative but
     // gives each visual emission its own small speed/radius variation.  The
-    // variation is unsynced in Lua, so keep it here rather than changing the
-    // synced fire cone or damage calculations.
+    // source chooses this in synced code, but it affects visuals only.
     let speed = effects::FIRE_SPEED + 0.1 * signed(seed);
     let radius = radius * (1.0 + 0.1 * signed(next(seed)));
+    raw_flame(position, radius, speed, seed);
+}
+
+pub(super) fn raw_flame(position: Float3, radius: f32, speed: f32, seed: u64) {
     let mut heat = effects::TRAP_HEAT;
     heat.life = radius / effects::TRAP_FLAME_LIFE_DIVISOR;
     heat.emit_vector = [0.0, speed, 0.0];
@@ -47,8 +64,8 @@ pub fn flame(position: Float3, radius: f32) {
     sparks.life = radius / effects::TRAP_SPARK_LIFE_DIVISOR;
     sparks.emit_vector = [0.0, speed, 0.0];
     emit_effect(&heat, position, seed);
-    emit_effect(&fire, position, next(seed));
-    emit_effect(&sparks, position, next(next(seed)));
+    emit_effect(&fire, position, seed.wrapping_add(1));
+    emit_effect(&sparks, position, seed.wrapping_add(2));
 }
 
 pub fn electric_field(position: Float3, radius: f32) {
@@ -94,21 +111,36 @@ fn emit_effect(effect: &Effect, position: Float3, seed: u64) {
         effect.force[1] * (effect.life + effect.life_spread),
         effect.force[2] * (effect.life + effect.life_spread),
     ];
-    let mut seed = seed;
+    let mut random = Random(seed as u32 ^ (seed >> 32) as u32);
     for _ in 0..effect.count {
-        seed = next(seed);
-        spawn(effect, position, force, seed);
+        spawn(effect, position, force, &mut random);
     }
 }
 
-fn spawn(effect: &Effect, position: Float3, force: [f32; 3], seed: u64) {
-    let azimuth = unit_float(seed) * core::f32::consts::TAU;
-    let cone = unit_float(next(seed)) * effect.emit_rotation_spread * DEGREES_TO_RADIANS;
-    let life = effect.life + unit_float(next(next(seed))) * effect.life_spread;
-    let travel = (effect.speed + unit_float(seed.wrapping_add(7)) * effect.speed_spread) * life;
-    let size = effect.size + unit_float(seed.wrapping_add(11)) * effect.size_spread;
-    let disc = unit_float(seed.wrapping_add(13)) * effect.start_radius;
-    let disc_angle = unit_float(seed.wrapping_add(17)) * core::f32::consts::TAU;
+fn spawn(effect: &Effect, position: Float3, force: [f32; 3], random: &mut Random) {
+    // Consume distinct samples, in the source particle class' attribute order.
+    let azimuth = random.sample() * core::f32::consts::TAU;
+    let cone = random.sample() * effect.emit_rotation_spread * DEGREES_TO_RADIANS;
+    let life = effect.life + random.sample() * effect.life_spread;
+    let travel = (effect.speed + random.sample() * effect.speed_spread) * life;
+    let delay = random.sample() * effect.delay_spread;
+    let size = effect.size + random.sample() * effect.size_spread;
+    let (rotation, rotation_end) = if effect.distortion {
+        (0.0, 0.0)
+    } else {
+        (
+            random.sample() * effect.rotation_spread,
+            (effect.rotation_speed + random.sample() * effect.rotation_speed_spread) * life,
+        )
+    };
+    let (disc_angle, disc) = if effect.start_radius > 0.0 {
+        (
+            random.sample() * core::f32::consts::TAU,
+            random.sample() * effect.start_radius,
+        )
+    } else {
+        (0.0, 0.0)
+    };
     // This is the two-stage transform used by LUPS' SimpleParticles2 and
     // JitterParticles2: construct the cone around emitVector's basis, then
     // apply CreateEmitMatrix3x3 to the resulting vector.  Applying only the
@@ -126,22 +158,28 @@ fn spawn(effect: &Effect, position: Float3, force: [f32; 3], seed: u64) {
         force_y: force[1],
         force_z: force[2],
         age: 0.0,
-        delay: unit_float(seed.wrapping_add(19)) * effect.delay_spread,
+        delay,
         life: life.max(MINIMUM_LIFE),
         size,
         size_end: size + effect.size_growth * life,
-        rotation: unit_float(seed.wrapping_add(23)) * effect.rotation_spread,
-        rotation_end: (effect.rotation_speed
-            + unit_float(seed.wrapping_add(29)) * effect.rotation_speed_spread)
-            * life,
+        rotation,
+        rotation_end,
         speed_exp: effect.speed_exp,
         size_exp: effect.size_exp,
         rotation_exp: effect.rotation_exp,
         // This is the Lua JitterParticles2 expression:
         // floor((math.random() - .5) * 2).  With the engine's [0, 1)
         // random range it produces -1 or 0, independently per particle.
-        animation_x: animation_direction(seed.wrapping_add(31)),
-        animation_y: animation_direction(seed.wrapping_add(37)),
+        animation_x: if effect.distortion {
+            (random.sample() * 2.0 - 1.0).floor()
+        } else {
+            0.0
+        },
+        animation_y: if effect.distortion {
+            (random.sample() * 2.0 - 1.0).floor()
+        } else {
+            0.0
+        },
         distortion: effect.distortion,
         distortion_strength: effect.distortion_strength,
         distortion_scale: effect.distortion_scale,
@@ -152,8 +190,21 @@ fn spawn(effect: &Effect, position: Float3, force: [f32; 3], seed: u64) {
     let _ = state::with_state(|ui| ui.fire.spawn(particle));
 }
 
-fn animation_direction(seed: u64) -> f32 {
-    ((unit_float(seed) - 0.5) * 2.0).floor()
+struct Random(u32);
+
+impl Random {
+    fn sample(&mut self) -> f32 {
+        #[cfg(feature = "fire-probe")]
+        {
+            self.0 = (self.0 * 251 + 1) % 65521;
+            self.0 as f32 / 65521.0
+        }
+        #[cfg(not(feature = "fire-probe"))]
+        {
+            self.0 = self.0.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
+            (self.0 >> 8) as f32 / 16_777_216.0
+        }
+    }
 }
 
 const MINIMUM_LIFE: f32 = 1.0;
@@ -221,7 +272,13 @@ fn next(seed: u64) -> u64 {
 }
 
 fn unit_float(seed: u64) -> f32 {
-    ((next(seed) >> 40) as u32) as f32 / 16_777_216.0
+    // Avalanche before taking the high bits. An LCG applied to seed + k
+    // gives fixed offsets between delay, rotation and size on every particle.
+    let mut mixed = seed;
+    mixed = (mixed ^ (mixed >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    mixed = (mixed ^ (mixed >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
+    mixed ^= mixed >> 31;
+    ((mixed >> 40) as u32) as f32 / 16_777_216.0
 }
 
 fn signed(seed: u64) -> f32 {

@@ -16,6 +16,7 @@ struct DistortionState {
     width: i32,
     height: i32,
     screen_texture: String,
+    depth_texture: String,
     distortion_texture: String,
     distortion_shader: u32,
     post_shader: u32,
@@ -26,8 +27,6 @@ struct DistortionState {
 
 struct SharedState(RefCell<DistortionState>);
 
-const MAX_DISTORTION_SIZE: f32 = 64.0;
-
 // The UI module is single-threaded in the engine, but the host callback API
 // requires callback state to be held in a static. This is the same pattern as
 // the other WASM post-processing widgets.
@@ -37,6 +36,7 @@ static STATE: SharedState = SharedState(RefCell::new(DistortionState {
     width: 0,
     height: 0,
     screen_texture: String::new(),
+    depth_texture: String::new(),
     distortion_texture: String::new(),
     distortion_shader: 0,
     post_shader: 0,
@@ -79,10 +79,20 @@ pub fn draw_screen_effects(width: i32, height: i32) {
     ensure_resources(width, height);
     let (screen_texture, distortion_texture, distortion_shader, post_shader) =
         STATE.0.borrow().to_render_values();
+    let depth_texture = STATE.0.borrow().depth_texture.clone();
     if screen_texture.is_empty()
+        || depth_texture.is_empty()
         || distortion_texture.is_empty()
         || distortion_shader == 0
         || post_shader == 0
+    {
+        return;
+    }
+
+    // LUPS tests heat particles against a copy of the scene depth. Sampling
+    // it in the shader gives the same occlusion without a general FBO API.
+    if spring::gfx::copy_to_texture(&depth_texture, 0, 0, 0, 0, width, height, gl::TEXTURE_2D, 0)
+        .is_err()
     {
         return;
     }
@@ -118,6 +128,7 @@ pub fn draw_screen_effects(width: i32, height: i32) {
     let _ = spring::gfx::blending(true);
     let _ = spring::gfx::blend_func(gl::ONE, gl::ONE);
     let _ = spring::gfx::matrix_mode(gl::TEXTURE);
+    let _ = spring::gfx::push_matrix(0);
     let _ = spring::gfx::load_identity(0);
     let _ = spring::gfx::matrix_mode(gl::PROJECTION);
     let _ = spring::gfx::push_matrix(0);
@@ -128,7 +139,12 @@ pub fn draw_screen_effects(width: i32, height: i32) {
 
     let _ = spring::gfx::use_shader(distortion_shader);
     let _ = spring::gfx::bind_texture(NOISE_TEXTURE, 0, true);
+    let _ = spring::gfx::bind_texture(&depth_texture, 1, true);
+    if let Ok(location) = spring::gfx::get_uniform_location(distortion_shader, "inverseView") {
+        let _ = spring::gfx::uniform(location, &[1.0 / width as f32, 1.0 / height as f32], 2);
+    }
     let _ = spring::gfx::render_to_texture(&distortion_texture, render_distortion);
+    let _ = spring::gfx::bind_texture(&depth_texture, 1, false);
     let _ = spring::gfx::bind_texture(NOISE_TEXTURE, 0, false);
 
     // The post pass replaces the screen with the sampled scene.  Only the
@@ -142,6 +158,8 @@ pub fn draw_screen_effects(width: i32, height: i32) {
     let _ = spring::gfx::bind_texture(&distortion_texture, 0, false);
     let _ = spring::gfx::use_shader(0);
 
+    let _ = spring::gfx::matrix_mode(gl::TEXTURE);
+    let _ = spring::gfx::pop_matrix(0);
     let _ = spring::gfx::matrix_mode(gl::PROJECTION);
     let _ = spring::gfx::pop_matrix(0);
     let _ = spring::gfx::matrix_mode(gl::MODELVIEW);
@@ -155,13 +173,34 @@ fn ensure_resources(width: i32, height: i32) {
         if !state.screen_texture.is_empty() {
             let _ = spring::gfx::delete_texture(&state.screen_texture);
         }
+        if !state.depth_texture.is_empty() {
+            let _ = spring::gfx::delete_texture(&state.depth_texture);
+        }
         if !state.distortion_texture.is_empty() {
             let _ = spring::gfx::delete_texture_fbo(&state.distortion_texture);
         }
         state.screen_texture.clear();
+        state.depth_texture.clear();
         state.distortion_texture.clear();
         state.width = width;
         state.height = height;
+
+        if let Ok(texture) = spring::gfx::create_texture(
+            width,
+            height,
+            0,
+            spring::gfx::TextureCreateParams {
+                target: gl::TEXTURE_2D,
+                format: gl::DEPTH_COMPONENT24,
+                min_filter: gl::NEAREST,
+                mag_filter: gl::NEAREST,
+                wrap_s: gl::CLAMP_TO_EDGE,
+                wrap_t: gl::CLAMP_TO_EDGE,
+                ..Default::default()
+            },
+        ) {
+            state.depth_texture = texture;
+        }
 
         if let Ok(texture) = spring::gfx::create_texture(
             width,
@@ -214,6 +253,9 @@ fn ensure_resources(width: i32, height: i32) {
         let _ = spring::gfx::use_shader(shader.shader_id);
         if let Ok(location) = spring::gfx::get_uniform_location(shader.shader_id, "noiseMap") {
             let _ = spring::gfx::uniform_int(location, &[0], 1);
+        }
+        if let Ok(location) = spring::gfx::get_uniform_location(shader.shader_id, "depthTex") {
+            let _ = spring::gfx::uniform_int(location, &[1], 1);
         }
         let _ = spring::gfx::use_shader(0);
     }
@@ -274,11 +316,7 @@ fn emit_distortion_vertices() {
 fn distortion_quad(particle: &Sample, up: spring::types::Float3, right: spring::types::Float3) {
     let radians = particle.rotation * core::f32::consts::PI / 180.0;
     let (sine, cosine) = (radians.sin(), radians.cos());
-    // The source LUPS effect grows large world-space particles, but using
-    // their full size for a screen-wide post-process quad makes one flame
-    // smear the map far beyond its visible sprite. Keep the visible particle
-    // size and limit only the distortion footprint.
-    let half = particle.size.min(MAX_DISTORTION_SIZE) * 0.5;
+    let half = particle.size * 0.5;
     let across = axis(right, cosine, up, sine, half);
     let along = axis(right, -sine, up, cosine, half);
     distortion_corner(particle, 0.0, 0.0, -1.0, -1.0, across, along);
@@ -310,7 +348,7 @@ fn distortion_corner(
     across: spring::types::Float3,
     along: spring::types::Float3,
 ) {
-    let _ = spring::gfx::multi_tex_coord(0, u, v, particle.animation_x, particle.animation_y, 2);
+    let _ = spring::gfx::multi_tex_coord(0, u, v, particle.animation_x, particle.animation_y, 4);
     let _ = spring::gfx::multi_tex_coord(1, u * 2.0 - 1.0, v * 2.0 - 1.0, 0.0, 0.0, 2);
     let _ = spring::gfx::multi_tex_coord(
         2,

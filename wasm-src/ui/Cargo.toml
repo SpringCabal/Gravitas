@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 
 [features]
 e2e = []
+fire-probe = ["e2e"]
 
 [dependencies]
 spring = { workspace = true }

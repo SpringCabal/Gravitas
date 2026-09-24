@@ -3,6 +3,7 @@ use spring::gl;
 use crate::state;
 
 use super::distortion;
+use super::effects::SMOKE_TEXTURE;
 use super::particles::Sample;
 
 pub fn draw() {
@@ -22,10 +23,26 @@ pub fn draw() {
     let _ = spring::gfx::depth_mask(false);
     let _ = spring::gfx::alpha_test(true, gl::GREATER, ALPHA_FLOOR);
     for (index, texture) in textures.iter().enumerate() {
+        if *texture == SMOKE_TEXTURE {
+            continue;
+        }
         let _ = state::with_state(|ui| ui.fire_pass = index);
         let _ = spring::gfx::bind_texture(texture, 0, true);
         let _ = spring::gfx::begin_end(gl::QUADS, emit_vertices);
         let _ = spring::gfx::bind_texture(texture, 0, false);
+    }
+    // LUPS composites heat after layer 0 flames and before layer 1 smoke.
+    if let Ok(view) = spring::display::get_view_geometry(0) {
+        distortion::draw_screen_effects(view.view_size_x, view.view_size_y);
+    }
+    if let Some(index) = textures
+        .iter()
+        .position(|texture| *texture == SMOKE_TEXTURE)
+    {
+        let _ = state::with_state(|ui| ui.fire_pass = index);
+        let _ = spring::gfx::bind_texture(SMOKE_TEXTURE, 0, true);
+        let _ = spring::gfx::begin_end(gl::QUADS, emit_vertices);
+        let _ = spring::gfx::bind_texture(SMOKE_TEXTURE, 0, false);
     }
     let _ = spring::gfx::pop_attrib(0);
 }
@@ -51,7 +68,8 @@ pub fn emit_vertices() {
 const ALPHA_FLOOR: f32 = 0.0;
 
 fn quad(particle: &Sample, up: spring::types::Float3, right: spring::types::Float3) {
-    let radians = particle.rotation * core::f32::consts::PI / 180.0;
+    // GLSL's mat2(ca, -sa, sa, ca) in SimpleParticles2 is column-major.
+    let radians = -particle.rotation * core::f32::consts::PI / 180.0;
     let (sine, cosine) = (radians.sin(), radians.cos());
     let half = particle.size * 0.5;
     let across = axis(right, cosine, up, sine, half);
