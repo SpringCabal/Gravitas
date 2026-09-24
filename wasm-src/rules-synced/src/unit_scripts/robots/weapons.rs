@@ -1,4 +1,4 @@
-//! Aiming, firing and the explicit-target watch of the robot scripts.
+//! Aiming and firing of the robot scripts.
 
 use alloc::rc::Rc;
 use core::cell::RefCell;
@@ -9,6 +9,8 @@ use super::super::common::{SIG_AIM, turn};
 use super::gait::wait_for_turn;
 use super::{RobotAnimationState, RobotKind, spin, stop_spin};
 
+/// The Lua AimWeapon functions aim at once and always allow the shot, moving
+/// or not.
 pub(super) fn aim(
     ctx: &UnitCtx,
     state: Rc<RefCell<RobotAnimationState>>,
@@ -16,36 +18,10 @@ pub(super) fn aim(
     heading: f32,
     pitch: f32,
 ) -> Option<bool> {
-    let explicit_target = has_explicit_target(ctx.unit());
-    {
-        let mut state_ref = state.borrow_mut();
-        state_ref.last_heading = heading;
-        state_ref.last_pitch = pitch;
-        if explicit_target {
-            state_ref.explicit_target = true;
-        }
-    }
-
-    // The engine CUS call-in also asks the script to aim during its
-    // movement-target pass.  The direct movement task owns that transition;
-    // defer those synthetic aim requests while the walk task is active.
-    if state.borrow().moving && !explicit_target {
-        return Some(false);
-    }
-    apply_aim(ctx, state);
-    Some(true)
-}
-
-fn apply_aim(ctx: &UnitCtx, state: Rc<RefCell<RobotAnimationState>>) {
-    let (kind, p, heading, pitch) = {
+    let (kind, p) = {
         let mut state_ref = state.borrow_mut();
         state_ref.aiming = true;
-        (
-            state_ref.kind,
-            state_ref.pieces,
-            state_ref.last_heading,
-            state_ref.last_pitch,
-        )
+        (state_ref.kind, state_ref.pieces)
     };
 
     // projector.lua uses SIG_RESET for the delayed turret reset.  The direct
@@ -81,42 +57,7 @@ fn apply_aim(ctx: &UnitCtx, state: Rc<RefCell<RobotAnimationState>>) {
             turn(ctx, p.arm_up_02, Axis::X, pitch, 19.0);
         }
     }
-}
-
-pub(super) async fn watch_explicit_target(state: Rc<RefCell<RobotAnimationState>>, ctx: UnitCtx) {
-    loop {
-        let explicit_target = has_explicit_target(ctx.unit());
-        let should_apply = {
-            let mut state_ref = state.borrow_mut();
-            if explicit_target {
-                if state_ref.explicit_target {
-                    false
-                } else {
-                    state_ref.explicit_target = true;
-                    true
-                }
-            } else {
-                state_ref.explicit_target = false;
-                false
-            }
-        };
-        if should_apply {
-            apply_aim(&ctx, Rc::clone(&state));
-        }
-        ctx.next_frame().await;
-    }
-}
-
-fn has_explicit_target(unit: spring::UnitId) -> bool {
-    spring::get_unit_rules_param_f32(unit.0, "targetID")
-        .ok()
-        .is_some_and(|target| target >= 0.0)
-        || (spring::get_unit_rules_param_f32(unit.0, "targetCoordX")
-            .ok()
-            .is_some_and(|target| target != -1.0)
-            && spring::get_unit_rules_param_f32(unit.0, "targetCoordZ")
-                .ok()
-                .is_some_and(|target| target != -1.0))
+    Some(true)
 }
 
 async fn reload_missiles(state: Rc<RefCell<RobotAnimationState>>, ctx: UnitCtx) {

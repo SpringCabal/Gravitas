@@ -12,7 +12,7 @@ mod weapons;
 
 use super::common::{SIG_ANIMATION, explode};
 use gait::animate;
-use weapons::{aim, aim_from, fire, query_weapon, watch_explicit_target};
+use weapons::{aim, aim_from, fire, query_weapon};
 
 pub(super) const DEGREES: f32 = PI / 180.0;
 
@@ -104,9 +104,6 @@ struct RobotAnimationState {
     /// The death explosions are under way.
     pub dying: bool,
     pub aiming: bool,
-    pub explicit_target: bool,
-    pub last_heading: f32,
-    pub last_pitch: f32,
 }
 
 /// projector.lua (B.O.B, Wallier, Projector) and projector_boss.lua.
@@ -126,9 +123,6 @@ impl RobotScript {
                 stunned: false,
                 dying: false,
                 aiming: false,
-                explicit_target: false,
-                last_heading: 0.0,
-                last_pitch: 0.0,
             })),
             next_gun: 0,
         }
@@ -254,13 +248,8 @@ fn create(
     ));
     ctx.spawn(TaskDefinition::with_state(
         "gravitas-robot-stun-detect",
-        Rc::clone(&state),
-        stun::detect,
-    ));
-    ctx.spawn(TaskDefinition::with_state(
-        "gravitas-robot-target-watch",
         state,
-        watch_explicit_target,
+        stun::detect,
     ));
 }
 

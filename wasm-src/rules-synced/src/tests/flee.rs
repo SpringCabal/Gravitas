@@ -56,11 +56,12 @@ impl Fleeing {
         };
         self.robot = robot;
         self.fire = fire;
-        let x = origin.x + ASSAULT_DISTANCE;
+        // Away from the other rigs.
+        let z = origin.z + ASSAULT_DISTANCE;
         let target = Float3 {
-            x,
-            y: crate::units::ground_height(x, origin.z),
-            z: origin.z,
+            x: origin.x,
+            y: crate::units::ground_height(origin.x, z),
+            z,
         };
         crate::units::order(robot, spring::cmd::FIGHT, &[target.x, target.y, target.z]);
         Step::Wait

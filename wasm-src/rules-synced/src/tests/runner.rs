@@ -117,6 +117,7 @@ fn cases() -> Vec<Entry> {
         Box::new(crate::tests::invulnerable::Invulnerable::new()),
         Box::new(crate::tests::fire::Burning::new()),
         Box::new(crate::tests::flee::Fleeing::new()),
+        Box::new(crate::tests::shoot::Shooting::new()),
         Box::new(crate::tests::death::Dying::new()),
         Box::new(crate::tests::electrafi::Shocking::new()),
         Box::new(crate::tests::jump::Jumping::new()),

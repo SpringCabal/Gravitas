@@ -33,6 +33,8 @@ mod restarting;
 #[cfg(feature = "e2e")]
 mod runner;
 #[cfg(feature = "e2e")]
+mod shoot;
+#[cfg(feature = "e2e")]
 mod spawn;
 #[cfg(feature = "e2e")]
 mod terrain;

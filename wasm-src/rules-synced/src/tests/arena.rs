@@ -24,6 +24,8 @@ pub struct Arena {
     pub bystander: i32,
     pub revivable: i32,
     pub fleeing: i32,
+    pub gunner: i32,
+    pub target: i32,
 }
 
 pub fn build() -> Option<Arena> {
@@ -47,6 +49,9 @@ pub fn build() -> Option<Arena> {
         barrel: spawn(BARREL, centre, RIG_BARREL, 0.0, 0.0),
         bystander: spawn(ROBOT, centre, RIG_BARREL, BARREL_REACH, 0.0),
         revivable: spawn(ROBOT, centre, RIG_RESPAWN, 0.0, 0.0),
+        gunner: spawn(ROBOT, centre, RIG_SHOOT, 0.0, 0.0),
+        target: spawn(GRAVIT, centre, RIG_SHOOT, 0.0, -TARGET_OFFSET),
+        // Last of the Gravits: the player gadget adopts it.
         jumper: spawn(GRAVIT, centre, RIG_INPUT, 0.0, 0.0),
         fleeing: spawn(ROBOT, centre, RIG_FLEE, 0.0, 0.0),
     };
@@ -66,7 +71,7 @@ pub fn build() -> Option<Arena> {
 }
 
 impl Arena {
-    pub fn units(&self) -> [i32; 19] {
+    pub fn units(&self) -> [i32; 21] {
         [
             self.plate,
             self.gate,
@@ -87,6 +92,8 @@ impl Arena {
             self.bystander,
             self.revivable,
             self.fleeing,
+            self.gunner,
+            self.target,
         ]
     }
 }
@@ -102,6 +109,7 @@ const RIG_RESPAWN: usize = 7;
 const RIG_JUMP: usize = 8;
 const RIG_INPUT: usize = 9;
 const RIG_FLEE: usize = 10;
+const RIG_SHOOT: usize = 11;
 
 // Keep independent cases apart even when a robot reacts to a hazard and
 // travels before another case's area-of-effect check runs.
@@ -109,6 +117,7 @@ const RIG_SPACING: f32 = 400.0;
 const RIG_COLUMNS: usize = 4;
 const PARK_OFFSET: f32 = 90.0;
 const PUSH_SEPARATION: f32 = 120.0;
+const TARGET_OFFSET: f32 = 200.0;
 
 const PLATE: &str = "plate";
 const GATE: &str = "gate";
