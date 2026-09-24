@@ -121,18 +121,16 @@ enum Script {
     Gravit(GravitScript),
     Robot(RobotScript),
     Immobile(ImmobileScript),
-    None,
 }
 
 impl GravitasUnitScript {
-    fn for_kind(kind: Option<ScriptKind>, ctx: &mut InitCtx<'_>) -> Self {
+    fn for_kind(kind: ScriptKind, ctx: &mut InitCtx<'_>) -> Self {
         let script = match kind {
-            Some(ScriptKind::Gravit) => Script::Gravit(GravitScript::new(ctx)),
-            Some(kind) => match robot_kind(kind) {
+            ScriptKind::Gravit => Script::Gravit(GravitScript::new(ctx)),
+            kind => match robot_kind(kind) {
                 Some(robot) => Script::Robot(RobotScript::new(ctx, robot)),
                 None => Script::Immobile(ImmobileScript::new(ctx, kind)),
             },
-            None => Script::None,
         };
         Self { script }
     }
@@ -152,17 +150,11 @@ impl GravitasUnitScript {
 }
 
 impl UnitScript for GravitasUnitScript {
-    fn new(ctx: &mut InitCtx<'_>) -> Self {
-        let kind = crate::units::def_of(ctx.unit().0)
-            .and_then(|def_id| crate::defs::get().unit(def_id).script);
-        Self::for_kind(kind, ctx)
-    }
-
     fn create(&mut self, ctx: &UnitCtx) {
         match &self.script {
             Script::Gravit(gravit) => gravit.create(ctx),
             Script::Robot(robot) => robot.create(ctx),
-            Script::Immobile(_) | Script::None => {}
+            Script::Immobile(_) => {}
         }
     }
 
@@ -170,7 +162,7 @@ impl UnitScript for GravitasUnitScript {
         match &self.script {
             Script::Gravit(gravit) => gravit.start_moving(ctx),
             Script::Robot(robot) => robot.start_moving(),
-            Script::Immobile(_) | Script::None => {}
+            Script::Immobile(_) => {}
         }
     }
 
@@ -178,7 +170,7 @@ impl UnitScript for GravitasUnitScript {
         match &self.script {
             Script::Gravit(gravit) => gravit.stop_moving(ctx),
             Script::Robot(robot) => robot.stop_moving(),
-            Script::Immobile(_) | Script::None => {}
+            Script::Immobile(_) => {}
         }
     }
 
@@ -187,7 +179,6 @@ impl UnitScript for GravitasUnitScript {
             Script::Gravit(gravit) => gravit.activate(),
             Script::Robot(_) => {}
             Script::Immobile(immobile) => immobile.activate(ctx),
-            Script::None => {}
         }
     }
 
@@ -196,7 +187,6 @@ impl UnitScript for GravitasUnitScript {
             Script::Gravit(gravit) => gravit.deactivate(),
             Script::Robot(_) => {}
             Script::Immobile(immobile) => immobile.deactivate(ctx),
-            Script::None => {}
         }
     }
 
@@ -208,7 +198,6 @@ impl UnitScript for GravitasUnitScript {
                 immobile.killed(ctx);
                 WreckLevel::One
             }
-            Script::None => WreckLevel::One,
         }
     }
 
@@ -216,7 +205,7 @@ impl UnitScript for GravitasUnitScript {
         match &self.script {
             Script::Gravit(gravit) => gravit.killed_pending(),
             Script::Robot(robot) => robot.killed_pending(),
-            Script::Immobile(_) | Script::None => false,
+            Script::Immobile(_) => false,
         }
     }
 
@@ -224,7 +213,7 @@ impl UnitScript for GravitasUnitScript {
         match &mut self.script {
             Script::Gravit(gravit) => gravit.query_weapon(),
             Script::Robot(robot) => robot.query_weapon(weapon),
-            Script::Immobile(_) | Script::None => Piece::INVALID,
+            Script::Immobile(_) => Piece::INVALID,
         }
     }
 
@@ -232,7 +221,7 @@ impl UnitScript for GravitasUnitScript {
         match &self.script {
             Script::Gravit(gravit) => gravit.aim_from_weapon(weapon),
             Script::Robot(robot) => robot.aim_from_weapon(weapon),
-            Script::Immobile(_) | Script::None => Piece::INVALID,
+            Script::Immobile(_) => Piece::INVALID,
         }
     }
 
@@ -249,7 +238,7 @@ impl UnitScript for GravitasUnitScript {
                 Some(true)
             }
             Script::Robot(robot) => robot.aim_weapon(ctx, weapon, heading, pitch),
-            Script::Immobile(_) | Script::None => None,
+            Script::Immobile(_) => None,
         }
     }
 
@@ -263,7 +252,7 @@ impl UnitScript for GravitasUnitScript {
         match &self.script {
             Script::Gravit(gravit) => gravit.build_piece(),
             Script::Robot(robot) => robot.build_piece(),
-            Script::Immobile(_) | Script::None => Piece::INVALID,
+            Script::Immobile(_) => Piece::INVALID,
         }
     }
 

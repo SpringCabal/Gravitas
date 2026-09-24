@@ -16,8 +16,13 @@ impl UnitDefScript for GravitasUnitScript {
         crate::defs::get().unit(def).script.map(capabilities)
     }
 
+    /// Only called for defs `capabilities` gave a script.
     fn for_def(def: i32, ctx: &mut InitCtx<'_>, _: &mut ()) -> Self {
-        Self::for_kind(crate::defs::get().unit(def).script, ctx)
+        let kind = crate::defs::get().unit(def).script;
+        Self::for_kind(
+            kind.expect("CusHost builds scripts only for defs with one"),
+            ctx,
+        )
     }
 }
 
