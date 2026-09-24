@@ -30,7 +30,7 @@ pub fn setup(handler: &mut GadgetHandler<Global>) {
         [
             // First, so the rules params it sets on a new unit are there for
             // every other gadget's UnitCreated.
-            unit_setup::UnitSetupGadget,
+            unit_setup::UnitSetupGadget::default(),
             level::LevelGadget,
             terrain::TerrainGadget,
             player::PlayerGadget::default(),

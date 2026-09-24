@@ -15,7 +15,7 @@ use self::gravit::GravitScript;
 use self::immobile::ImmobileScript;
 use self::robots::{RobotKind, RobotScript};
 
-pub use self::module::{GravitasCusModule, attach, call};
+pub use self::module::{GravitasCusModule, attach, attach_existing, call};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum ScriptKind {
@@ -114,10 +114,8 @@ enum Script {
     None,
 }
 
-impl UnitScript for GravitasUnitScript {
-    fn new(ctx: &mut InitCtx<'_>) -> Self {
-        let kind = crate::units::def_of(ctx.unit().0)
-            .and_then(|def_id| crate::defs::get().unit(def_id).script);
+impl GravitasUnitScript {
+    fn for_kind(kind: Option<ScriptKind>, ctx: &mut InitCtx<'_>) -> Self {
         let script = match kind {
             Some(ScriptKind::Gravit) => Script::Gravit(GravitScript::new(ctx)),
             Some(kind) => match robot_kind(kind) {
@@ -127,6 +125,28 @@ impl UnitScript for GravitasUnitScript {
             None => Script::None,
         };
         Self { script }
+    }
+}
+
+impl UnitScript for GravitasUnitScript {
+    fn new(ctx: &mut InitCtx<'_>) -> Self {
+        let kind = crate::units::def_of(ctx.unit().0)
+            .and_then(|def_id| crate::defs::get().unit(def_id).script);
+        Self::for_kind(kind, ctx)
+    }
+
+    /// The jump gadget's calls; they return nothing.
+    fn call_named(
+        &mut self,
+        ctx: &UnitCtx,
+        name: &str,
+        _arguments: &[f32],
+        _returns: &mut [f32],
+    ) -> Option<usize> {
+        match &self.script {
+            Script::Gravit(gravit) => gravit.named_call(ctx, name).then_some(0),
+            _ => None,
+        }
     }
 
     fn create(&mut self, ctx: &UnitCtx) {
@@ -240,15 +260,6 @@ impl UnitScript for GravitasUnitScript {
 
     fn query_nano_piece(&mut self, ctx: &UnitCtx) -> Piece {
         self.query_build_info(ctx)
-    }
-}
-
-impl GravitasUnitScript {
-    fn named_call(&mut self, ctx: &UnitCtx, name: &str) -> bool {
-        match &self.script {
-            Script::Gravit(gravit) => gravit.named_call(ctx, name),
-            _ => false,
-        }
     }
 }
 

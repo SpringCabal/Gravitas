@@ -1,3 +1,5 @@
+use core::cell::Cell;
+
 use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
 
@@ -6,19 +8,23 @@ use crate::{effects, shapes, unit_scripts, units, walls};
 
 /// Gives each new unit its unit script, rules params (the def's, then the
 /// scenario's), shape and blocking.
-pub struct UnitSetupGadget;
+#[derive(Default)]
+pub struct UnitSetupGadget {
+    started: Cell<bool>,
+}
 
 impl Gadget<Global> for UnitSetupGadget {
     fn name(&self) -> &'static str {
         "UnitSetup"
     }
 
-    /// Units that exist before the gadget (a rules reload) still need scripts.
-    fn init(&self, _ctx: &AddonContext<'_, Global>) {
-        for unit_id in spring::get_all_units().unwrap_or_default() {
-            if let Ok(def) = spring::get_unit_def_id(unit_id) {
-                unit_scripts::attach(unit_id, def.0);
-            }
+    /// Units created before the game starts (or that survived a rules
+    /// reload) get their scripts on the first frame. Before it `CusHost`
+    /// reads the frame as `u32::MAX`, so a task that sleeps in `Create`
+    /// would never wake (engine TODO item I).
+    fn game_frame(&self, _ctx: &AddonContext<'_, Global>, _frame: i32) {
+        if !self.started.replace(true) {
+            unit_scripts::attach_existing();
         }
     }
 
@@ -30,7 +36,9 @@ impl Gadget<Global> for UnitSetupGadget {
         _team: i32,
         _builder: i32,
     ) {
-        unit_scripts::attach(unit_id, unit_def_id);
+        if self.started.get() {
+            unit_scripts::attach(unit_id, unit_def_id);
+        }
         effects::tag_on_create(unit_id, unit_def_id);
         // After the def's tags: the scenario can override them.
         units::set_rules_params(unit_id, ctx.global().pending_rules.take());
