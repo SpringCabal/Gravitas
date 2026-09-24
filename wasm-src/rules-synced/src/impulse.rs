@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use spring::ResultExt;
 
 use spring::types::Float3;
 
@@ -77,7 +78,8 @@ pub fn apply(pending: Vec<Pending>) {
                 z: 0.0,
             },
         ] {
-            let _ = spring::add_unit_impulse(pending.unit_id, impulse, 0.0);
+            spring::add_unit_impulse(pending.unit_id, impulse, 0.0)
+                .log_err_once("gravity gun impulse");
         }
     }
 }

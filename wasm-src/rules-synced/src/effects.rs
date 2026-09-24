@@ -1,3 +1,4 @@
+use spring::ResultExt;
 use springcabal::message::Encoder;
 
 use crate::units;
@@ -58,14 +59,19 @@ pub fn explode_barrel(barrel: i32, position: spring::types::Float3) {
     );
     send_fx("flame", position, &[EXPLOSION_RADIUS]);
     for nearby in units::units_in_cylinder(position.x, position.z, EXPLOSION_RADIUS) {
-        let _ = spring::add_unit_damage(
+        // An earlier hit may have set off another barrel that killed it.
+        if !units::valid(nearby) {
+            continue;
+        }
+        spring::add_unit_damage(
             nearby,
             EXPLOSION_DAMAGE,
             0.0,
             -1,
             barrel,
             spring::types::Float3::default(),
-        );
+        )
+        .log_err_once("barrel blast damage");
     }
 }
 
@@ -87,7 +93,10 @@ pub fn kill_fallen(frame: i32) {
         z: map.map_size_z as f32,
     };
     for unit_id in units::units_in_box(low, high) {
-        let _ = spring::destroy_unit(
+        if !units::valid(unit_id) {
+            continue;
+        }
+        spring::destroy_unit(
             unit_id,
             spring::generated::owned::unit_control::DestroyUnitOptions {
                 selfd: false,
@@ -95,7 +104,8 @@ pub fn kill_fallen(frame: i32) {
                 attacker_id: -1,
                 recycle_id: false,
             },
-        );
+        )
+        .log_err_once("removing a unit that fell off the map");
     }
 }
 
@@ -131,5 +141,5 @@ pub fn send_fx(kind: &str, position: spring::types::Float3, values: &[f32]) {
             .field(position.z),
         |message, value| message.field(value),
     );
-    let _ = spring::send_to_unsynced(&message.finish());
+    spring::send_to_unsynced(&message.finish()).log_err_once("fire or electric effect message");
 }

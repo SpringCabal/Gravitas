@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use spring::ResultExt;
 
 use spring::types::Float3;
 
@@ -189,7 +190,8 @@ pub fn fly(global: &Global) -> Vec<i32> {
     let mut landed = Vec::new();
     for flight in flights {
         if let Some((position, heading)) = flight.pose {
-            let _ = spring::set_unit_position(flight.unit_id, position);
+            spring::set_unit_position(flight.unit_id, position)
+                .log_err_once("moving a jumping unit");
             units::face_radians(flight.unit_id, heading);
         }
         for name in flight.calls {

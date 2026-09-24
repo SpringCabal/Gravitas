@@ -1,11 +1,12 @@
 use crate::state::Global;
+use spring::ResultExt;
 
 /// Remove the level and everything in it; the level gadget spawns it again
 /// on the next frame.
 pub fn perform(global: &Global) {
     global.restart.begin_wipe();
     for unit_id in spring::get_all_units().unwrap_or_default() {
-        let _ = spring::destroy_unit(
+        spring::destroy_unit(
             unit_id,
             spring::generated::owned::unit_control::DestroyUnitOptions {
                 selfd: false,
@@ -13,7 +14,8 @@ pub fn perform(global: &Global) {
                 attacker_id: -1,
                 recycle_id: false,
             },
-        );
+        )
+        .log_err_once("restart: removing a unit");
     }
     global.restart.finish_wipe();
     reset(global);

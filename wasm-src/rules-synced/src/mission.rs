@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use spring::ResultExt;
 
 use springcabal::message::Encoder;
 
@@ -91,7 +92,7 @@ pub fn win(global: &Global, ally_teams: &[i32]) {
     let victory = ally_teams.contains(&PLAYER_ALLY_TEAM);
     global.outcome.set(Some(victory));
     let message = Encoder::new("GRAVITAS_OVER").flag(victory).finish();
-    let _ = spring::send_to_unsynced(&message);
+    spring::send_to_unsynced(&message).log_err("game over message to the ui");
 }
 
 const PLAYER_ALLY_TEAM: i32 = 0;
@@ -149,7 +150,7 @@ fn stun(unit_id: i32) {
     let Ok(health) = spring::units_info::get_unit_health(unit_id) else {
         return;
     };
-    let _ = spring::set_unit_health(
+    spring::set_unit_health(
         unit_id,
         spring::types::UnitHealthValue {
             health: health.health,
@@ -158,5 +159,6 @@ fn stun(unit_id: i32) {
             build: health.build_progress,
             use_amounts: true,
         },
-    );
+    )
+    .log_err_once("stunning a unit near an electric field");
 }

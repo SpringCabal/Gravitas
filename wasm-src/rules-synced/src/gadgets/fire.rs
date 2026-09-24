@@ -1,3 +1,4 @@
+use spring::ResultExt;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
@@ -38,14 +39,19 @@ impl Gadget<Global> for FireGadget {
             (fires.update(frame), fires.flames(frame))
         };
         for burn in burns {
-            let _ = spring::add_unit_damage(
+            // An earlier burn this frame may have killed it.
+            if !units::valid(burn.unit_id) {
+                continue;
+            }
+            spring::add_unit_damage(
                 burn.unit_id,
                 burn.damage,
                 0.0,
                 -1,
                 burn.attacker_id,
                 spring::types::Float3::default(),
-            );
+            )
+            .log_err_once("fire damage");
             emit_burn(burn.unit_id, burn.size_mult);
         }
         for flame in flames {

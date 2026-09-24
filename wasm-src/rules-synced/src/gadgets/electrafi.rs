@@ -1,3 +1,4 @@
+use spring::ResultExt;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
@@ -40,15 +41,20 @@ impl Gadget<Global> for ElectrafiGadget {
             (electrafi.update(frame), electrafi.arcs(frame))
         };
         for shock in shocks {
+            // An earlier shock this frame may have killed it.
+            if !units::valid(shock.unit_id) {
+                continue;
+            }
             let paralyze_time = if shock.paralyze { PARALYZING } else { 0.0 };
-            let _ = spring::add_unit_damage(
+            spring::add_unit_damage(
                 shock.unit_id,
                 shock.damage,
                 paralyze_time,
                 -1,
                 shock.attacker_id,
                 spring::types::Float3::default(),
-            );
+            )
+            .log_err_once("electric field damage");
             emit_spark(shock.unit_id, shock.intensity);
         }
         for arc in arcs {

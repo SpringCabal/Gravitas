@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use spring::ResultExt;
 
 use spring::types::Float3;
 
@@ -132,7 +133,7 @@ impl Respawns {
 /// respawnable too. Returns its id.
 pub fn rebirth(rebirth: &Rebirth) -> Option<i32> {
     if units::valid(rebirth.unit_id) {
-        let _ = spring::destroy_unit(
+        spring::destroy_unit(
             rebirth.unit_id,
             spring::generated::owned::unit_control::DestroyUnitOptions {
                 selfd: false,
@@ -140,7 +141,8 @@ pub fn rebirth(rebirth: &Rebirth) -> Option<i32> {
                 attacker_id: -1,
                 recycle_id: false,
             },
-        );
+        )
+        .log_err_once("respawn: removing the old unit");
     }
     let Some(unit_id) = units::create(rebirth.unit_def_id, rebirth.origin, rebirth.team_id) else {
         diagnostics::warning(&alloc::format!(
