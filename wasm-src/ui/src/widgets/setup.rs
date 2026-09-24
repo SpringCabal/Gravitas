@@ -27,7 +27,8 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
             ),
             // Before the fire widget: it reads the frame this records.
             GameClockWidget::default(),
-            ApiSyncWidget,
+            GfxRulesEffectsWidget,
+            DbgScreenshotsWidget,
             // Before the camera: it records the player unit from the status.
             GuiHudWidget,
             GuiCameraWidget::default(),
