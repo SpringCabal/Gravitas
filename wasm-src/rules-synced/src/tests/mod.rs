@@ -3,6 +3,8 @@ mod arena;
 #[cfg(feature = "e2e")]
 mod barrel;
 #[cfg(feature = "e2e")]
+mod death;
+#[cfg(feature = "e2e")]
 mod electrafi;
 #[cfg(feature = "e2e")]
 mod falling;

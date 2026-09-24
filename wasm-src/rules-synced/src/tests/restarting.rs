@@ -34,9 +34,10 @@ impl Case for Restarting {
 const OTHER_GRAVIT_FRAME: i32 = 144;
 const KILL_FRAME: i32 = 148;
 const PRESS_FRAME: i32 = 150;
-const VERDICT_FRAME: i32 = 175;
-const DIE_AGAIN_FRAME: i32 = 180;
-const SECOND_VERDICT_FRAME: i32 = 190;
+/// After the killed player unit's death animation (25 frames).
+const VERDICT_FRAME: i32 = 180;
+const DIE_AGAIN_FRAME: i32 = 185;
+const SECOND_VERDICT_FRAME: i32 = 195;
 
 impl Restarting {
     fn kill_other_gravit(&mut self, global: &Global) -> Step {
@@ -106,7 +107,7 @@ impl Restarting {
     }
 }
 
-fn destroy(unit_id: i32) {
+pub fn destroy(unit_id: i32) {
     let _ = spring::destroy_unit(
         unit_id,
         spring::generated::owned::unit_control::DestroyUnitOptions {

@@ -182,6 +182,13 @@ impl UnitScript for GravitasUnitScript {
         }
     }
 
+    fn killed_pending(&self) -> bool {
+        match &self.script {
+            Script::Gravit(gravit) => gravit.killed_pending(),
+            _ => false,
+        }
+    }
+
     fn query_weapon(&mut self, _ctx: &UnitCtx, weapon: WeaponId) -> Piece {
         match &mut self.script {
             Script::Gravit(gravit) => gravit.query_weapon(),

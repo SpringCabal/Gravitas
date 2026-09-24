@@ -9,8 +9,7 @@ use spring::cus::{
 };
 
 use super::common::{
-    SIG_AIM, SIG_ANIMATION, SIG_IDLE, SIG_JUMP, SIG_STOP, SIG_WALK, explode, move_piece,
-    play_unit_sound, turn,
+    SIG_AIM, SIG_IDLE, SIG_JUMP, SIG_STOP, SIG_WALK, explode, move_piece, play_unit_sound, turn,
 };
 use data::{AnimAxis, Command, CommandKind, Keyframe, PieceName};
 
@@ -84,6 +83,8 @@ impl GravitPieces {
 struct GravitAnimationState {
     active: bool,
     jumping: bool,
+    /// The death animation is playing.
+    dying: bool,
     pieces: GravitPieces,
 }
 
@@ -100,6 +101,7 @@ impl GravitScript {
             state: Rc::new(RefCell::new(GravitAnimationState {
                 active: false,
                 jumping: false,
+                dying: false,
                 pieces,
             })),
         }
@@ -135,23 +137,24 @@ impl GravitScript {
         self.state.borrow_mut().active = false;
     }
 
+    /// gravit.lua's Killed: the death sound, the death animation, then the
+    /// limbs fly off. The unit stays until the animation is over.
     pub(super) fn killed(&self, ctx: &UnitCtx) -> WreckLevel {
-        ctx.signal(SIG_ANIMATION);
         ctx.signal(SIG_AIM);
-        ctx.signal(SIG_STOP);
+        ctx.signal(SIG_WALK);
+        ctx.signal(SIG_IDLE);
         play_unit_sound("sounds/death.ogg", 1.0, ctx.unit());
-        let p = self.pieces;
-        for piece in [
-            p.thigh_left,
-            p.thigh_right,
-            p.head,
-            p.pelvis,
-            p.arm_left,
-            p.arm_right,
-        ] {
-            explode(ctx, piece, SfxFlags::EXPLODE);
-        }
-        WreckLevel::One
+        self.state.borrow_mut().dying = true;
+        ctx.spawn(TaskDefinition::with_state(
+            "gravitas-gravit-die",
+            Rc::clone(&self.state),
+            die,
+        ));
+        WRECK_LEVEL
+    }
+
+    pub(super) fn killed_pending(&self) -> bool {
+        self.state.borrow().dying
     }
 
     pub(super) fn query_weapon(&self) -> Piece {
@@ -288,6 +291,26 @@ async fn stop(state: Rc<RefCell<GravitAnimationState>>, ctx: UnitCtx) {
     let pieces = state.borrow().pieces;
     play_animation(&ctx, pieces, data::STOP, false).await;
 }
+
+async fn die(state: Rc<RefCell<GravitAnimationState>>, ctx: UnitCtx) {
+    let p = state.borrow().pieces;
+    play_animation(&ctx, p, data::DIE, false).await;
+    for piece in [
+        p.thigh_left,
+        p.thigh_right,
+        p.head,
+        p.pelvis,
+        p.arm_left,
+        p.arm_right,
+    ] {
+        explode(&ctx, piece, SfxFlags::EXPLODE);
+    }
+    state.borrow_mut().dying = false;
+    ctx.set_killed_finished(WRECK_LEVEL);
+}
+
+/// gravit.lua's Killed returns 1.
+const WRECK_LEVEL: WreckLevel = WreckLevel::One;
 
 async fn play_animation(ctx: &UnitCtx, pieces: GravitPieces, animation: &[Keyframe], snap: bool) {
     for (index, frame) in animation.iter().enumerate() {

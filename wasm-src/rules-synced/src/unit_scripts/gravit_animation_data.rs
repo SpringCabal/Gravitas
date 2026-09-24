@@ -1,4 +1,4 @@
-#![allow(dead_code, clippy::approx_constant, clippy::excessive_precision)]
+#![allow(clippy::approx_constant, clippy::excessive_precision)]
 
 // Exact keyframes ported from scripts/animations/gravit_*.lua.
 // Move targets include the original script's one-time skeleton offset adjustment.
