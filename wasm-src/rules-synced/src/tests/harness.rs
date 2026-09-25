@@ -59,10 +59,7 @@ pub fn press_restart() {
 }
 
 pub fn send_to_ui(request: Request<'_>) {
-    let message = request.encode();
-    if spring::send_to_unsynced(&message).is_err() {
-        crate::diagnostics::warning(&alloc::format!("E2E request not sent: {message}"));
-    }
+    springcabal::message::send_to_ui(&request.encode());
 }
 
 pub fn capture(name: &str) {

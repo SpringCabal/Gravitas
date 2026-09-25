@@ -20,13 +20,14 @@ pub fn spawn(global: &Global) {
             Some(unit_id) => spawned.push((spawn.id, unit_id)),
             None => {
                 failed += 1;
-                diagnostics::warning(&format!(
+                spring::log_warning!(
+                    crate::diagnostics::LOG_SECTION,
                     "spawn failed: {} at {} {} (def {:?})",
                     spawn.def_name,
                     spawn.x,
                     spawn.z,
                     crate::defs::get().id(spawn.def_name)
-                ));
+                );
             }
         }
     }
@@ -64,17 +65,22 @@ fn link_gates(level: &crate::state::Level, plates: &mut crate::plate::Plates) ->
         };
         if !linked {
             failures += 1;
-            diagnostics::warning(&format!(
+            spring::log_warning!(
+                crate::diagnostics::LOG_SECTION,
                 "plate link failed: plate {} gate {}",
-                link.plate, link.gate
-            ));
+                link.plate,
+                link.gate
+            );
         }
     }
     plates.enable_link_checks();
     for link in level::BITMASK_LINKS {
         let Some(gate) = level.unit_of(link.gate) else {
             failures += 1;
-            diagnostics::warning("bitmask link failed: missing gate");
+            spring::log_warning!(
+                crate::diagnostics::LOG_SECTION,
+                "bitmask link failed: missing gate"
+            );
             continue;
         };
         let mut mask = Vec::new();
@@ -90,7 +96,7 @@ fn link_gates(level: &crate::state::Level, plates: &mut crate::plate::Plates) ->
         }
         if !plates.bitmask_link(mask, gate) {
             failures += 1;
-            diagnostics::warning("bitmask link failed");
+            spring::log_warning!(crate::diagnostics::LOG_SECTION, "bitmask link failed");
         }
     }
     failures

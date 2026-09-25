@@ -20,7 +20,7 @@ pub const HIDDEN_INTERFACE: u32 = CONSOLE
     | MAP_BORDER;
 
 pub fn setup(handler: &mut WidgetHandler<Global>) {
-    if gallery::active() {
+    if springcabal::gallery::active() {
         gallery::setup(handler);
         return;
     }

@@ -53,15 +53,7 @@ impl Input {
         // A failed send isn't recorded, so the next poll tries again.
         self.sent
             .send_if_changed((player_unit, input), |(_, input)| {
-                let message = input.encode();
-                spring::send_lua_rules_msg(&message)
-                    .map_err(|error| {
-                        crate::diagnostics::warning(&alloc::format!(
-                            "player input not sent (error {}): {message}",
-                            error.code
-                        ))
-                    })
-                    .is_ok()
+                springcabal::message::send_to_rules(&input.encode())
             });
     }
 

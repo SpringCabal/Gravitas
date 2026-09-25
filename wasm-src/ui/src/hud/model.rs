@@ -80,8 +80,6 @@ fn bind_string(model: u64, name: &str, initial: &str) -> Option<u64> {
 
 /// The end-of-game panel's restart button.
 pub fn restart(global: &Global) {
-    if let Err(error) = spring::send_lua_rules_msg(gravitas_shared::RESTART) {
-        crate::diagnostics::warning(&alloc::format!("restart not sent (error {})", error.code));
-    }
+    springcabal::message::send_to_rules(gravitas_shared::RESTART);
     super::overlays::hide_game_over(&mut global.hud.access_mut());
 }

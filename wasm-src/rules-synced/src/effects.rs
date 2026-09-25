@@ -125,9 +125,10 @@ const FALL_CEILING: f32 = 50.0;
 
 fn set_rules_param(unit_id: i32, name: &str, value: f32) {
     if spring::set_unit_rules_param_f32(unit_id, name, value, units::RULES_PARAM_PRIVATE).is_err() {
-        crate::diagnostics::warning(&alloc::format!(
+        spring::log_warning!(
+            crate::diagnostics::LOG_SECTION,
             "set_unit_rules_param_f32 failed for {name} on unit {unit_id}"
-        ));
+        );
     }
 }
 
@@ -141,5 +142,5 @@ pub fn send_effect(position: spring::types::Float3, kind: EffectKind) {
         position: [position.x, position.y, position.z],
         kind,
     };
-    spring::send_to_unsynced(&effect.encode()).log_err_once("fire or electric effect message");
+    springcabal::message::send_to_ui(&effect.encode());
 }

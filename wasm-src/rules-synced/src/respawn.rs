@@ -3,7 +3,7 @@ use spring::ResultExt;
 
 use spring::types::Float3;
 
-use crate::{diagnostics, effects, units};
+use crate::{effects, units};
 
 #[derive(Default)]
 pub struct Respawns {
@@ -145,12 +145,13 @@ pub fn rebirth(rebirth: &Rebirth) -> Option<i32> {
         .log_err_once("respawn: removing the old unit");
     }
     let Some(unit_id) = units::create(rebirth.unit_def_id, rebirth.origin, rebirth.team_id) else {
-        diagnostics::warning(&alloc::format!(
+        spring::log_warning!(
+            crate::diagnostics::LOG_SECTION,
             "respawn failed: unit def {} at {} {}",
             rebirth.unit_def_id,
             rebirth.origin.x,
             rebirth.origin.z
-        ));
+        );
         return None;
     };
     effects::mark_respawnable(unit_id);

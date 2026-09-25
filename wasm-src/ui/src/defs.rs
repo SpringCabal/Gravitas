@@ -1,8 +1,7 @@
 //! Per-def customParams the draw and unit callins need, read once.
 
-use alloc::boxed::Box;
 use alloc::vec::Vec;
-use core::cell::OnceCell;
+use springcabal::defs::DefCache;
 
 #[derive(Clone, Copy, Default)]
 pub struct UnitDef {
@@ -12,12 +11,10 @@ pub struct UnitDef {
     pub effect: bool,
 }
 
-thread_local! {
-    static DEFS: OnceCell<&'static [UnitDef]> = const { OnceCell::new() };
-}
+static DEFS: DefCache<Vec<UnitDef>> = DefCache::new(load);
 
 pub fn unit(unit_def_id: i32) -> UnitDef {
-    let defs = DEFS.with(|defs| *defs.get_or_init(load));
+    let defs = DEFS.get();
     usize::try_from(unit_def_id)
         .ok()
         .and_then(|index| defs.get(index))
@@ -25,10 +22,10 @@ pub fn unit(unit_def_id: i32) -> UnitDef {
         .unwrap_or_default()
 }
 
-fn load() -> &'static [UnitDef] {
+fn load() -> Vec<UnitDef> {
     let count = spring::unit_defs::get_unit_def_count(0).unwrap_or(0) as i32;
     // Unit def ids start at 1; index 0 stays empty.
-    let defs: Vec<UnitDef> = (0..=count)
+    (0..=count)
         .map(|unit_def_id| {
             let keys =
                 spring::unit_defs::get_unit_def_custom_param_keys(unit_def_id).unwrap_or_default();
@@ -38,6 +35,5 @@ fn load() -> &'static [UnitDef] {
                 effect: has("effect"),
             }
         })
-        .collect();
-    Box::leak(defs.into_boxed_slice())
+        .collect()
 }

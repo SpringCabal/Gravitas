@@ -26,6 +26,6 @@ impl Gadget<Global> for StatusGadget {
         }
         let message = status::message(ctx.global(), frame);
         self.sent
-            .send_if_changed(message, |message| spring::send_to_unsynced(message).is_ok());
+            .send_if_changed(message, |message| springcabal::message::send_to_ui(message));
     }
 }

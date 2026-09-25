@@ -1,5 +1,3 @@
-use alloc::format;
-
 use crate::diagnostics;
 
 use super::{Hud, model};
@@ -14,10 +12,11 @@ pub fn initialize(hud: &mut Hud) {
         Ok(true) => {}
         Ok(false) => return,
         Err(error) => {
-            diagnostics::warning(&format!(
+            spring::log_warning!(
+                crate::diagnostics::LOG_SECTION,
                 "RmlUi readiness query failed (error code {})",
                 error.code
-            ));
+            );
             return;
         }
     }
@@ -25,7 +24,10 @@ pub fn initialize(hud: &mut Hud) {
         return;
     };
     let Some(bindings) = model::create(context) else {
-        diagnostics::warning("RmlUi data-model creation failed");
+        spring::log_warning!(
+            crate::diagnostics::LOG_SECTION,
+            "RmlUi data-model creation failed"
+        );
         return;
     };
     if !load_document(context) {
@@ -71,15 +73,19 @@ fn create_context() -> Option<u64> {
     let context = match spring::create_rml_context("gravitas-wasm") {
         Ok(context) => context,
         Err(error) => {
-            diagnostics::warning(&format!(
+            spring::log_warning!(
+                crate::diagnostics::LOG_SECTION,
                 "RmlUi context creation failed (error code {})",
                 error.code
-            ));
+            );
             return None;
         }
     };
     if !context.success || context.context_handle == 0 {
-        diagnostics::warning("RmlUi context creation returned no context");
+        spring::log_warning!(
+            crate::diagnostics::LOG_SECTION,
+            "RmlUi context creation returned no context"
+        );
         return None;
     }
     Some(context.context_handle)
@@ -89,15 +95,19 @@ fn load_document(context: u64) -> bool {
     let document = match spring::load_rml_document(context, "LuaUI/wasm/gravitas.rml") {
         Ok(document) => document,
         Err(error) => {
-            diagnostics::warning(&format!(
+            spring::log_warning!(
+                crate::diagnostics::LOG_SECTION,
                 "RmlUi document load failed (error code {})",
                 error.code
-            ));
+            );
             return false;
         }
     };
     if !document.success || document.document_handle == 0 {
-        diagnostics::warning("RmlUi document load returned no document");
+        spring::log_warning!(
+            crate::diagnostics::LOG_SECTION,
+            "RmlUi document load returned no document"
+        );
         return false;
     }
     let document = document.document_handle;
@@ -108,14 +118,18 @@ fn load_document(context: u64) -> bool {
     match spring::rml_ui::document_show(document, options) {
         Ok(true) => true,
         Ok(false) => {
-            diagnostics::warning("RmlUi document show returned false");
+            spring::log_warning!(
+                crate::diagnostics::LOG_SECTION,
+                "RmlUi document show returned false"
+            );
             false
         }
         Err(error) => {
-            diagnostics::warning(&format!(
+            spring::log_warning!(
+                crate::diagnostics::LOG_SECTION,
                 "RmlUi document show failed (error code {})",
                 error.code
-            ));
+            );
             false
         }
     }

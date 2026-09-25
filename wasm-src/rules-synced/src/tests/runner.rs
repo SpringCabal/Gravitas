@@ -20,7 +20,10 @@ pub fn stage_level(global: &Global) -> bool {
             global.tests.arena.set(Some(built));
             global.tests.pending_link.set(true);
         }
-        None => diagnostics::warning("E2E arena could not be built"),
+        None => spring::log_warning!(
+            crate::diagnostics::LOG_SECTION,
+            "E2E arena could not be built"
+        ),
     }
     true
 }

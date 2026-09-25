@@ -89,8 +89,7 @@ pub fn issue_assault(assault: &Assault) {
 pub fn win(global: &Global, ally_teams: &[i32]) {
     let victory = ally_teams.contains(&PLAYER_ALLY_TEAM);
     global.outcome.set(Some(victory));
-    spring::send_to_unsynced(&gravitas_shared::game_over(victory))
-        .log_err("game over message to the ui");
+    springcabal::message::send_to_ui(&gravitas_shared::game_over(victory));
 }
 
 const PLAYER_ALLY_TEAM: i32 = 0;

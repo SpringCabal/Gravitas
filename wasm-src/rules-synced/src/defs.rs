@@ -1,10 +1,9 @@
 //! Unit and weapon defs, resolved once: ids for the defs the rules refer to by
 //! name, and the per-def customParams and values the hot paths need.
 
-use alloc::boxed::Box;
 use alloc::string::String;
 use alloc::vec::Vec;
-use core::cell::OnceCell;
+use springcabal::defs::DefCache;
 
 use crate::unit_scripts::ScriptKind;
 
@@ -64,13 +63,11 @@ static NO_DEF: UnitDef = UnitDef {
     script: None,
 };
 
-thread_local! {
-    static DEFS: OnceCell<&'static Defs> = const { OnceCell::new() };
-}
+static DEFS: DefCache<Defs> = DefCache::new(Defs::load);
 
 /// The resolved defs. Loaded on first use; defs never change during a game.
 pub fn get() -> &'static Defs {
-    DEFS.with(|defs| *defs.get_or_init(|| Box::leak(Box::new(Defs::load()))))
+    DEFS.get()
 }
 
 impl Defs {
