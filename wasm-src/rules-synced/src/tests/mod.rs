@@ -70,4 +70,6 @@ pub struct Shared {
     /// Spawn the real level instead of the arena (the level case).
     real_level: core::cell::Cell<bool>,
     record: core::cell::RefCell<record::Record>,
+    /// Where the cases that passed left their units, for the scene case.
+    rests: core::cell::RefCell<alloc::vec::Vec<harness::Rest>>,
 }

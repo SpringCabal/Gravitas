@@ -1,11 +1,17 @@
+use alloc::vec::Vec;
+
+use spring::types::Float3;
+
 use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
 
 pub struct Invulnerable {
     protected: i32,
     exposed: i32,
     protected_health: f32,
     exposed_health: f32,
+    protected_at: Float3,
+    exposed_at: Float3,
 }
 
 impl Invulnerable {
@@ -15,6 +21,8 @@ impl Invulnerable {
             exposed: -1,
             protected_health: 0.0,
             exposed_health: 0.0,
+            protected_at: Float3::default(),
+            exposed_at: Float3::default(),
         }
     }
 }
@@ -30,6 +38,18 @@ impl Case for Invulnerable {
             VERDICT_FRAME => self.check(),
             _ => Step::Wait,
         }
+    }
+
+    fn rest(&self) -> Vec<Rest> {
+        alloc::vec![
+            Rest::at(
+                self.protected,
+                self.protected_at,
+                STILL,
+                "the invulnerable wall"
+            ),
+            Rest::at(self.exposed, self.exposed_at, STILL, "the struck robot"),
+        ]
     }
 }
 
@@ -50,6 +70,13 @@ impl Invulnerable {
         else {
             return fail("no health readings");
         };
+        let (Some(protected_at), Some(exposed_at)) =
+            (harness::position(protected), harness::position(exposed))
+        else {
+            return fail("no positions");
+        };
+        self.protected_at = protected_at;
+        self.exposed_at = exposed_at;
         self.protected = protected;
         self.exposed = exposed;
         self.protected_health = protected_health;

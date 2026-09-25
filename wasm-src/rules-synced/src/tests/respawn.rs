@@ -1,12 +1,15 @@
+use alloc::vec::Vec;
+
 use spring::types::Float3;
 
 use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::harness::{self, Case, Rest, Step, fail};
 use crate::units;
 
 pub struct Respawning {
     origin: Float3,
     victim: i32,
+    reborn: i32,
 }
 
 impl Respawning {
@@ -14,6 +17,7 @@ impl Respawning {
         Self {
             origin: Float3::default(),
             victim: -1,
+            reborn: -1,
         }
     }
 }
@@ -29,6 +33,15 @@ impl Case for Respawning {
             VERDICT_FRAME => self.check(),
             _ => Step::Wait,
         }
+    }
+
+    fn rest(&self) -> Vec<Rest> {
+        alloc::vec![Rest::at(
+            self.reborn,
+            self.origin,
+            REBORN_RANGE,
+            "the respawned robot"
+        )]
     }
 }
 
@@ -71,6 +84,7 @@ impl Respawning {
         if !crate::effects::is_respawnable(reborn) {
             return fail("the respawned unit is not respawnable");
         }
+        self.reborn = reborn;
         Step::Pass
     }
 }

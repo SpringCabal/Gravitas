@@ -1,10 +1,15 @@
+use alloc::vec::Vec;
+
 use spring::types::Float3;
 
 use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::arena::RIG_SPACING;
+use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
 use crate::tests::record;
 
 pub struct Shocking {
+    field: i32,
+    field_at: Float3,
     victim: i32,
     park: Float3,
     entry_paralyze: f32,
@@ -14,6 +19,8 @@ pub struct Shocking {
 impl Shocking {
     pub fn new() -> Self {
         Self {
+            field: -1,
+            field_at: Float3::default(),
             victim: -1,
             park: Float3::default(),
             entry_paralyze: 0.0,
@@ -34,6 +41,19 @@ impl Case for Shocking {
             LINGER_FRAME => self.check_lingering(global),
             _ => Step::Wait,
         }
+    }
+
+    fn rest(&self) -> Vec<Rest> {
+        alloc::vec![
+            Rest::at(self.field, self.field_at, STILL, "the electric field"),
+            // Once the stun wears off it walks on, away from the field.
+            Rest::at(
+                self.victim,
+                self.clear(),
+                RIG_SPACING * 0.5,
+                "the robot out of the field"
+            ),
+        ]
     }
 }
 
@@ -56,6 +76,8 @@ impl Shocking {
         ) else {
             return fail("no position or health reading");
         };
+        self.field = field;
+        self.field_at = centre;
         self.victim = victim;
         self.park = park;
         self.entry_paralyze = paralyze;
@@ -69,13 +91,7 @@ impl Shocking {
             return fail("lost the shocked unit");
         };
         // Clear of the field: the robot's own spot is inside its reach.
-        harness::place(
-            self.victim,
-            Float3 {
-                x: self.park.x + CLEAR_OF_FIELD,
-                ..self.park
-            },
-        );
+        harness::place(self.victim, self.clear());
         if paralyze <= self.entry_paralyze {
             return fail("standing in an electric field did not stun the robot");
         }
@@ -84,6 +100,13 @@ impl Shocking {
         };
         self.exit_health = health;
         Step::Wait
+    }
+
+    fn clear(&self) -> Float3 {
+        Float3 {
+            x: self.park.x + CLEAR_OF_FIELD,
+            ..self.park
+        }
     }
 
     /// A robot that left the field keeps sparking for a while, unhurt.

@@ -1,9 +1,13 @@
+use alloc::vec::Vec;
+
 use spring::types::Float3;
 
 use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
 
 pub struct Burning {
+    field: i32,
+    field_at: Float3,
     victim: i32,
     park: Float3,
     entry_health: f32,
@@ -13,6 +17,8 @@ pub struct Burning {
 impl Burning {
     pub fn new() -> Self {
         Self {
+            field: -1,
+            field_at: Float3::default(),
             victim: -1,
             park: Float3::default(),
             entry_health: 0.0,
@@ -35,6 +41,18 @@ impl Case for Burning {
             _ => Step::Wait,
         }
     }
+
+    fn rest(&self) -> Vec<Rest> {
+        alloc::vec![
+            Rest::at(self.field, self.field_at, STILL, "the fire"),
+            Rest::at(
+                self.victim,
+                self.park,
+                STILL,
+                "the Gravit back from the fire"
+            ),
+        ]
+    }
 }
 
 const BURN_VERDICT_FRAME: i32 = 30;
@@ -54,6 +72,8 @@ impl Burning {
         ) else {
             return fail("no position or health reading");
         };
+        self.field = field;
+        self.field_at = centre;
         self.victim = victim;
         self.park = park;
         self.entry_health = health;

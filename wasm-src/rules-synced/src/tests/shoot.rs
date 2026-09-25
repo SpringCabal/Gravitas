@@ -1,7 +1,9 @@
+use alloc::vec::Vec;
+
 use spring::types::Float3;
 
 use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
 use crate::units;
 
 /// A robot shoots while it walks: the Lua AimWeapon functions never refuse a
@@ -10,6 +12,7 @@ pub struct Shooting {
     gunner: i32,
     target: i32,
     origin: Float3,
+    target_at: Float3,
     target_health: f32,
 }
 
@@ -19,6 +22,7 @@ impl Shooting {
             gunner: -1,
             target: -1,
             origin: Float3::default(),
+            target_at: Float3::default(),
             target_health: 0.0,
         }
     }
@@ -36,6 +40,29 @@ impl Case for Shooting {
             _ => Step::Wait,
         }
     }
+
+    /// The gunner stops somewhere on its walk.
+    fn rest(&self) -> Vec<Rest> {
+        let walk_middle = Float3 {
+            z: self.origin.z - WALK_DISTANCE * 0.5,
+            ..self.origin
+        };
+        alloc::vec![
+            Rest::at(
+                self.gunner,
+                walk_middle,
+                WALK_DISTANCE * 0.5 + STILL,
+                "the walking gunner"
+            ),
+            // The hits push it back.
+            Rest::at(
+                self.target,
+                self.target_at,
+                PUSHED_BACK,
+                "the gunner's target"
+            ),
+        ]
+    }
 }
 
 const WALK_FRAME: i32 = 2;
@@ -44,6 +71,8 @@ const VERDICT_FRAME: i32 = 60;
 /// enough to still be walking at the verdict.
 const WALK_DISTANCE: f32 = 250.0;
 const FIRE_AT_WILL: f32 = 2.0;
+const HOLD_FIRE: f32 = 0.0;
+const PUSHED_BACK: f32 = 80.0;
 const MOVED: f32 = 20.0;
 
 impl Shooting {
@@ -52,10 +81,14 @@ impl Shooting {
         else {
             return fail("no arena");
         };
-        let (Some(origin), Some(health)) = (harness::position(gunner), harness::health(target))
-        else {
+        let (Some(origin), Some(target_at), Some(health)) = (
+            harness::position(gunner),
+            harness::position(target),
+            harness::health(target),
+        ) else {
             return fail("no position or health reading");
         };
+        self.target_at = target_at;
         self.gunner = gunner;
         self.target = target;
         self.origin = origin;
@@ -83,6 +116,8 @@ impl Shooting {
             return fail("the walking robot never hit its target");
         }
         harness::halt(self.gunner);
+        // Done shooting: the target stays alive for the scene.
+        units::order(self.gunner, spring::cmd::FIRE_STATE, &[HOLD_FIRE]);
         Step::Pass
     }
 }

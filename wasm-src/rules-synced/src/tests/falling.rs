@@ -1,13 +1,17 @@
+use alloc::vec::Vec;
+
 use spring::types::Float3;
 
 use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
 
 pub struct Falling {
     dropped: i32,
     cushioned: i32,
     dropped_health: f32,
     cushioned_health: f32,
+    dropped_at: Float3,
+    cushioned_at: Float3,
 }
 
 impl Falling {
@@ -17,6 +21,8 @@ impl Falling {
             cushioned: -1,
             dropped_health: 0.0,
             cushioned_health: 0.0,
+            dropped_at: Float3::default(),
+            cushioned_at: Float3::default(),
         }
     }
 }
@@ -33,6 +39,19 @@ impl Case for Falling {
             VERDICT_FRAME => self.check(),
             _ => Step::Wait,
         }
+    }
+
+    /// Both went straight up and came straight down.
+    fn rest(&self) -> Vec<Rest> {
+        alloc::vec![
+            Rest::at(self.dropped, self.dropped_at, STILL, "the dropped robot"),
+            Rest::at(
+                self.cushioned,
+                self.cushioned_at,
+                STILL,
+                "the cushioned robot"
+            ),
+        ]
     }
 }
 
@@ -53,6 +72,13 @@ impl Falling {
         else {
             return fail("no health readings");
         };
+        let (Some(dropped_at), Some(cushioned_at)) =
+            (harness::position(dropped), harness::position(cushioned))
+        else {
+            return fail("no positions");
+        };
+        self.dropped_at = dropped_at;
+        self.cushioned_at = cushioned_at;
         self.dropped = dropped;
         self.cushioned = cushioned;
         self.dropped_health = dropped_health;

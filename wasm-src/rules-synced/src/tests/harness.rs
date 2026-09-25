@@ -1,4 +1,5 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 
 use gravitas_shared::e2e::Request;
 use spring::types::Float3;
@@ -9,7 +10,72 @@ use crate::units;
 
 pub trait Case {
     fn name(&self) -> &'static str;
+    fn phase(&self) -> Phase {
+        Phase::Arena
+    }
+    /// `frame` counts from the case's start: 0 on its first step.
     fn step(&mut self, global: &Global, frame: i32) -> Step;
+    /// Where the case left its units once it passed. The scene case checks
+    /// them on the frame it has the arena shot.
+    fn rest(&self) -> Vec<Rest> {
+        Vec::new()
+    }
+}
+
+/// When a case may start: every case of a phase starts together, once every
+/// case of the phase before has its verdict. A case that changes more than
+/// its own rig (the scene, a restart) gets a phase of its own.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Phase {
+    /// The arena as built, before any case touches it.
+    Setup,
+    /// The cases that each play in their own rig.
+    Arena,
+    /// The arena at rest, shot and checked.
+    Scene,
+    /// Restarts rebuild the arena.
+    Restart,
+    /// Restarts into the real level.
+    Level,
+}
+
+pub const PHASES: [Phase; 5] = [
+    Phase::Setup,
+    Phase::Arena,
+    Phase::Scene,
+    Phase::Restart,
+    Phase::Level,
+];
+
+/// Where a unit should be once its case is done.
+pub enum Rest {
+    /// Within `within` elmos of `at`, on the ground plane.
+    At {
+        unit: i32,
+        at: Float3,
+        within: f32,
+        what: &'static str,
+    },
+    Gone {
+        unit: i32,
+        what: &'static str,
+    },
+}
+
+impl Rest {
+    pub fn at(unit: i32, at: Float3, within: f32, what: &'static str) -> Self {
+        Rest::At {
+            unit,
+            at,
+            within,
+            what,
+        }
+    }
+
+    /// Where `unit` is now, with `within` of leeway.
+    pub fn here(unit: i32, within: f32, what: &'static str) -> Option<Self> {
+        position(unit).map(|at| Rest::at(unit, at, within, what))
+    }
 }
 
 pub enum Step {
@@ -17,6 +83,9 @@ pub enum Step {
     Pass,
     Fail(String),
 }
+
+/// Leeway for a unit no case moved: it settles on the ground after spawning.
+pub const STILL: f32 = 10.0;
 
 pub fn fail(reason: &str) -> Step {
     Step::Fail(String::from(reason))

@@ -1,19 +1,23 @@
 use alloc::format;
 
 use crate::level;
-use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::state::{Global, Phase as LevelPhase};
+use crate::tests::harness::{self, Case, Phase, Step, fail};
 use crate::tests::{record, runner};
 use crate::units;
 
 /// The real level, after every other case: restart into it and check that it
 /// spawned whole, linked its plates, handed the player its Gravit, and gave
-/// the hazards their scenario sizes before any gadget's UnitCreated.
-pub struct RealLevel;
+/// the hazards their scenario sizes before any gadget's UnitCreated. The
+/// restart makes a round trip through the ui module, so the case waits for
+/// the level to be up instead of counting frames.
+pub struct RealLevel {
+    restarted: bool,
+}
 
 impl RealLevel {
     pub fn new() -> Self {
-        Self
+        Self { restarted: false }
     }
 }
 
@@ -22,24 +26,31 @@ impl Case for RealLevel {
         "level"
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
-        match frame {
-            RESTART_FRAME => {
-                runner::use_real_level(global);
-                harness::press_restart();
-                Step::Wait
-            }
-            VERDICT_FRAME => check(global),
-            _ => Step::Wait,
+    fn phase(&self) -> Phase {
+        Phase::Level
+    }
+
+    fn step(&mut self, global: &Global, _frame: i32) -> Step {
+        if !self.restarted {
+            runner::use_real_level(global);
+            harness::press_restart();
+            self.restarted = true;
+            return Step::Wait;
+        }
+        if level_up(global) {
+            check(global)
+        } else {
+            Step::Wait
         }
     }
 }
 
-/// After the restart case's last check.
-const RESTART_FRAME: i32 = 200;
-/// The restart goes through the ui module and back; then restart, spawn and
-/// link take a frame each.
-const VERDICT_FRAME: i32 = 212;
+/// The real level has spawned and linked (the arena spawns nothing into
+/// the level's list).
+fn level_up(global: &Global) -> bool {
+    let level = global.level.access();
+    level.phase == LevelPhase::Running && !level.spawned.is_empty()
+}
 const PLAYER_DEF: &str = "gravit";
 
 fn check(global: &Global) -> Step {

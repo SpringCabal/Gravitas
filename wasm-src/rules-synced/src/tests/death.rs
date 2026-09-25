@@ -1,7 +1,9 @@
+use alloc::vec::Vec;
+
 use spring::types::Float3;
 
 use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::harness::{self, Case, Rest, Step, fail};
 use crate::units;
 
 /// A Gravit that dies plays gravit.lua's death animation before it goes, and
@@ -35,19 +37,32 @@ impl Case for Dying {
             _ => Step::Wait,
         }
     }
+
+    fn rest(&self) -> Vec<Rest> {
+        alloc::vec![
+            Rest::Gone {
+                unit: self.unit_id,
+                what: "the dead Gravit",
+            },
+            Rest::Gone {
+                unit: self.robot,
+                what: "the dead robot",
+            },
+        ]
+    }
 }
 
-/// After the fire and barrel cases are done with their units.
-const KILL_FRAME: i32 = 137;
-const ANIMATING_FRAME: i32 = 147;
+const KILL_FRAME: i32 = 2;
+const ANIMATING_FRAME: i32 = KILL_FRAME + 10;
 /// The animation is 25 frames long.
-const GONE_FRAME: i32 = 170;
+const GONE_FRAME: i32 = KILL_FRAME + 33;
 const HEAD: &str = "head";
 const MOVED: f32 = 0.5;
 
 impl Dying {
     fn kill(&mut self, global: &Global) -> Step {
-        let Some((unit_id, robot)) = harness::arena(global, |arena| (arena.burning, arena.exposed))
+        let Some((unit_id, robot)) =
+            harness::arena(global, |arena| (arena.dying_gravit, arena.dying_robot))
         else {
             return fail("no arena");
         };

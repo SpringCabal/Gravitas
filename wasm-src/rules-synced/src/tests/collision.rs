@@ -1,13 +1,18 @@
+use alloc::vec::Vec;
+
 use spring::types::Float3;
 
 use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::arena::RIG_SPACING;
+use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
 
 /// A robot thrown into a crate takes the engine's collision damage. The robot
 /// is immune to fall damage for the throw, so a hard landing can't pass for
 /// the collision.
 pub struct Collision {
     thrown: i32,
+    anvil: i32,
+    origin: Float3,
     health: f32,
 }
 
@@ -15,6 +20,8 @@ impl Collision {
     pub fn new() -> Self {
         Self {
             thrown: -1,
+            anvil: -1,
+            origin: Float3::default(),
             health: 0.0,
         }
     }
@@ -32,6 +39,19 @@ impl Case for Collision {
             _ => Step::Wait,
         }
     }
+
+    /// The bounce decides where the robot and the crate stop; they stay in
+    /// the rig.
+    fn rest(&self) -> Vec<Rest> {
+        let mut rest = alloc::vec![Rest::at(
+            self.thrown,
+            self.origin,
+            RIG_SPACING * 0.5,
+            "the thrown robot"
+        )];
+        rest.extend(Rest::here(self.anvil, STILL, "the crate the robot hit"));
+        rest
+    }
 }
 
 const THROW_FRAME: i32 = 2;
@@ -46,13 +66,17 @@ const THROW: Float3 = Float3 {
 
 impl Collision {
     fn throw(&mut self, global: &Global, frame: i32) -> Step {
-        let Some(thrown) = harness::arena(global, |arena| arena.thrown) else {
+        let Some((thrown, anvil)) = harness::arena(global, |arena| (arena.thrown, arena.anvil))
+        else {
             return fail("no arena");
         };
-        let Some(health) = harness::health(thrown) else {
-            return fail("no health reading");
+        let (Some(health), Some(origin)) = (harness::health(thrown), harness::position(thrown))
+        else {
+            return fail("no health or position reading");
         };
         self.thrown = thrown;
+        self.anvil = anvil;
+        self.origin = origin;
         self.health = health;
         global
             .fall_immunity

@@ -2,9 +2,13 @@ use spring::types::Float3;
 
 use crate::units;
 
+/// The e2e cases' units. Each case has its own rig, an area of the arena no
+/// other case's units reach, so the cases can run at the same time.
 #[derive(Clone, Copy)]
 pub struct Arena {
     pub centre: Float3,
+    /// Bumped every time the arena is built (a restart builds it again).
+    pub generation: u32,
     pub plate: i32,
     pub gate: i32,
     pub toggler: i32,
@@ -26,43 +30,57 @@ pub struct Arena {
     pub bystander: i32,
     pub revivable: i32,
     pub fleeing: i32,
+    pub scare: i32,
     pub gunner: i32,
     pub target: i32,
+    pub dying_gravit: i32,
+    pub dying_robot: i32,
+    pub terrain_plate: i32,
+    pub terrain_gate: i32,
+    pub terrain_toggler: i32,
 }
 
-pub fn build() -> Option<Arena> {
+pub fn build(generation: u32) -> Option<Arena> {
     let centre = flat_centre();
     let arena = Arena {
         centre,
-        plate: spawn(PLATE, centre, RIG_PLATE, 0.0, 0.0),
-        gate: spawn(GATE, centre, RIG_PLATE, GATE_OFFSET, 0.0),
-        toggler: spawn(CRATE, centre, RIG_PLATE, 0.0, PARK_OFFSET),
-        pushed: spawn(CRATE, centre, RIG_IMPULSE, 0.0, 0.0),
-        pusher: spawn(WALL, centre, RIG_IMPULSE, -PUSH_SEPARATION, 0.0),
-        protected: spawn(WALL, centre, RIG_DAMAGE, 0.0, 0.0),
-        exposed: spawn(ROBOT, centre, RIG_DAMAGE, PARK_OFFSET, 0.0),
-        fire: spawn(FIRE, centre, RIG_FIRE, 0.0, 0.0),
-        burning: spawn(GRAVIT, centre, RIG_FIRE, 0.0, PARK_OFFSET),
-        electrafi: spawn(ELECTRAFI, centre, RIG_ELECTRAFI, 0.0, 0.0),
-        shocked: spawn(ROBOT, centre, RIG_ELECTRAFI, 0.0, PARK_OFFSET),
-        vaulter: spawn(GRAVIT, centre, RIG_JUMP, 0.0, 0.0),
-        dropped: spawn(ROBOT, centre, RIG_FALL, -PARK_OFFSET, 0.0),
-        cushioned: spawn(ROBOT, centre, RIG_FALL, PARK_OFFSET, 0.0),
-        thrown: spawn(ROBOT, centre, RIG_FALL, THROW_DISTANCE, COLLISION_OFFSET),
-        anvil: spawn(CRATE, centre, RIG_FALL, 0.0, COLLISION_OFFSET),
-        barrel: spawn(BARREL, centre, RIG_BARREL, 0.0, 0.0),
-        bystander: spawn(ROBOT, centre, RIG_BARREL, BARREL_REACH, 0.0),
-        revivable: spawn(ROBOT, centre, RIG_RESPAWN, 0.0, 0.0),
-        gunner: spawn(ROBOT, centre, RIG_SHOOT, 0.0, 0.0),
-        target: spawn(GRAVIT, centre, RIG_SHOOT, -TARGET_OFFSET, 0.0),
+        generation,
+        plate: spawn(PLATE, centre, Rig::Plate, 0.0, 0.0),
+        gate: spawn(GATE, centre, Rig::Plate, GATE_OFFSET, 0.0),
+        toggler: spawn(CRATE, centre, Rig::Plate, 0.0, PARK_OFFSET),
+        pushed: spawn(CRATE, centre, Rig::Impulse, 0.0, 0.0),
+        pusher: spawn(WALL, centre, Rig::Impulse, -PUSH_SEPARATION, 0.0),
+        protected: spawn(WALL, centre, Rig::Damage, 0.0, 0.0),
+        exposed: spawn(ROBOT, centre, Rig::Damage, PARK_OFFSET, 0.0),
+        fire: spawn(FIRE, centre, Rig::Fire, 0.0, 0.0),
+        burning: spawn(GRAVIT, centre, Rig::Fire, 0.0, PARK_OFFSET),
+        electrafi: spawn(ELECTRAFI, centre, Rig::Electrafi, 0.0, 0.0),
+        shocked: spawn(ROBOT, centre, Rig::Electrafi, 0.0, PARK_OFFSET),
+        vaulter: spawn(GRAVIT, centre, Rig::Jump, 0.0, 0.0),
+        dropped: spawn(ROBOT, centre, Rig::Fall, -PARK_OFFSET, 0.0),
+        cushioned: spawn(ROBOT, centre, Rig::Fall, PARK_OFFSET, 0.0),
+        thrown: spawn(ROBOT, centre, Rig::Collision, THROW_DISTANCE, 0.0),
+        anvil: spawn(CRATE, centre, Rig::Collision, 0.0, 0.0),
+        barrel: spawn(BARREL, centre, Rig::Barrel, 0.0, 0.0),
+        bystander: spawn(ROBOT, centre, Rig::Barrel, BARREL_REACH, 0.0),
+        revivable: spawn(ROBOT, centre, Rig::Respawn, 0.0, 0.0),
+        gunner: spawn(ROBOT, centre, Rig::Shoot, 0.0, 0.0),
+        target: spawn(GRAVIT, centre, Rig::Shoot, -TARGET_OFFSET, 0.0),
+        fleeing: spawn(ROBOT, centre, Rig::Flee, 0.0, 0.0),
+        scare: spawn(FIRE, centre, Rig::Flee, 0.0, SCARE_OFFSET),
+        dying_gravit: spawn(GRAVIT, centre, Rig::Death, 0.0, 0.0),
+        dying_robot: spawn(ROBOT, centre, Rig::Death, PARK_OFFSET, 0.0),
+        terrain_plate: spawn(PLATE, centre, Rig::Terrain, 0.0, 0.0),
+        terrain_gate: spawn(GATE, centre, Rig::Terrain, GATE_OFFSET, 0.0),
+        terrain_toggler: spawn(CRATE, centre, Rig::Terrain, 0.0, PARK_OFFSET),
         // Last of the Gravits: the player gadget adopts it.
-        jumper: spawn(GRAVIT, centre, RIG_INPUT, 0.0, 0.0),
-        fleeing: spawn(ROBOT, centre, RIG_FLEE, 0.0, 0.0),
+        jumper: spawn(GRAVIT, centre, Rig::Input, 0.0, 0.0),
     };
     if arena.missing() {
         return None;
     }
     size_field(arena.fire, crate::fire::SIZE_PARAM, FIRE_SIZE);
+    size_field(arena.scare, crate::fire::SIZE_PARAM, SCARE_SIZE);
     size_field(
         arena.electrafi,
         crate::electrafi::SIZE_PARAM,
@@ -75,7 +93,7 @@ pub fn build() -> Option<Arena> {
 }
 
 impl Arena {
-    pub fn units(&self) -> [i32; 23] {
+    pub fn units(&self) -> [i32; 29] {
         [
             self.plate,
             self.gate,
@@ -98,35 +116,59 @@ impl Arena {
             self.bystander,
             self.revivable,
             self.fleeing,
+            self.scare,
             self.gunner,
             self.target,
+            self.dying_gravit,
+            self.dying_robot,
+            self.terrain_plate,
+            self.terrain_gate,
+            self.terrain_toggler,
+        ]
+    }
+
+    /// Link each plate to its gate (on the frame after the build).
+    pub fn links(&self) -> [(i32, i32); 2] {
+        [
+            (self.plate, self.gate),
+            (self.terrain_plate, self.terrain_gate),
         ]
     }
 }
 
-const RIG_PLATE: usize = 0;
-const RIG_FIRE: usize = 1;
-const RIG_ELECTRAFI: usize = 2;
-const RIG_FALL: usize = 3;
-const RIG_IMPULSE: usize = 4;
-const RIG_DAMAGE: usize = 5;
-const RIG_BARREL: usize = 6;
-const RIG_RESPAWN: usize = 7;
-const RIG_JUMP: usize = 8;
-const RIG_INPUT: usize = 9;
-const RIG_FLEE: usize = 10;
-const RIG_SHOOT: usize = 11;
+/// The rigs, laid out on a grid. The shoot and flee rigs are on the top row:
+/// their robots walk up, out of the grid.
+#[derive(Clone, Copy)]
+enum Rig {
+    Flee,
+    Shoot,
+    Jump,
+    Input,
+    Electrafi,
+    Plate,
+    Terrain,
+    Impulse,
+    Damage,
+    Death,
+    Fire,
+    Fall,
+    Collision,
+    Barrel,
+    Respawn,
+}
 
-// Keep independent cases apart even when a robot reacts to a hazard and
-// travels before another case's area-of-effect check runs.
-const RIG_SPACING: f32 = 400.0;
-const RIG_COLUMNS: usize = 4;
+/// Rig centres are this far apart, so a robot that reacts to a hazard and
+/// walks off stays in its own rig.
+pub const RIG_SPACING: f32 = 450.0;
+const RIG_COLUMNS: usize = 5;
+const RIG_ROWS: usize = 3;
 const PARK_OFFSET: f32 = 90.0;
 const PUSH_SEPARATION: f32 = 120.0;
 const TARGET_OFFSET: f32 = 200.0;
-/// The collision case shares the fall rig, clear of its two robots.
-const COLLISION_OFFSET: f32 = -150.0;
 const THROW_DISTANCE: f32 = 70.0;
+/// Behind the fleeing robot (it walks up), and small enough not to reach it.
+const SCARE_OFFSET: f32 = 150.0;
+const SCARE_SIZE: f32 = 50.0;
 
 const PLATE: &str = "plate";
 const GATE: &str = "gate";
@@ -148,8 +190,9 @@ const ELECTRAFI_SIZE: f32 = 100.0;
 const PLAYER_TEAM: i32 = 0;
 const ENEMY_TEAM: i32 = 1;
 const SAMPLE_STEP: f32 = 128.0;
-const ARENA_SPAN: f32 = 1100.0;
-const MAP_MARGIN: f32 = 600.0;
+/// How far past the outer rig centres the flat ground has to reach: the
+/// top row's robots walk and jump up to 300 elmos up.
+const ARENA_MARGIN: f32 = 400.0;
 
 impl Arena {
     fn missing(&self) -> bool {
@@ -157,7 +200,7 @@ impl Arena {
     }
 }
 
-fn spawn(name: &str, centre: Float3, rig: usize, offset_x: f32, offset_z: f32) -> i32 {
+fn spawn(name: &str, centre: Float3, rig: Rig, offset_x: f32, offset_z: f32) -> i32 {
     let position = rig_position(centre, rig, offset_x, offset_z);
     let team = if name == GRAVIT {
         PLAYER_TEAM
@@ -175,9 +218,10 @@ fn spawn(name: &str, centre: Float3, rig: usize, offset_x: f32, offset_z: f32) -
     unit_id
 }
 
-fn rig_position(centre: Float3, rig: usize, offset_x: f32, offset_z: f32) -> Float3 {
-    let column = (rig % RIG_COLUMNS) as f32 - 1.5;
-    let row = (rig / RIG_COLUMNS) as f32 - 1.0;
+fn rig_position(centre: Float3, rig: Rig, offset_x: f32, offset_z: f32) -> Float3 {
+    let index = rig as usize;
+    let column = (index % RIG_COLUMNS) as f32 - (RIG_COLUMNS - 1) as f32 * 0.5;
+    let row = (index / RIG_COLUMNS) as f32 - (RIG_ROWS - 1) as f32 * 0.5;
     let x = centre.x + column * RIG_SPACING + offset_x;
     let z = centre.z + row * RIG_SPACING + offset_z;
     Float3 {
@@ -187,22 +231,32 @@ fn rig_position(centre: Float3, rig: usize, offset_x: f32, offset_z: f32) -> Flo
     }
 }
 
+/// Half the arena's width and depth: the rig grid, and a margin around it.
+fn half_extents() -> (f32, f32) {
+    (
+        (RIG_COLUMNS - 1) as f32 * 0.5 * RIG_SPACING + ARENA_MARGIN,
+        (RIG_ROWS - 1) as f32 * 0.5 * RIG_SPACING + ARENA_MARGIN,
+    )
+}
+
+/// The flattest spot on the map for the whole arena.
 fn flat_centre() -> Float3 {
     let Ok(map) = spring::game::get_game_map_info(0) else {
         return Float3::default();
     };
     let width = map.map_size_x as f32;
     let depth = map.map_size_z as f32;
+    let (half_x, half_z) = half_extents();
     let mut best = Float3 {
         x: width * 0.5,
         y: 0.0,
         z: depth * 0.5,
     };
     let mut best_spread = f32::MAX;
-    let mut z = MAP_MARGIN;
-    while z < depth - MAP_MARGIN {
-        let mut x = MAP_MARGIN;
-        while x < width - MAP_MARGIN {
+    let mut z = half_z;
+    while z <= depth - half_z {
+        let mut x = half_x;
+        while x <= width - half_x {
             let spread = spread_at(x, z);
             if spread < best_spread {
                 best_spread = spread;
@@ -222,11 +276,11 @@ fn flat_centre() -> Float3 {
 fn spread_at(x: f32, z: f32) -> f32 {
     let mut lowest = f32::MAX;
     let mut highest = f32::MIN;
-    let half = ARENA_SPAN * 0.5;
-    let mut sample_z = z - half;
-    while sample_z <= z + half {
-        let mut sample_x = x - half;
-        while sample_x <= x + half {
+    let (half_x, half_z) = half_extents();
+    let mut sample_z = z - half_z;
+    while sample_z <= z + half_z {
+        let mut sample_x = x - half_x;
+        while sample_x <= x + half_x {
             let height = units::ground_height(sample_x, sample_z);
             lowest = lowest.min(height);
             highest = highest.max(height);

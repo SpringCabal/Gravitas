@@ -21,10 +21,13 @@ Two guest crates and the messages they share, compiled to `wasm32-unknown-unknow
     scenario's units, areas and plate links, and the Gravit keyframes.
   - `tests/`: the in-game e2e cases, built only with the
     `headless-integration` feature (`e2e`, the visual build, adds the
-    screenshots). They run in an arena that replaces the level, then the last case
-    restarts into the real level and checks it. Input, restarts and
-    screenshots go through the ui module (`ui/src/shots.rs`), which the
-    headless run loads too.
+    screenshots). They run in an arena that replaces the level, each case in
+    its own rig, in phases (`tests/harness.rs`): the rig cases together, then
+    the scene case, which checks every unit's place on the frame it asks for
+    the screenshot, then a restart, then the last case restarts into the real
+    level and checks it. Each case waits for what it needs rather than for a
+    frame. Input, restarts and screenshots go through the ui module
+    (`ui/src/shots.rs`), which the headless run loads too.
 - `ui`: the widgets (HUD, camera, input, healthbars, fire particles, map
   edge, music). Each owns its state; `state.rs` holds the player unit, the
   HUD, the game clock and the fire particles.

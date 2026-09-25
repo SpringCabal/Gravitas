@@ -8,6 +8,7 @@ use crate::state::Global;
 pub struct Record {
     deaths: u32,
     first_death: Option<String>,
+    destroyed: Vec<i32>,
     toggles: Vec<(i32, bool)>,
     /// Fire and electric-field units and their size when UnitCreated reached
     /// the tests gadget.
@@ -79,6 +80,7 @@ pub fn shot_taken(global: &Global, name: &str) -> bool {
 pub fn note_destroyed(global: &Global, unit_id: i32, unit_def_id: i32) {
     let mut record = global.tests.record.borrow_mut();
     record.deaths += 1;
+    record.destroyed.push(unit_id);
     if record.first_death.is_none() {
         record.first_death = Some(describe(unit_id, unit_def_id));
     }
@@ -117,8 +119,29 @@ pub fn first_death(global: &Global) -> Option<String> {
     global.tests.record.borrow().first_death.clone()
 }
 
-pub fn clear_toggles(global: &Global) {
-    global.tests.record.borrow_mut().toggles.clear();
+/// Forget the toggles of `units` (other cases' plates keep theirs).
+/// Whether `unit_id` was destroyed (ids are reused after a restart).
+pub fn destroyed(global: &Global, unit_id: i32) -> bool {
+    global.tests.record.borrow().destroyed.contains(&unit_id)
+}
+
+/// How many units were destroyed so far: a mark for [`destroyed_since`].
+pub fn destroyed_count(global: &Global) -> usize {
+    global.tests.record.borrow().destroyed.len()
+}
+
+/// Whether `unit_id` was destroyed after `mark`.
+pub fn destroyed_since(global: &Global, mark: usize, unit_id: i32) -> bool {
+    global.tests.record.borrow().destroyed[mark..].contains(&unit_id)
+}
+
+pub fn clear_toggles(global: &Global, units: &[i32]) {
+    global
+        .tests
+        .record
+        .borrow_mut()
+        .toggles
+        .retain(|(unit_id, _)| !units.contains(unit_id));
 }
 
 pub fn toggled_to(global: &Global, unit_id: i32, active: bool) -> bool {

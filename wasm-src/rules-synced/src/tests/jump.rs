@@ -1,11 +1,14 @@
+use alloc::vec::Vec;
+
 use spring::types::Float3;
 
 use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::harness::{self, Case, Rest, Step, fail};
 
 pub struct Jumping {
     unit_id: i32,
     origin: Float3,
+    goal: Float3,
 }
 
 impl Jumping {
@@ -13,6 +16,7 @@ impl Jumping {
         Self {
             unit_id: -1,
             origin: Float3::default(),
+            goal: Float3::default(),
         }
     }
 }
@@ -29,6 +33,15 @@ impl Case for Jumping {
             VERDICT_FRAME => self.check_landed(global),
             _ => Step::Wait,
         }
+    }
+
+    fn rest(&self) -> Vec<Rest> {
+        alloc::vec![Rest::at(
+            self.unit_id,
+            self.goal,
+            TOLERANCE,
+            "the Gravit that jumped"
+        )]
     }
 }
 
@@ -64,7 +77,13 @@ impl Jumping {
             return fail("a jump onto a ledge was accepted");
         }
         for (x, z) in DIRECTIONS {
-            if request(global, unit_id, origin.x + x * REACH, origin.z + z * REACH) {
+            let goal = Float3 {
+                x: origin.x + x * REACH,
+                z: origin.z + z * REACH,
+                ..origin
+            };
+            if request(global, unit_id, goal.x, goal.z) {
+                self.goal = goal;
                 return Step::Wait;
             }
         }

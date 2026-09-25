@@ -1,5 +1,5 @@
 use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::harness::{self, Case, Phase, Step, fail};
 use crate::tests::record;
 use crate::units;
 
@@ -14,6 +14,10 @@ impl Spawned {
 impl Case for Spawned {
     fn name(&self) -> &'static str {
         "spawn"
+    }
+
+    fn phase(&self) -> Phase {
+        Phase::Setup
     }
 
     fn step(&mut self, global: &Global, frame: i32) -> Step {

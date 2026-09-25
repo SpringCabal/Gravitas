@@ -1,5 +1,9 @@
+use alloc::vec::Vec;
+
+use spring::types::Float3;
+
 use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
 use crate::units;
 
 pub struct PushAndPull {
@@ -7,6 +11,7 @@ pub struct PushAndPull {
     attacker: i32,
     pushed_from: f32,
     pulled_from: f32,
+    wall_at: Float3,
 }
 
 impl PushAndPull {
@@ -16,6 +21,7 @@ impl PushAndPull {
             attacker: -1,
             pushed_from: 0.0,
             pulled_from: 0.0,
+            wall_at: Float3::default(),
         }
     }
 }
@@ -34,6 +40,19 @@ impl Case for PushAndPull {
             _ => self.keep_firing(global, frame),
         }
     }
+
+    fn rest(&self) -> Vec<Rest> {
+        let mut rest = Vec::new();
+        rest.push(Rest::at(
+            self.attacker,
+            self.wall_at,
+            STILL,
+            "the pushing wall",
+        ));
+        // The pull decides where the crate ends up; it must stay there.
+        rest.extend(Rest::here(self.target, STILL, "the pushed crate"));
+        rest
+    }
 }
 
 const PUSH_FRAME: i32 = 5;
@@ -50,8 +69,12 @@ impl PushAndPull {
         else {
             return fail("no arena");
         };
+        let Some(wall_at) = harness::position(attacker) else {
+            return fail("no position for the wall");
+        };
         self.target = target;
         self.attacker = attacker;
+        self.wall_at = wall_at;
         Step::Wait
     }
 

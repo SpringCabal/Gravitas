@@ -6,7 +6,7 @@ use alloc::vec::Vec;
 use crate::diagnostics;
 use crate::state::Global;
 use crate::tests::arena;
-use crate::tests::harness::{Case, Step};
+use crate::tests::harness::{Case, PHASES, Phase, Step};
 
 /// Build the e2e arena instead of the level, until the level case asks for
 /// the real one. Returns true when the level is replaced, even if the arena
@@ -15,20 +15,40 @@ pub fn stage_level(global: &Global) -> bool {
     if global.tests.real_level.get() {
         return false;
     }
-    match arena::build() {
+    let generation = global
+        .tests
+        .arena
+        .get()
+        .map_or(0, |arena| arena.generation + 1);
+    match arena::build(generation) {
         Some(built) => {
+            diagnostics::info(&alloc::format!(
+                "E2E arena at {:.0} {:.0}",
+                built.centre.x,
+                built.centre.z
+            ));
             global.tests.arena.set(Some(built));
             global.tests.pending_link.set(true);
         }
-        None => spring::log_warning!(
-            crate::diagnostics::LOG_SECTION,
-            "E2E arena could not be built"
-        ),
+        None => {
+            global.tests.arena.set(None);
+            spring::log_warning!(
+                crate::diagnostics::LOG_SECTION,
+                "E2E arena could not be built"
+            );
+        }
     }
     true
 }
 
-/// The e2e cases and their verdicts, owned by the tests gadget.
+/// The arena is built and linked: the cases can start.
+pub fn arena_ready(global: &Global) -> bool {
+    global.tests.arena.get().is_some() && !global.tests.pending_link.get()
+}
+
+/// The e2e cases and their verdicts, owned by the tests gadget. The cases
+/// run phase by phase (see [`Phase`]); each case counts its own frames from
+/// its start and waits for what it needs, never for a frame of the suite.
 #[derive(Default)]
 pub struct Runner {
     state: RefCell<State>,
@@ -37,52 +57,71 @@ pub struct Runner {
 #[derive(Default)]
 struct State {
     entries: Vec<Entry>,
-    started: i32,
     booted: bool,
     done: bool,
 }
 
 struct Entry {
     case: Box<dyn Case>,
+    /// The frame the case took its first step.
+    started: Option<i32>,
     verdict: Option<bool>,
 }
 
-const FIRST_CASE_FRAME: i32 = 6;
-const SUITE_TIMEOUT: i32 = 240;
+/// A case that has no verdict this many frames after its start fails.
+const CASE_TIMEOUT: i32 = 600;
+/// The arena comes up within a few frames of the game start.
+const ARENA_TIMEOUT: i32 = 300;
 
 impl Runner {
     pub fn game_frame(&self, global: &Global, frame: i32) {
         link_arena(global);
-        let Some(local) = self.begin(frame) else {
+        if !self.ready(global, frame) {
             return;
-        };
+        }
         // The cases create, destroy and damage units, which raises callins in
         // this gadget: no borrow of the state is held while they run.
         let mut entries = core::mem::take(&mut self.state.borrow_mut().entries);
-        for entry in &mut entries {
-            step(entry, global, local);
+        if let Some(phase) = current_phase(&entries) {
+            for entry in entries
+                .iter_mut()
+                .filter(|entry| entry.case.phase() == phase)
+            {
+                step(entry, global, frame);
+            }
         }
-        let finished = entries.iter().all(|entry| entry.verdict.is_some());
+        let finished = current_phase(&entries).is_none();
         self.state.borrow_mut().entries = entries;
-        if finished || local >= SUITE_TIMEOUT {
+        if finished {
             self.finish();
         }
     }
 
-    fn begin(&self, frame: i32) -> Option<i32> {
-        if frame < FIRST_CASE_FRAME {
-            return None;
-        }
+    /// Load the cases once the arena is up, or fail them all if it never
+    /// comes up. False while there is nothing to run.
+    fn ready(&self, global: &Global, frame: i32) -> bool {
         let mut state = self.state.borrow_mut();
         if state.done {
-            return None;
+            return false;
         }
-        if !state.booted {
+        if state.booted {
+            return true;
+        }
+        if arena_ready(global) {
             state.booted = true;
-            state.started = frame;
             state.entries = cases();
+            return true;
         }
-        Some(frame - state.started)
+        if frame >= ARENA_TIMEOUT {
+            state.entries = cases();
+            for entry in &mut state.entries {
+                entry.verdict = Some(false);
+                report(entry.case.name(), Step::Fail("no arena".into()));
+            }
+            drop(state);
+            self.finish();
+        }
+        false
     }
 
     fn finish(&self) {
@@ -103,12 +142,21 @@ impl Runner {
     }
 }
 
+/// The first phase with a case still running.
+fn current_phase(entries: &[Entry]) -> Option<Phase> {
+    PHASES.into_iter().find(|phase| {
+        entries
+            .iter()
+            .any(|entry| entry.case.phase() == *phase && entry.verdict.is_none())
+    })
+}
+
 /// Ask for the real level on the next restart.
 pub fn use_real_level(global: &Global) {
     global.tests.real_level.set(true);
 }
 
-/// Link the arena's plate and gate on the frame after it was built.
+/// Link the arena's plates and gates on the frame after it was built.
 fn link_arena(global: &Global) {
     if !global.tests.pending_link.replace(false) {
         return;
@@ -117,7 +165,9 @@ fn link_arena(global: &Global) {
         return;
     };
     let mut plates = global.plates.access_mut();
-    plates.simple_link(arena.plate, arena.gate);
+    for (plate, gate) in arena.links() {
+        plates.simple_link(plate, gate);
+    }
     plates.enable_link_checks();
 }
 
@@ -139,37 +189,44 @@ fn cases() -> Vec<Entry> {
         Box::new(crate::tests::barrel::Barrel::new()),
         Box::new(crate::tests::terrain::Terrain::new()),
         Box::new(crate::tests::respawn::Respawning::new()),
+        Box::new(crate::tests::visuals::Visuals::new()),
         Box::new(crate::tests::restarting::Restarting::new()),
         Box::new(crate::tests::level::RealLevel::new()),
-        Box::new(crate::tests::visuals::Visuals::new()),
     ];
     cases
         .into_iter()
         .map(|case| Entry {
             case,
+            started: None,
             verdict: None,
         })
         .collect()
 }
 
-fn step(entry: &mut Entry, global: &Global, local: i32) {
+fn step(entry: &mut Entry, global: &Global, frame: i32) {
     if entry.verdict.is_some() {
         return;
     }
+    let started = *entry.started.get_or_insert(frame);
+    let local = frame - started;
     let name = entry.case.name();
-    match entry.case.step(global, local) {
-        Step::Wait if local < SUITE_TIMEOUT => {}
-        Step::Wait => {
-            entry.verdict = Some(false);
-            diagnostics::info(&alloc::format!("E2E case {name} FAIL timed out"));
-        }
-        Step::Pass => {
-            entry.verdict = Some(true);
-            diagnostics::info(&alloc::format!("E2E case {name} PASS"));
-        }
-        Step::Fail(reason) => {
-            entry.verdict = Some(false);
-            diagnostics::info(&alloc::format!("E2E case {name} FAIL {reason}"));
-        }
+    let outcome = match entry.case.step(global, local) {
+        Step::Wait if local < CASE_TIMEOUT => return,
+        Step::Wait => Step::Fail("timed out".into()),
+        outcome => outcome,
+    };
+    let passed = matches!(outcome, Step::Pass);
+    if passed {
+        global.tests.rests.borrow_mut().extend(entry.case.rest());
+    }
+    entry.verdict = Some(passed);
+    report(name, outcome);
+}
+
+fn report(name: &str, outcome: Step) {
+    match outcome {
+        Step::Pass => diagnostics::info(&alloc::format!("E2E case {name} PASS")),
+        Step::Fail(reason) => diagnostics::info(&alloc::format!("E2E case {name} FAIL {reason}")),
+        Step::Wait => {}
     }
 }

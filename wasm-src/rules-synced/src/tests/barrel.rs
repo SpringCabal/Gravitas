@@ -1,16 +1,24 @@
+use alloc::vec::Vec;
+
 use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
 
 pub struct Barrel {
+    barrel: i32,
     bystander: i32,
+    bystander_at: spring::types::Float3,
     bystander_health: f32,
+    bystander_killed: bool,
 }
 
 impl Barrel {
     pub fn new() -> Self {
         Self {
+            barrel: -1,
             bystander: -1,
+            bystander_at: spring::types::Float3::default(),
             bystander_health: 0.0,
+            bystander_killed: false,
         }
     }
 }
@@ -23,9 +31,30 @@ impl Case for Barrel {
     fn step(&mut self, global: &Global, frame: i32) -> Step {
         match frame {
             BLAST_FRAME => self.blast(global),
-            VERDICT_FRAME => self.check(),
+            VERDICT_FRAME => self.check(global),
             _ => Step::Wait,
         }
+    }
+
+    fn rest(&self) -> Vec<Rest> {
+        let barrel = Rest::Gone {
+            unit: self.barrel,
+            what: "the exploded barrel",
+        };
+        let bystander = if !self.bystander_killed {
+            Rest::at(
+                self.bystander,
+                self.bystander_at,
+                STILL,
+                "the robot by the barrel",
+            )
+        } else {
+            Rest::Gone {
+                unit: self.bystander,
+                what: "the robot the barrel killed",
+            }
+        };
+        alloc::vec![barrel, bystander]
     }
 }
 
@@ -39,10 +68,14 @@ impl Barrel {
         else {
             return fail("no arena");
         };
-        let Some(health) = harness::health(bystander) else {
-            return fail("no health reading");
+        let (Some(health), Some(bystander_at)) =
+            (harness::health(bystander), harness::position(bystander))
+        else {
+            return fail("no health or position reading");
         };
+        self.barrel = barrel;
         self.bystander = bystander;
+        self.bystander_at = bystander_at;
         self.bystander_health = health;
         let _ = spring::destroy_unit(
             barrel,
@@ -56,7 +89,9 @@ impl Barrel {
         Step::Wait
     }
 
-    fn check(&mut self) -> Step {
+    fn check(&mut self, global: &Global) -> Step {
+        // A robot the blast killed plays its death stages before it goes.
+        self.bystander_killed = crate::tests::record::destroyed(global, self.bystander);
         let Some(health) = harness::health(self.bystander) else {
             return Step::Pass;
         };

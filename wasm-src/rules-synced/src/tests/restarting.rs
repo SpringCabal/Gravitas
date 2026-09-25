@@ -1,14 +1,39 @@
+use alloc::vec::Vec;
+
 use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::harness::{self, Case, Phase, Step, fail};
+use crate::tests::{record, runner};
 use crate::units;
 
+/// Losing the player's Gravit ends the game, and the HUD's restart button
+/// (a round trip through the ui module) brings the arena back. The case
+/// waits for each of those instead of counting frames.
 pub struct Restarting {
-    jumper: i32,
+    generation: u32,
+    /// The units alive when restart was pressed, and the destroyed-unit mark
+    /// then.
+    old_units: Vec<i32>,
+    destroyed_mark: usize,
+    stage: Stage,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Stage {
+    KillOther,
+    KillPlayer,
+    GameOver,
+    Rebuilt,
+    OverAgain,
 }
 
 impl Restarting {
     pub fn new() -> Self {
-        Self { jumper: -1 }
+        Self {
+            generation: 0,
+            old_units: Vec::new(),
+            destroyed_mark: 0,
+            stage: Stage::KillOther,
+        }
     }
 }
 
@@ -17,27 +42,25 @@ impl Case for Restarting {
         "restart"
     }
 
+    /// A restart rebuilds the whole arena.
+    fn phase(&self) -> Phase {
+        Phase::Restart
+    }
+
     fn step(&mut self, global: &Global, frame: i32) -> Step {
-        match frame {
-            OTHER_GRAVIT_FRAME => self.kill_other_gravit(global),
-            KILL_FRAME => self.kill(global),
-            PRESS_FRAME => self.press(global),
-            VERDICT_FRAME => self.check(global),
-            DIE_AGAIN_FRAME => self.die_again(global),
-            SECOND_VERDICT_FRAME => self.check_over_again(global),
+        match self.stage {
+            Stage::KillOther => self.kill_other_gravit(global),
+            Stage::KillPlayer if frame >= KILL_FRAME => self.kill(global),
+            Stage::GameOver if global.outcome.get().is_some() => self.press(global),
+            Stage::Rebuilt if self.rebuilt(global) => self.check(global),
+            Stage::OverAgain if global.outcome.get().is_some() => self.check_over_again(global),
             _ => Step::Wait,
         }
     }
 }
 
-/// After the jump case is done with its Gravit.
-const OTHER_GRAVIT_FRAME: i32 = 144;
-const KILL_FRAME: i32 = 148;
-const PRESS_FRAME: i32 = 150;
-/// After the killed player unit's death animation (25 frames).
-const VERDICT_FRAME: i32 = 180;
-const DIE_AGAIN_FRAME: i32 = 185;
-const SECOND_VERDICT_FRAME: i32 = 195;
+/// A few frames after the other Gravit died, the game must still be on.
+const KILL_FRAME: i32 = 4;
 
 impl Restarting {
     fn kill_other_gravit(&mut self, global: &Global) -> Step {
@@ -45,34 +68,61 @@ impl Restarting {
             return fail("no arena");
         };
         destroy(vaulter);
-        if global.outcome.get().is_some() {
-            return fail("losing a Gravit that is not the player's ended the game");
-        }
+        self.stage = Stage::KillPlayer;
         Step::Wait
     }
 
     fn kill(&mut self, global: &Global) -> Step {
-        let Some(jumper) = harness::arena(global, |arena| arena.jumper) else {
+        if global.outcome.get().is_some() {
+            return fail("losing a Gravit that is not the player's ended the game");
+        }
+        let Some((jumper, generation)) =
+            harness::arena(global, |arena| (arena.jumper, arena.generation))
+        else {
             return fail("no arena");
         };
-        self.jumper = jumper;
+        self.generation = generation;
         destroy(jumper);
+        self.stage = Stage::GameOver;
         Step::Wait
     }
 
     fn press(&mut self, global: &Global) -> Step {
         if global.outcome.get() != Some(false) {
-            return fail("losing the player unit did not end the game");
+            return fail("losing the player unit won the game");
         }
+        // Ids come back after a restart, so look for each unit's UnitDestroyed
+        // (a dying unit already had its own).
+        self.destroyed_mark = record::destroyed_count(global);
+        self.old_units = spring::get_all_units()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|unit_id| !record::destroyed(global, *unit_id))
+            .collect();
         harness::press_restart();
+        self.stage = Stage::Rebuilt;
         Step::Wait
     }
 
+    fn rebuilt(&self, global: &Global) -> bool {
+        runner::arena_ready(global)
+            && harness::arena(global, |arena| arena.generation) != Some(self.generation)
+    }
+
     fn check(&mut self, global: &Global) -> Step {
-        if units::valid(self.jumper) {
-            return fail("restart did not clear the old level");
+        let kept = self
+            .old_units
+            .iter()
+            .filter(|unit_id| !record::destroyed_since(global, self.destroyed_mark, **unit_id))
+            .count();
+        if self.old_units.is_empty() || kept != 0 {
+            return Step::Fail(alloc::format!(
+                "restart kept {kept} of the old level's {} units",
+                self.old_units.len()
+            ));
         }
-        let Some(units) = harness::arena(global, |arena| arena.units()) else {
+        let Some((units, jumper)) = harness::arena(global, |arena| (arena.units(), arena.jumper))
+        else {
             return fail("no arena after the restart");
         };
         let missing = units
@@ -88,20 +138,17 @@ impl Restarting {
         if global.outcome.get().is_some() {
             return fail("the restart left the game in its over state");
         }
-        Step::Wait
-    }
-
-    fn die_again(&mut self, global: &Global) -> Step {
-        let Some(jumper) = harness::arena(global, |arena| arena.jumper) else {
-            return fail("no arena after the restart");
-        };
+        if global.player_unit.get() != Some(jumper) {
+            return fail("the player does not drive the new arena's Gravit");
+        }
         destroy(jumper);
+        self.stage = Stage::OverAgain;
         Step::Wait
     }
 
     fn check_over_again(&mut self, global: &Global) -> Step {
         if global.outcome.get() != Some(false) {
-            return fail("dying after a restart did not end the game again");
+            return fail("dying after a restart won the game");
         }
         Step::Pass
     }

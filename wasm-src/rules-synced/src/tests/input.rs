@@ -1,11 +1,25 @@
+use alloc::vec::Vec;
+
 use spring::types::Float3;
 
 use crate::state::Global;
-use crate::tests::harness::{self, Case, Step, fail};
+use crate::tests::harness::{self, Case, Rest, Step, fail};
 
+/// The jump button, pressed through the ui module, makes the player's Gravit
+/// jump. The press makes a round trip through the ui module, so the case
+/// waits for the jump to start instead of counting frames.
 pub struct Input {
     unit_id: i32,
     origin: Float3,
+    goal: Float3,
+    stage: Stage,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Stage {
+    Press,
+    TakeOff,
+    Land,
 }
 
 impl Input {
@@ -13,6 +27,8 @@ impl Input {
         Self {
             unit_id: -1,
             origin: Float3::default(),
+            goal: Float3::default(),
+            stage: Stage::Press,
         }
     }
 }
@@ -22,17 +38,31 @@ impl Case for Input {
         "input"
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
-        match frame {
-            PRESS_FRAME => self.press(global),
-            VERDICT_FRAME => self.check(),
+    fn step(&mut self, global: &Global, _frame: i32) -> Step {
+        let jumping = global.jumps.access().is_jumping(self.unit_id);
+        match self.stage {
+            Stage::Press => self.press(global),
+            Stage::TakeOff if jumping => {
+                // Let go, or the held button jumps again after the landing.
+                harness::release_pointer();
+                self.stage = Stage::Land;
+                Step::Wait
+            }
+            Stage::Land if !jumping => self.check(),
             _ => Step::Wait,
         }
     }
+
+    fn rest(&self) -> Vec<Rest> {
+        alloc::vec![Rest::at(
+            self.unit_id,
+            self.goal,
+            TOLERANCE,
+            "the player's Gravit"
+        )]
+    }
 }
 
-const PRESS_FRAME: i32 = 4;
-const VERDICT_FRAME: i32 = 120;
 const REACH: f32 = 300.0;
 const TOLERANCE: f32 = 60.0;
 
@@ -41,17 +71,25 @@ impl Input {
         let Some(unit_id) = harness::arena(global, |arena| arena.jumper) else {
             return fail("no arena");
         };
+        if global.player_unit.get() != Some(unit_id) {
+            return fail("the player does not drive the arena's last Gravit");
+        }
         let Some(origin) = harness::position(unit_id) else {
             return fail("no player position");
         };
         self.unit_id = unit_id;
         self.origin = origin;
-        harness::press_jump(origin.x + REACH, origin.z);
+        // Up, out of the grid: the cursor trace must find bare ground there.
+        self.goal = Float3 {
+            z: origin.z - REACH,
+            ..origin
+        };
+        harness::press_jump(self.goal.x, self.goal.z);
+        self.stage = Stage::TakeOff;
         Step::Wait
     }
 
     fn check(&mut self) -> Step {
-        harness::release_pointer();
         let Some(position) = harness::position(self.unit_id) else {
             return fail("no player position");
         };
