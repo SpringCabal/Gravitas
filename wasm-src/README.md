@@ -38,25 +38,39 @@ Two guest crates and the messages they share, compiled to `wasm32-unknown-unknow
 
 ## Differences from the Lua version
 
-- There is a restart (HUD button after the game ends): the Lua game had
-  none. Units destroyed by a restart die without explosions, respawns or a
-  game over.
 - The fire and electric-field effects are drawn by the ui module; the Lua
   game used LUPS. The HUD is RmlUi instead of Chili.
-- A robot deciding whether to flee measures its distance to the hazard in
-  3D. `unit_robots.lua` has a typo (`(y-ax)*(y-ay)`) in that distance; it
-  only changes how far the robot looks for other hazards.
-- The robots' escape search reads an electric field's `elecSize`;
-  `unit_robots.lua` drops that value and uses 100. The level's fields are
-  all size 100, so this changes nothing in play.
 - `game_fall_damage.lua` pairs up collisions that have no attacker by their
   damage. On this engine only feature collisions lack one, so the port
   skips the pairing and gives each the 2.5× damage Lua gives an unmatched one.
+
+## Improvements over the Lua version
+
+These are deliberate. Keep them when matching the Lua original; they are not
+differences to remove.
+
+- Restart (the HUD button after the game ends) reloads the level inside the
+  running game; Lua's end screen restarts the whole engine
+  (`Spring.Restart`). Units removed by a restart die without explosions,
+  respawns or a game over (`rules-synced/src/restart.rs`).
+- A robot deciding whether to flee measures its distance to the hazard in
+  3D. `unit_robots.lua` has a typo (`(y-ax)*(y-ay)`) in that distance; it
+  only changes how far the robot looks for other hazards
+  (`rules-synced/src/robots.rs`).
+- The robots' escape search reads an electric field's `elecSize`;
+  `unit_robots.lua` drops that value and uses 100. The level's fields are
+  all size 100, so this changes nothing in play yet
+  (`rules-synced/src/electrafi.rs`).
 - The camera looks 9 frames of the player's velocity ahead;
   `shoot_n_run.lua` looks 30 frames of a smoothed velocity, times the game
-  speed, ahead, which puts the player near the screen edge while walking.
+  speed, ahead, which puts the player near the screen edge while walking
+  (`ui/src/camera.rs`).
 - A jump with `jumpSpeed` 0 is refused; in Lua (5.1) its wall check loops
-  forever and the game hangs.
+  forever and the game hangs (`rules-synced/src/jump.rs`).
+- The boss spasms while it is stunned, as the other robots do.
+  `projector_boss.lua` checks for a stun only once, 50 ms after the boss is
+  created, so Lua's boss never shows it
+  (`rules-synced/src/unit_scripts/robots/stun.rs`).
 
 ## Commands
 
