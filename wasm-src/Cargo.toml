@@ -12,5 +12,5 @@ too_many_arguments = "allow"
 [workspace.dependencies]
 spring = { git = "https://github.com/gajop/spring-rust", branch = "rust-wip", features = ["alloc"] }
 spring-addons = { git = "https://github.com/gajop/spring-rust", branch = "rust-wip" }
-springcabal = { git = "ssh://git@github.com/gajop/springcabal-rs.git" }
-springcabal-control = { git = "ssh://git@github.com/gajop/springcabal-rs.git" }
+springcabal = { git = "ssh://git@github.com/gajop/springcabal-rs.git", rev = "9fe685eaa33978e4c1a1c0fe334ee3afaa3d0a8e" }
+springcabal-control = { git = "ssh://git@github.com/gajop/springcabal-rs.git", rev = "9fe685eaa33978e4c1a1c0fe334ee3afaa3d0a8e" }
