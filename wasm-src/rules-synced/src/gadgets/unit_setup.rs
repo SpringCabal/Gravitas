@@ -14,8 +14,7 @@ impl Gadget<Global> for UnitSetupGadget {
         "UnitSetup"
     }
 
-    /// Units that already exist when the rules load (after a rules reload).
-    /// A new game has none: the level is spawned on the first frame.
+    /// Units that outlive a rules reload get their scripts here.
     fn init(&self, _ctx: &AddonContext<'_, Global>) {
         unit_scripts::attach_existing();
     }
