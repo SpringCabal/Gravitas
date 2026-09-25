@@ -42,7 +42,7 @@ impl Default for Camera {
 
 impl Camera {
     /// Point the camera where the e2e scenario asks.
-    #[cfg(feature = "e2e")]
+    #[cfg(feature = "headless-integration")]
     pub fn handle_request(&self, message: &[u8]) {
         use gravitas_shared::e2e::Request;
         if let Some(Request::Look { x, z, height }) =

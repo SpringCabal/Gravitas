@@ -86,7 +86,7 @@ const NO_UNIT: i32 = -1;
 
 /// The mouse, or the e2e scenario's scripted pointer when it has one.
 fn pointer(global: &Global) -> Option<Pointer> {
-    #[cfg(feature = "e2e")]
+    #[cfg(feature = "headless-integration")]
     if let Some(scripted) = global.scripted_pointer.get() {
         return Some(Pointer {
             target: scripted.target,
@@ -96,7 +96,7 @@ fn pointer(global: &Global) -> Option<Pointer> {
             middle: scripted.jump,
         });
     }
-    #[cfg(not(feature = "e2e"))]
+    #[cfg(not(feature = "headless-integration"))]
     let _ = global;
     let mouse = spring::input::get_mouse_state(0).ok()?;
     let (target, target_unit) = trace(mouse.x, mouse.y);

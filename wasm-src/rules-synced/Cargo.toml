@@ -9,7 +9,10 @@ build = "../build.rs"
 crate-type = ["cdylib"]
 
 [features]
-e2e = []
+# The in-game cases (verification: gravitas e2e).
+headless-integration = []
+# The visual scenario (verification: gravitas shots): the same cases.
+e2e = ["headless-integration"]
 
 [dependencies]
 spring = { workspace = true }

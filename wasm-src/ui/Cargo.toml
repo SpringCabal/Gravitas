@@ -9,7 +9,12 @@ build = "../build.rs"
 crate-type = ["cdylib"]
 
 [features]
-e2e = []
+# The headless suite's in-game cases: the scripted pointer, the restart
+# button and screenshot requests.
+headless-integration = []
+# The visual scenario (verification: gravitas shots): the same cases, and
+# the screenshots are taken.
+e2e = ["headless-integration"]
 fire-probe = ["e2e"]
 
 [dependencies]

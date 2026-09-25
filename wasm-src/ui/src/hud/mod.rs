@@ -4,7 +4,7 @@ mod overlays;
 mod status;
 
 pub use document::{apply_bindings, initialize, render};
-#[cfg(feature = "e2e")]
+#[cfg(feature = "headless-integration")]
 pub use model::restart;
 pub use overlays::{game_over, update_pause};
 pub use status::update;

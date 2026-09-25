@@ -19,8 +19,9 @@ Two guest crates and the messages they share, compiled to `wasm32-unknown-unknow
     `with_cus_module`.
   - `level.rs` and `unit_scripts/gravit_animation_data.rs` are data: the
     scenario's units, areas and plate links, and the Gravit keyframes.
-  - `tests/`: the in-game e2e cases, built only with the `e2e` feature.
-    They run in an arena that replaces the level, then the last case
+  - `tests/`: the in-game e2e cases, built only with the
+    `headless-integration` feature (`e2e`, the visual build, adds the
+    screenshots). They run in an arena that replaces the level, then the last case
     restarts into the real level and checks it. Input, restarts and
     screenshots go through the ui module (`ui/src/shots.rs`), which the
     headless run loads too.

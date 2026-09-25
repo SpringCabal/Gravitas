@@ -22,7 +22,7 @@ pub struct Global {
     pub fire: Resource<Fire>,
     /// The e2e scenario's stand-in for the mouse: the input widget sends it
     /// through the normal input message.
-    #[cfg(feature = "e2e")]
+    #[cfg(feature = "headless-integration")]
     pub scripted_pointer: Cell<Option<crate::shots::ScriptedPointer>>,
 }
 

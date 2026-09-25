@@ -34,7 +34,7 @@ impl Widget<Global> for GuiCameraWidget {
         {
             self.camera.follow(ctx.global(), 0.0);
         }
-        #[cfg(feature = "e2e")]
+        #[cfg(feature = "headless-integration")]
         self.camera.handle_request(message);
     }
 }
