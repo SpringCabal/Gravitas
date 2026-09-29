@@ -1,12 +1,17 @@
-use crate::state::Global;
 use spring::ResultExt;
+use spring::commands;
+
+use crate::state::Global;
 
 /// Remove the level and everything in it; the level gadget spawns it again
 /// on the next frame.
 pub fn perform(global: &Global) {
     global.restart.begin_wipe();
+    // Now, so the gadgets that run after this one this frame find no level,
+    // as when the units were gone before them.
+    reset(global);
     for unit_id in spring::get_all_units().unwrap_or_default() {
-        spring::destroy_unit(
+        commands::destroy_unit(
             unit_id,
             spring::generated::owned::unit_control::DestroyUnitOptions {
                 selfd: false,
@@ -15,10 +20,18 @@ pub fn perform(global: &Global) {
                 recycle_id: false,
             },
         )
-        .log_err_once("restart: removing a unit");
+        .then(|removed| {
+            removed.log_err_once("restart: removing a unit");
+        });
     }
-    global.restart.finish_wipe();
-    reset(global);
+    // After the removed units' UnitDestroyed, which see `wiping()` and record
+    // their deaths into the level state: drop that too.
+    commands::run(|| {
+        crate::with_global(|global| {
+            global.restart.finish_wipe();
+            reset(global);
+        })
+    });
 }
 
 /// Put every part of `Global` that belongs to a level back to its default.

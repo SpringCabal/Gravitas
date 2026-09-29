@@ -1,5 +1,6 @@
 use gravitas_shared::{Effect, EffectKind};
 use spring::ResultExt;
+use spring::commands;
 
 use crate::units;
 
@@ -40,7 +41,8 @@ pub fn blocks_damage(unit_id: i32, paralyzer: bool) -> bool {
     }
 }
 
-/// The blast of a barrel that was destroyed at `position`.
+/// The blast of a barrel that was destroyed at `position`. Its damage runs
+/// the damaged units' callins: call it as a command.
 pub fn explode_barrel(barrel: i32, position: spring::types::Float3) {
     let _ = spring::sound::play_sound_file(
         EXPLOSION_SOUND,
@@ -98,19 +100,21 @@ pub fn kill_fallen(frame: i32) {
         z: map.map_size_z as f32,
     };
     for unit_id in units::units_in_box(low, high) {
-        if !units::valid(unit_id) {
-            continue;
-        }
-        spring::destroy_unit(
-            unit_id,
-            spring::generated::owned::unit_control::DestroyUnitOptions {
-                selfd: false,
-                reclaimed: true,
-                attacker_id: -1,
-                recycle_id: false,
-            },
-        )
-        .log_err_once("removing a unit that fell off the map");
+        commands::run(move || {
+            if !units::valid(unit_id) {
+                return;
+            }
+            spring::destroy_unit(
+                unit_id,
+                spring::generated::owned::unit_control::DestroyUnitOptions {
+                    selfd: false,
+                    reclaimed: true,
+                    attacker_id: -1,
+                    recycle_id: false,
+                },
+            )
+            .log_err_once("removing a unit that fell off the map");
+        });
     }
 }
 

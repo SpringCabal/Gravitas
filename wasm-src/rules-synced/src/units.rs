@@ -1,8 +1,7 @@
-use core::cell::Cell;
-
 use alloc::string::String;
 use alloc::vec::Vec;
 
+use spring::commands::{self, Pending};
 use spring::generated::owned::unit_control;
 use spring::types::Float3;
 
@@ -21,39 +20,43 @@ pub fn ground_height(x: f32, z: f32) -> f32 {
     spring::get_ground_height(x, z).unwrap_or(0.0)
 }
 
-/// Create a scenario unit. Its rules params are handed to the unit setup
-/// gadget through `pending_rules`, so they are set before any other gadget's
-/// UnitCreated sees the unit.
-pub fn spawn(spawn: &Spawn, pending_rules: &Cell<RulesParams>) -> Option<i32> {
-    let def_id = crate::defs::get().id(spawn.def_name)?;
-    let unit_def = unit_control::DefRef {
-        name: String::from(spawn.def_name),
-        id: def_id,
-    };
-    let options = unit_control::CreateUnitOptions {
-        build: false,
-        flatten_ground: true,
-        unit_id: -1,
-        builder_id: -1,
-    };
-    let position = Float3 {
-        x: spawn.x,
-        y: spawn.y,
-        z: spawn.z,
-    };
-    pending_rules.set(spawn.rules);
-    let created =
-        unit_control::create_unit(&unit_def, position, DEFAULT_FACING, spawn.team, options);
-    // Taken by UnitCreated; cleared here too in case there was none.
-    pending_rules.set(&[]);
-    let unit_id = created.ok()?;
-    if unit_id < 0 {
-        return None;
-    }
-    face(unit_id, spawn.angle);
-    order(unit_id, spring::cmd::FIRE_STATE, &[spawn.fire_state as f32]);
-    order(unit_id, spring::cmd::MOVE_STATE, &[spawn.move_state as f32]);
-    Some(unit_id)
+/// Create a scenario unit, once this callin returns. Its rules params are
+/// handed to the unit setup gadget through `pending_rules`, so they are set
+/// before any other gadget's UnitCreated sees the unit.
+pub fn spawn(spawn: &'static Spawn) -> Pending<Option<i32>> {
+    let def_id = crate::defs::get().id(spawn.def_name);
+    commands::queue(move || {
+        let def_id = def_id?;
+        let unit_def = unit_control::DefRef {
+            name: String::from(spawn.def_name),
+            id: def_id,
+        };
+        let options = unit_control::CreateUnitOptions {
+            build: false,
+            flatten_ground: true,
+            unit_id: -1,
+            builder_id: -1,
+        };
+        let position = Float3 {
+            x: spawn.x,
+            y: spawn.y,
+            z: spawn.z,
+        };
+        crate::with_global(|global| global.pending_rules.set(spawn.rules));
+        let created =
+            unit_control::create_unit(&unit_def, position, DEFAULT_FACING, spawn.team, options);
+        // Taken by UnitCreated; cleared here too in case there was none.
+        crate::with_global(|global| global.pending_rules.set(&[]));
+        let unit_id = created.ok()?;
+        if unit_id < 0 {
+            return None;
+        }
+        face(unit_id, spawn.angle);
+        // Queued like the orders UnitCreated gave, and after them.
+        order(unit_id, spring::cmd::FIRE_STATE, &[spawn.fire_state as f32]);
+        order(unit_id, spring::cmd::MOVE_STATE, &[spawn.move_state as f32]);
+        Some(unit_id)
+    })
 }
 
 /// Rules params by name, as the scenario sets them.
@@ -69,7 +72,8 @@ pub fn set_rules_params(unit_id: i32, rules: RulesParams) {
     }
 }
 
-pub fn create(def_id: i32, position: Float3, team: i32) -> Option<i32> {
+/// Create a unit once this callin returns; `.then` gets its id.
+pub fn create(def_id: i32, position: Float3, team: i32) -> Pending<Option<i32>> {
     let unit_def = unit_control::DefRef {
         name: crate::defs::get().unit(def_id).name.clone(),
         id: def_id,
@@ -80,18 +84,31 @@ pub fn create(def_id: i32, position: Float3, team: i32) -> Option<i32> {
         unit_id: -1,
         builder_id: -1,
     };
-    let unit_id =
-        unit_control::create_unit(&unit_def, position, DEFAULT_FACING, team, options).ok()?;
-    (unit_id >= 0).then_some(unit_id)
+    commands::queue(move || {
+        let unit_id =
+            unit_control::create_unit(&unit_def, position, DEFAULT_FACING, team, options).ok()?;
+        (unit_id >= 0).then_some(unit_id)
+    })
 }
 
-/// Give `unit_id` an order. The engine refusing one is logged.
+/// Give `unit_id` an order once this callin returns. The engine refusing one
+/// is logged.
 pub fn order(unit_id: i32, command: i32, params: &[f32]) {
-    order_with(unit_id, command, params, 0);
+    let _ = order_with(unit_id, command, params, 0);
 }
 
 /// [`order`] with option bits (`spring::cmd::options`).
-pub fn order_with(unit_id: i32, command: i32, params: &[f32], options: u32) {
+pub fn order_with(unit_id: i32, command: i32, params: &[f32], options: u32) -> Pending<()> {
+    let params = params.to_vec();
+    commands::queue(move || order_now(unit_id, command, &params, options))
+}
+
+/// [`order_with`] right away, for code that already runs as a command. A unit
+/// that died since the order was decided gets none.
+pub fn order_now(unit_id: i32, command: i32, params: &[f32], options: u32) {
+    if !valid(unit_id) {
+        return;
+    }
     crate::diagnostics::check(
         spring::give_order_to_unit(unit_id, command, params, options, 0),
         || alloc::format!("order {command} {params:?} for unit {unit_id}"),

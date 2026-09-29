@@ -1,5 +1,8 @@
+use alloc::rc::Rc;
 use alloc::vec::Vec;
+use core::cell::RefCell;
 
+use spring::commands;
 use spring::types::Float3;
 
 use crate::state::Global;
@@ -14,6 +17,9 @@ pub struct Fleeing {
     origin: Float3,
     fire: i32,
     fire_at: Float3,
+    /// The verdict of the last hit, reached right after its damage and
+    /// reported on the next step.
+    verdict: Rc<RefCell<Option<Step>>>,
 }
 
 impl Fleeing {
@@ -23,6 +29,7 @@ impl Fleeing {
             origin: Float3::default(),
             fire: -1,
             fire_at: Float3::default(),
+            verdict: Rc::default(),
         }
     }
 }
@@ -33,17 +40,14 @@ impl Case for Fleeing {
     }
 
     fn step(&mut self, global: &Global, frame: i32) -> Step {
+        if let Some(verdict) = self.verdict.take() {
+            return verdict;
+        }
         match frame {
             ASSAULT_FRAME => self.assault(global),
-            FIRST_HIT_FRAME => self.hit_and_check("the first escape"),
+            FIRST_HIT_FRAME => self.hit_and_check("the first escape", false),
             // After the flee cooldown, while the first escape is still queued.
-            SECOND_HIT_FRAME => match self.hit_and_check("the second escape") {
-                Step::Wait => {
-                    harness::halt(self.robot);
-                    Step::Pass
-                }
-                verdict => verdict,
-            },
+            SECOND_HIT_FRAME => self.hit_and_check("the second escape", true),
             _ => Step::Wait,
         }
     }
@@ -98,29 +102,44 @@ impl Fleeing {
         Step::Wait
     }
 
-    /// Hurt the robot with the fire as the attacker, then read its queue.
-    fn hit_and_check(&mut self, what: &str) -> Step {
-        let _ = spring::add_unit_damage(
-            self.robot,
-            HIT_DAMAGE,
-            0.0,
-            -1,
-            self.fire,
-            Float3::default(),
+    /// Hurt the robot with the fire as the attacker, then read its queue
+    /// once the escape orders its UnitPreDamaged queued have run. The `last`
+    /// hit passes the case.
+    fn hit_and_check(&mut self, what: &'static str, last: bool) -> Step {
+        let (robot, verdict) = (self.robot, Rc::clone(&self.verdict));
+        commands::add_unit_damage(robot, HIT_DAMAGE, 0.0, -1, self.fire, Float3::default()).then(
+            move |_| {
+                commands::run(move || {
+                    let checked = check_escape(robot, what);
+                    let checked = match checked {
+                        Step::Wait if last => {
+                            harness::halt(robot);
+                            Step::Pass
+                        }
+                        Step::Wait => return,
+                        failed => failed,
+                    };
+                    *verdict.borrow_mut() = Some(checked);
+                });
+            },
         );
-        let Ok(queue) = spring::get_unit_commands(self.robot, QUEUE_READ) else {
-            return fail("could not read the robot's orders");
-        };
-        let ids: alloc::vec::Vec<i32> = queue.iter().map(|command| command.cmd_id).collect();
-        let moves = ids.iter().filter(|id| **id == spring::cmd::MOVE).count();
-        let assault_kept = ids.contains(&spring::cmd::FIGHT);
-        if ids.first() != Some(&spring::cmd::MOVE) || moves != 1 || !assault_kept {
-            return Step::Fail(alloc::format!(
-                "after {what} the orders are {ids:?}, want one MOVE in front of the FIGHT"
-            ));
-        }
         Step::Wait
     }
+}
+
+fn check_escape(robot: i32, what: &str) -> Step {
+    let Ok(queue) = spring::get_unit_commands(robot, QUEUE_READ) else {
+        return fail("could not read the robot's orders");
+    };
+    let ids: alloc::vec::Vec<i32> = queue.iter().map(|command| command.cmd_id).collect();
+    let moves = ids.iter().filter(|id| **id == spring::cmd::MOVE).count();
+    let assault_kept = ids.contains(&spring::cmd::FIGHT);
+    if ids.first() != Some(&spring::cmd::MOVE) || moves != 1 || !assault_kept {
+        return Step::Fail(alloc::format!(
+            "after {what} the orders are {ids:?}, want one MOVE in front of the FIGHT"
+        ));
+    }
+    Step::Wait
 }
 
 const QUEUE_READ: u32 = 8;

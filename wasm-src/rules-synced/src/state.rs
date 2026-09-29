@@ -1,8 +1,10 @@
 //! What the gadgets share. Everything else is owned by the gadget that uses it.
 //!
-//! Each part is its own `Resource`, borrowed only for the duration of a state
-//! update: never across an engine call that can raise a callin (creating,
-//! destroying, damaging or ordering a unit). A conflicting borrow panics.
+//! Each part is its own `Resource`; a conflicting borrow panics. The engine
+//! calls that raise callins (creating, destroying, damaging or ordering a
+//! unit) are `spring::commands`, run once the callin returns, so a callin may
+//! hold a borrow while it queues them. Code that runs as a command makes such
+//! calls directly and holds no borrow across them.
 
 use core::cell::Cell;
 

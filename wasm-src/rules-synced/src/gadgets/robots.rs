@@ -1,3 +1,5 @@
+use alloc::rc::Rc;
+
 use spring_addons::AddonContext;
 use spring_addons::rules::{CommandEvent, Gadget, UnitDestroyedEvent, UnitPreDamagedEvent};
 
@@ -7,7 +9,7 @@ use crate::state::{Global, PerLevel};
 /// Robots don't hurt each other, and step out of fire and electric fields.
 #[derive(Default)]
 pub struct RobotsGadget {
-    robots: PerLevel<Robots>,
+    robots: Rc<PerLevel<Robots>>,
 }
 
 impl Gadget<Global> for RobotsGadget {
@@ -28,13 +30,16 @@ impl Gadget<Global> for RobotsGadget {
             spring::game::current_frame(),
         );
         if let Some(avoidance) = avoidance {
-            let unit_id = avoidance.unit_id;
-            robots::move_away(avoidance);
-            // After the orders: inserting the escape finishes the current
-            // command, and UnitCmdDone would forget a mark made before.
-            self.robots
-                .get(ctx.global())
-                .mark(unit_id, spring::game::current_frame());
+            let (unit_id, frame) = (avoidance.unit_id, spring::game::current_frame());
+            // Busy from now on, so another hit before the orders run doesn't
+            // send it away again.
+            self.robots.get(ctx.global()).mark(unit_id, frame);
+            let robots = Rc::clone(&self.robots);
+            robots::move_away(avoidance).then(move |()| {
+                // Again after the orders: inserting the escape finishes the
+                // current command, and UnitCmdDone forgot the mark.
+                crate::with_global(|global| robots.get(global).mark(unit_id, frame));
+            });
         }
         let same_team = event.unit_team == event.attacker_team;
         robots::is_friendly_fire(event.unit_def_id, event.attacker_def_id, same_team)

@@ -1,44 +1,52 @@
 //! Level setup: spawn on one frame, link on the next.
 
 use alloc::format;
+use alloc::rc::Rc;
 use alloc::vec::Vec;
+use core::cell::RefCell;
+
+use spring::commands;
 
 use crate::state::{Global, Phase};
 use crate::{diagnostics, level, mission, tests, units};
 
-/// Spawn the level's units (or the e2e arena instead).
+/// Spawn the level's units (or the e2e arena instead). The level is linked
+/// on the next frame.
 pub fn spawn(global: &Global) {
     reveal_map();
     if tests::stage_level(global) {
         global.level.access_mut().phase = Phase::Running;
         return;
     }
-    let mut spawned = Vec::with_capacity(level::SPAWNS.len());
-    let mut failed = 0;
+    let spawned = Rc::new(RefCell::new(Vec::with_capacity(level::SPAWNS.len())));
     for spawn in level::SPAWNS {
-        match units::spawn(spawn, &global.pending_rules) {
-            Some(unit_id) => spawned.push((spawn.id, unit_id)),
-            None => {
-                failed += 1;
-                spring::log_warning!(
-                    crate::diagnostics::LOG_SECTION,
-                    "spawn failed: {} at {} {} (def {:?})",
-                    spawn.def_name,
-                    spawn.x,
-                    spawn.z,
-                    crate::defs::get().id(spawn.def_name)
-                );
-            }
-        }
+        let spawned = Rc::clone(&spawned);
+        units::spawn(spawn).then(move |unit_id| match unit_id {
+            Some(unit_id) => spawned.borrow_mut().push((spawn.id, unit_id)),
+            None => spring::log_warning!(
+                crate::diagnostics::LOG_SECTION,
+                "spawn failed: {} at {} {} (def {:?})",
+                spawn.def_name,
+                spawn.x,
+                spawn.z,
+                crate::defs::get().id(spawn.def_name)
+            ),
+        });
     }
-    let mut level = global.level.access_mut();
-    level.spawned = spawned;
-    level.phase = Phase::Link;
-    diagnostics::info(&format!(
-        "level spawned: {} of {} units",
-        level::SPAWNS.len() - failed,
-        level::SPAWNS.len(),
-    ));
+    // After every unit above was created.
+    commands::run(move || {
+        let spawned = spawned.take();
+        crate::with_global(|global| {
+            let mut level = global.level.access_mut();
+            diagnostics::info(&format!(
+                "level spawned: {} of {} units",
+                spawned.len(),
+                level::SPAWNS.len(),
+            ));
+            level.spawned = spawned;
+            level.phase = Phase::Link;
+        });
+    });
 }
 
 /// Link plates to gates and stun the robots standing in electric fields, on

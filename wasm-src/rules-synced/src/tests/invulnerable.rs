@@ -1,5 +1,6 @@
 use alloc::vec::Vec;
 
+use spring::commands;
 use spring::types::Float3;
 
 use crate::state::Global;
@@ -107,7 +108,7 @@ impl Invulnerable {
 }
 
 fn damage(unit_id: i32, attacker_id: i32) {
-    let _ = spring::add_unit_damage(
+    let _ = commands::add_unit_damage(
         unit_id,
         DAMAGE,
         0.0,

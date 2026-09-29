@@ -3,6 +3,7 @@ use core::cell::RefCell;
 use alloc::vec::Vec;
 
 use spring::ResultExt;
+use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent, UnitPreDamagedEvent};
 
@@ -30,10 +31,8 @@ impl Gadget<Global> for FallDamageGadget {
     }
 
     fn game_frame(&self, _ctx: &AddonContext<'_, Global>, frame: i32) {
-        // Damage raises UnitPreDamaged here: release the list first.
-        let debris = core::mem::take(&mut *self.debris.borrow_mut());
-        for (unit_id, damage) in debris {
-            spring::add_unit_damage(
+        for (unit_id, damage) in self.debris.take() {
+            commands::add_unit_damage(
                 unit_id,
                 damage * falldamage::DEBRIS_DAMAGE_MULTIPLIER,
                 0.0,
@@ -41,7 +40,9 @@ impl Gadget<Global> for FallDamageGadget {
                 NO_ATTACKER,
                 spring::types::Float3::default(),
             )
-            .log_err_once("debris collision damage");
+            .then(|damaged| {
+                damaged.log_err_once("debris collision damage");
+            });
         }
         effects::kill_fallen(frame);
     }

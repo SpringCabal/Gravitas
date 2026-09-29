@@ -20,24 +20,26 @@ pub fn stage_level(global: &Global) -> bool {
         .arena
         .get()
         .map_or(0, |arena| arena.generation + 1);
-    match arena::build(generation) {
-        Some(built) => {
-            diagnostics::info(&alloc::format!(
-                "E2E arena at {:.0} {:.0}",
-                built.centre.x,
-                built.centre.z
-            ));
-            global.tests.arena.set(Some(built));
-            global.tests.pending_link.set(true);
-        }
-        None => {
-            global.tests.arena.set(None);
-            spring::log_warning!(
-                crate::diagnostics::LOG_SECTION,
-                "E2E arena could not be built"
-            );
-        }
-    }
+    arena::build(generation, |built| {
+        crate::with_global(|global| match built {
+            Some(built) => {
+                diagnostics::info(&alloc::format!(
+                    "E2E arena at {:.0} {:.0}",
+                    built.centre.x,
+                    built.centre.z
+                ));
+                global.tests.arena.set(Some(built));
+                global.tests.pending_link.set(true);
+            }
+            None => {
+                global.tests.arena.set(None);
+                spring::log_warning!(
+                    crate::diagnostics::LOG_SECTION,
+                    "E2E arena could not be built"
+                );
+            }
+        })
+    });
     true
 }
 

@@ -72,8 +72,8 @@ impl Dying {
         self.unit_id = unit_id;
         self.head = head;
         self.robot = robot;
-        crate::tests::restarting::destroy(unit_id);
-        crate::tests::restarting::destroy(robot);
+        harness::destroy(unit_id);
+        harness::destroy(robot);
         Step::Wait
     }
 

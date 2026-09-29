@@ -2,6 +2,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 
 use gravitas_shared::e2e::Request;
+use spring::commands;
 use spring::types::Float3;
 
 use crate::state::Global;
@@ -147,25 +148,32 @@ pub fn paralyze(unit_id: i32) -> Option<f32> {
         .map(|health| health.paralyze_damage)
 }
 
+/// Set the unit's health and clear its stun, once this callin returns.
 pub fn heal(unit_id: i32, value: f32) {
-    let Ok(health) = spring::units_info::get_unit_health(unit_id) else {
-        return;
-    };
-    let _ = spring::set_unit_health(
-        unit_id,
-        spring::types::UnitHealthValue {
-            health: value,
-            capture: health.capture_progress,
-            paralyze: 0.0,
-            build: health.build_progress,
-            use_amounts: true,
-        },
-    );
+    commands::run(move || {
+        let Ok(health) = spring::units_info::get_unit_health(unit_id) else {
+            return;
+        };
+        let _ = spring::set_unit_health(
+            unit_id,
+            spring::types::UnitHealthValue {
+                health: value,
+                capture: health.capture_progress,
+                paralyze: 0.0,
+                build: health.build_progress,
+                use_amounts: true,
+            },
+        );
+    });
 }
 
+/// Move the unit there, stopped, once this callin returns: after the orders
+/// given before.
 pub fn place(unit_id: i32, position: Float3) {
-    let _ = spring::set_unit_velocity(unit_id, Float3::default());
-    let _ = spring::set_unit_position(unit_id, position);
+    commands::run(move || {
+        let _ = spring::set_unit_velocity(unit_id, Float3::default());
+        let _ = spring::set_unit_position(unit_id, position);
+    });
 }
 
 pub fn position(unit_id: i32) -> Option<Float3> {
@@ -199,5 +207,18 @@ pub fn moved(from: Option<Float3>, to: Option<Float3>, minimum: f32) -> bool {
 }
 
 pub fn halt(unit_id: i32) {
-    let _ = spring::give_order_to_unit(unit_id, spring::cmd::STOP, &[], 0, 0);
+    let _ = commands::give_order_to_unit(unit_id, spring::cmd::STOP, &[], 0, 0);
+}
+
+/// Destroy the unit once this callin returns.
+pub fn destroy(unit_id: i32) {
+    let _ = commands::destroy_unit(
+        unit_id,
+        spring::generated::owned::unit_control::DestroyUnitOptions {
+            selfd: false,
+            reclaimed: false,
+            attacker_id: -1,
+            recycle_id: false,
+        },
+    );
 }

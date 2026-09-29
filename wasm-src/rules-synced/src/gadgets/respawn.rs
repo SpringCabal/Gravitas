@@ -1,3 +1,5 @@
+use alloc::rc::Rc;
+
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
@@ -8,7 +10,7 @@ use crate::state::{Global, PerLevel};
 /// Respawnable units come back where they started when they die or get stuck.
 #[derive(Default)]
 pub struct RespawnGadget {
-    respawns: PerLevel<Respawns>,
+    respawns: Rc<PerLevel<Respawns>>,
 }
 
 impl Gadget<Global> for RespawnGadget {
@@ -42,25 +44,20 @@ impl Gadget<Global> for RespawnGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
-        let global = ctx.global();
-        let due = {
-            let mut respawns = self.respawns.get(global);
-            if frame == respawn::SCAN_FRAME {
-                respawns.scan(frame);
-            }
-            respawns.update(frame)
-        };
-        // Destroying and creating units raises UnitDestroyed and UnitCreated,
-        // which borrow the respawns: none is held here.
-        for rebirth in &due {
-            if let Some(unit_id) = respawn::rebirth(rebirth) {
-                self.respawns.get(global).adopt(
-                    unit_id,
-                    rebirth.unit_def_id,
-                    rebirth.team_id,
-                    frame,
-                );
-            }
+        let mut respawns = self.respawns.get(ctx.global());
+        if frame == respawn::SCAN_FRAME {
+            respawns.scan(frame);
+        }
+        for rebirth in respawns.update(frame) {
+            let respawns = Rc::clone(&self.respawns);
+            let (unit_def_id, team_id) = (rebirth.unit_def_id, rebirth.team_id);
+            respawn::rebirth(&rebirth, move |unit_id| {
+                crate::with_global(|global| {
+                    respawns
+                        .get(global)
+                        .adopt(unit_id, unit_def_id, team_id, frame);
+                });
+            });
         }
     }
 }

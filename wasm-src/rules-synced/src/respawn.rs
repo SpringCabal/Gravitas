@@ -1,5 +1,6 @@
 use alloc::vec::Vec;
 use spring::ResultExt;
+use spring::commands;
 
 use spring::types::Float3;
 
@@ -129,33 +130,39 @@ impl Respawns {
     }
 }
 
-/// Replace the unit with a new one where it started. The new unit is
-/// respawnable too. Returns its id.
-pub fn rebirth(rebirth: &Rebirth) -> Option<i32> {
-    if units::valid(rebirth.unit_id) {
-        spring::destroy_unit(
-            rebirth.unit_id,
-            spring::generated::owned::unit_control::DestroyUnitOptions {
-                selfd: false,
-                reclaimed: false,
-                attacker_id: -1,
-                recycle_id: false,
-            },
-        )
-        .log_err_once("respawn: removing the old unit");
-    }
-    let Some(unit_id) = units::create(rebirth.unit_def_id, rebirth.origin, rebirth.team_id) else {
-        spring::log_warning!(
-            crate::diagnostics::LOG_SECTION,
-            "respawn failed: unit def {} at {} {}",
-            rebirth.unit_def_id,
-            rebirth.origin.x,
-            rebirth.origin.z
-        );
-        return None;
-    };
-    effects::mark_respawnable(unit_id);
-    Some(unit_id)
+/// Replace the unit with a new one where it started, once this callin
+/// returns. The new unit is respawnable too; `reborn` gets its id.
+pub fn rebirth(rebirth: &Rebirth, reborn: impl FnOnce(i32) + 'static) {
+    let old = rebirth.unit_id;
+    commands::run(move || {
+        if units::valid(old) {
+            spring::destroy_unit(
+                old,
+                spring::generated::owned::unit_control::DestroyUnitOptions {
+                    selfd: false,
+                    reclaimed: false,
+                    attacker_id: -1,
+                    recycle_id: false,
+                },
+            )
+            .log_err_once("respawn: removing the old unit");
+        }
+    });
+    let (unit_def_id, origin) = (rebirth.unit_def_id, rebirth.origin);
+    units::create(unit_def_id, origin, rebirth.team_id).then(move |unit_id| {
+        let Some(unit_id) = unit_id else {
+            spring::log_warning!(
+                crate::diagnostics::LOG_SECTION,
+                "respawn failed: unit def {} at {} {}",
+                unit_def_id,
+                origin.x,
+                origin.z
+            );
+            return;
+        };
+        effects::mark_respawnable(unit_id);
+        reborn(unit_id);
+    });
 }
 
 pub const SCAN_FRAME: i32 = 30;

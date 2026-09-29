@@ -1,10 +1,14 @@
+use alloc::rc::Rc;
+use core::cell::Cell;
+
+use spring::commands;
 use spring::types::Float3;
 
 use crate::units;
 
 /// The e2e cases' units. Each case has its own rig, an area of the arena no
 /// other case's units reach, so the cases can run at the same time.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct Arena {
     pub centre: Float3,
     /// Bumped every time the arena is built (a restart builds it again).
@@ -40,56 +44,87 @@ pub struct Arena {
     pub terrain_toggler: i32,
 }
 
-pub fn build(generation: u32) -> Option<Arena> {
+/// Build the arena once this callin returns; `built` gets it, or `None` if a
+/// unit could not be created.
+pub fn build(generation: u32, built: impl FnOnce(Option<Arena>) + 'static) {
     let centre = flat_centre();
-    let arena = Arena {
+    let arena = Rc::new(Cell::new(Arena {
         centre,
         generation,
-        plate: spawn(PLATE, centre, Rig::Plate, 0.0, 0.0),
-        gate: spawn(GATE, centre, Rig::Plate, GATE_OFFSET, 0.0),
-        toggler: spawn(CRATE, centre, Rig::Plate, 0.0, PARK_OFFSET),
-        pushed: spawn(CRATE, centre, Rig::Impulse, 0.0, 0.0),
-        pusher: spawn(WALL, centre, Rig::Impulse, -PUSH_SEPARATION, 0.0),
-        protected: spawn(WALL, centre, Rig::Damage, 0.0, 0.0),
-        exposed: spawn(ROBOT, centre, Rig::Damage, PARK_OFFSET, 0.0),
-        fire: spawn(FIRE, centre, Rig::Fire, 0.0, 0.0),
-        burning: spawn(GRAVIT, centre, Rig::Fire, 0.0, PARK_OFFSET),
-        electrafi: spawn(ELECTRAFI, centre, Rig::Electrafi, 0.0, 0.0),
-        shocked: spawn(ROBOT, centre, Rig::Electrafi, 0.0, PARK_OFFSET),
-        vaulter: spawn(GRAVIT, centre, Rig::Jump, 0.0, 0.0),
-        dropped: spawn(ROBOT, centre, Rig::Fall, -PARK_OFFSET, 0.0),
-        cushioned: spawn(ROBOT, centre, Rig::Fall, PARK_OFFSET, 0.0),
-        thrown: spawn(ROBOT, centre, Rig::Collision, THROW_DISTANCE, 0.0),
-        anvil: spawn(CRATE, centre, Rig::Collision, 0.0, 0.0),
-        barrel: spawn(BARREL, centre, Rig::Barrel, 0.0, 0.0),
-        bystander: spawn(ROBOT, centre, Rig::Barrel, BARREL_REACH, 0.0),
-        revivable: spawn(ROBOT, centre, Rig::Respawn, 0.0, 0.0),
-        gunner: spawn(ROBOT, centre, Rig::Shoot, 0.0, 0.0),
-        target: spawn(GRAVIT, centre, Rig::Shoot, -TARGET_OFFSET, 0.0),
-        fleeing: spawn(ROBOT, centre, Rig::Flee, 0.0, 0.0),
-        scare: spawn(FIRE, centre, Rig::Flee, 0.0, SCARE_OFFSET),
-        dying_gravit: spawn(GRAVIT, centre, Rig::Death, 0.0, 0.0),
-        dying_robot: spawn(ROBOT, centre, Rig::Death, PARK_OFFSET, 0.0),
-        terrain_plate: spawn(PLATE, centre, Rig::Terrain, 0.0, 0.0),
-        terrain_gate: spawn(GATE, centre, Rig::Terrain, GATE_OFFSET, 0.0),
-        terrain_toggler: spawn(CRATE, centre, Rig::Terrain, 0.0, PARK_OFFSET),
+        ..Arena::default()
+    }));
+    let layout: [(Field, &str, Rig, f32, f32); 29] = [
+        (|a| &mut a.plate, PLATE, Rig::Plate, 0.0, 0.0),
+        (|a| &mut a.gate, GATE, Rig::Plate, GATE_OFFSET, 0.0),
+        (|a| &mut a.toggler, CRATE, Rig::Plate, 0.0, PARK_OFFSET),
+        (|a| &mut a.pushed, CRATE, Rig::Impulse, 0.0, 0.0),
+        (|a| &mut a.pusher, WALL, Rig::Impulse, -PUSH_SEPARATION, 0.0),
+        (|a| &mut a.protected, WALL, Rig::Damage, 0.0, 0.0),
+        (|a| &mut a.exposed, ROBOT, Rig::Damage, PARK_OFFSET, 0.0),
+        (|a| &mut a.fire, FIRE, Rig::Fire, 0.0, 0.0),
+        (|a| &mut a.burning, GRAVIT, Rig::Fire, 0.0, PARK_OFFSET),
+        (|a| &mut a.electrafi, ELECTRAFI, Rig::Electrafi, 0.0, 0.0),
+        (|a| &mut a.shocked, ROBOT, Rig::Electrafi, 0.0, PARK_OFFSET),
+        (|a| &mut a.vaulter, GRAVIT, Rig::Jump, 0.0, 0.0),
+        (|a| &mut a.dropped, ROBOT, Rig::Fall, -PARK_OFFSET, 0.0),
+        (|a| &mut a.cushioned, ROBOT, Rig::Fall, PARK_OFFSET, 0.0),
+        (
+            |a| &mut a.thrown,
+            ROBOT,
+            Rig::Collision,
+            THROW_DISTANCE,
+            0.0,
+        ),
+        (|a| &mut a.anvil, CRATE, Rig::Collision, 0.0, 0.0),
+        (|a| &mut a.barrel, BARREL, Rig::Barrel, 0.0, 0.0),
+        (|a| &mut a.bystander, ROBOT, Rig::Barrel, BARREL_REACH, 0.0),
+        (|a| &mut a.revivable, ROBOT, Rig::Respawn, 0.0, 0.0),
+        (|a| &mut a.gunner, ROBOT, Rig::Shoot, 0.0, 0.0),
+        (|a| &mut a.target, GRAVIT, Rig::Shoot, -TARGET_OFFSET, 0.0),
+        (|a| &mut a.fleeing, ROBOT, Rig::Flee, 0.0, 0.0),
+        (|a| &mut a.scare, FIRE, Rig::Flee, 0.0, SCARE_OFFSET),
+        (|a| &mut a.dying_gravit, GRAVIT, Rig::Death, 0.0, 0.0),
+        (|a| &mut a.dying_robot, ROBOT, Rig::Death, PARK_OFFSET, 0.0),
+        (|a| &mut a.terrain_plate, PLATE, Rig::Terrain, 0.0, 0.0),
+        (
+            |a| &mut a.terrain_gate,
+            GATE,
+            Rig::Terrain,
+            GATE_OFFSET,
+            0.0,
+        ),
+        (
+            |a| &mut a.terrain_toggler,
+            CRATE,
+            Rig::Terrain,
+            0.0,
+            PARK_OFFSET,
+        ),
         // Last of the Gravits: the player gadget adopts it.
-        jumper: spawn(GRAVIT, centre, Rig::Input, 0.0, 0.0),
-    };
-    if arena.missing() {
-        return None;
+        (|a| &mut a.jumper, GRAVIT, Rig::Input, 0.0, 0.0),
+    ];
+    for (field, name, rig, offset_x, offset_z) in layout {
+        spawn(&arena, field, name, centre, rig, offset_x, offset_z);
     }
-    size_field(arena.fire, crate::fire::SIZE_PARAM, FIRE_SIZE);
-    size_field(arena.scare, crate::fire::SIZE_PARAM, SCARE_SIZE);
-    size_field(
-        arena.electrafi,
-        crate::electrafi::SIZE_PARAM,
-        ELECTRAFI_SIZE,
-    );
-    size_field(arena.revivable, RESPAWNABLE_PARAM, 1.0);
-    protect(arena.protected);
-    protect(arena.pusher);
-    Some(arena)
+    // After every unit above was created.
+    commands::run(move || {
+        let arena = arena.get();
+        if arena.missing() {
+            built(None);
+            return;
+        }
+        size_field(arena.fire, crate::fire::SIZE_PARAM, FIRE_SIZE);
+        size_field(arena.scare, crate::fire::SIZE_PARAM, SCARE_SIZE);
+        size_field(
+            arena.electrafi,
+            crate::electrafi::SIZE_PARAM,
+            ELECTRAFI_SIZE,
+        );
+        size_field(arena.revivable, RESPAWNABLE_PARAM, 1.0);
+        protect(arena.protected);
+        protect(arena.pusher);
+        built(Some(arena));
+    });
 }
 
 impl Arena {
@@ -200,22 +235,57 @@ impl Arena {
     }
 }
 
-fn spawn(name: &str, centre: Float3, rig: Rig, offset_x: f32, offset_z: f32) -> i32 {
+/// The field of [`Arena`] a unit goes in.
+type Field = fn(&mut Arena) -> &mut i32;
+
+/// Create a unit of the arena into `field`, which is -1 if that failed.
+fn spawn(
+    arena: &Rc<Cell<Arena>>,
+    field: Field,
+    name: &str,
+    centre: Float3,
+    rig: Rig,
+    offset_x: f32,
+    offset_z: f32,
+) {
     let position = rig_position(centre, rig, offset_x, offset_z);
     let team = if name == GRAVIT {
         PLAYER_TEAM
     } else {
         ENEMY_TEAM
     };
-    let Some(unit_id) = crate::defs::get()
-        .id(name)
-        .and_then(|def_id| units::create(def_id, position, team))
-    else {
-        return -1;
+    let arena = Rc::clone(arena);
+    let store = move |unit_id: i32| {
+        let mut built = arena.get();
+        *field(&mut built) = unit_id;
+        arena.set(built);
     };
-    let _ = spring::give_order_to_unit(unit_id, spring::cmd::FIRE_STATE, &[FIRE_STATE_HOLD], 0, 0);
-    let _ = spring::give_order_to_unit(unit_id, spring::cmd::MOVE_STATE, &[MOVE_STATE_HOLD], 0, 0);
-    unit_id
+    let Some(def_id) = crate::defs::get().id(name) else {
+        commands::run(move || store(-1));
+        return;
+    };
+    units::create(def_id, position, team).then(move |unit_id| {
+        let Some(unit_id) = unit_id else {
+            store(-1);
+            return;
+        };
+        // Queued like the orders UnitCreated gave, and after them.
+        let _ = commands::give_order_to_unit(
+            unit_id,
+            spring::cmd::FIRE_STATE,
+            &[FIRE_STATE_HOLD],
+            0,
+            0,
+        );
+        let _ = commands::give_order_to_unit(
+            unit_id,
+            spring::cmd::MOVE_STATE,
+            &[MOVE_STATE_HOLD],
+            0,
+            0,
+        );
+        store(unit_id);
+    });
 }
 
 fn rig_position(centre: Float3, rig: Rig, offset_x: f32, offset_z: f32) -> Float3 {

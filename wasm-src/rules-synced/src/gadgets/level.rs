@@ -1,3 +1,4 @@
+use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
@@ -24,7 +25,7 @@ impl Gadget<Global> for LevelGadget {
         match phase {
             // After every gadget has run this frame, so they all see the new
             // level from the next frame on.
-            Phase::Spawn => ctx.delay(setup::spawn),
+            Phase::Spawn => commands::run(|| crate::with_global(setup::spawn)),
             Phase::Link => setup::link(global),
             Phase::Running => {}
         }

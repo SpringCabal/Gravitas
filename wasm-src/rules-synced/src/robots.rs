@@ -1,5 +1,6 @@
 use alloc::vec::Vec;
 
+use spring::commands::{self, Pending};
 use spring::types::Float3;
 
 use crate::units;
@@ -67,32 +68,34 @@ pub fn is_friendly_fire(unit_def_id: i32, attacker_def_id: i32, same_team: bool)
 }
 
 /// Walk out of the way before carrying on with the queue (an assault's FIGHT
-/// order stays behind the escape). A robot still on its previous escape drops
-/// that one first, as `unit_robots.lua` does.
-pub fn move_away(avoidance: Avoidance) {
-    let unit_id = avoidance.unit_id;
-    if avoidance.replace_order
-        && let Some(previous) = spring::get_unit_commands(unit_id, 1)
-            .ok()
-            .and_then(|queue| queue.into_iter().next())
-    {
-        units::order(unit_id, spring::cmd::REMOVE, &[previous.tag as f32]);
-    }
-    let goal = avoidance.goal;
-    // INSERT with ALT: the first parameter is a queue position, not a tag.
-    units::order_with(
-        unit_id,
-        spring::cmd::INSERT,
-        &[
-            FRONT_OF_QUEUE,
-            spring::cmd::MOVE as f32,
-            NO_OPTIONS,
-            goal.x,
-            goal.y,
-            goal.z,
-        ],
-        spring::cmd::options::ALT_KEY,
-    );
+/// order stays behind the escape), once this callin returns. A robot still on
+/// its previous escape drops that one first, as `unit_robots.lua` does.
+pub fn move_away(avoidance: Avoidance) -> Pending<()> {
+    commands::queue(move || {
+        let unit_id = avoidance.unit_id;
+        if avoidance.replace_order
+            && let Some(previous) = spring::get_unit_commands(unit_id, 1)
+                .ok()
+                .and_then(|queue| queue.into_iter().next())
+        {
+            units::order_now(unit_id, spring::cmd::REMOVE, &[previous.tag as f32], 0);
+        }
+        let goal = avoidance.goal;
+        // INSERT with ALT: the first parameter is a queue position, not a tag.
+        units::order_now(
+            unit_id,
+            spring::cmd::INSERT,
+            &[
+                FRONT_OF_QUEUE,
+                spring::cmd::MOVE as f32,
+                NO_OPTIONS,
+                goal.x,
+                goal.y,
+                goal.z,
+            ],
+            spring::cmd::options::ALT_KEY,
+        );
+    })
 }
 
 const FRONT_OF_QUEUE: f32 = 0.0;

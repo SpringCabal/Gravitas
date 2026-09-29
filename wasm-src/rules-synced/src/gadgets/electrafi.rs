@@ -1,4 +1,5 @@
 use spring::ResultExt;
+use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
@@ -38,33 +39,39 @@ impl Gadget<Global> for ElectrafiGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
-        let (shocks, arcs) = {
-            let mut electrafi = self.electrafi.get(ctx.global());
-            (electrafi.update(frame), electrafi.arcs(frame))
-        };
+        let mut electrafi = self.electrafi.get(ctx.global());
+        let shocks = electrafi.update(frame);
+        let arcs = electrafi.arcs(frame);
         for shock in shocks {
-            // An earlier shock this frame may have killed it.
-            if !units::valid(shock.unit_id) {
-                continue;
-            }
-            if let Some(damage) = shock.damage {
-                let paralyze_time = if shock.paralyze { PARALYZING } else { 0.0 };
-                spring::add_unit_damage(
-                    shock.unit_id,
-                    damage,
-                    paralyze_time,
-                    -1,
-                    shock.attacker_id,
-                    spring::types::Float3::default(),
-                )
-                .log_err_once("electric field damage");
-            }
-            emit_spark(shock.unit_id, shock.intensity);
-            crate::tests::note_spark(ctx.global(), shock.unit_id, shock.damage.is_some());
+            commands::run(move || {
+                // An earlier shock this frame may have killed it.
+                if !units::valid(shock.unit_id) {
+                    return;
+                }
+                if let Some(damage) = shock.damage {
+                    let paralyze_time = if shock.paralyze { PARALYZING } else { 0.0 };
+                    spring::add_unit_damage(
+                        shock.unit_id,
+                        damage,
+                        paralyze_time,
+                        -1,
+                        shock.attacker_id,
+                        spring::types::Float3::default(),
+                    )
+                    .log_err_once("electric field damage");
+                }
+                emit_spark(shock.unit_id, shock.intensity);
+                crate::with_global(|global| {
+                    crate::tests::note_spark(global, shock.unit_id, shock.damage.is_some());
+                });
+            });
         }
-        for arc in arcs {
-            send_effect(arc.position, EffectKind::Arc { radius: arc.radius });
-        }
+        // Behind the sparks: the ui module seeds effects by their order.
+        commands::run(move || {
+            for arc in arcs {
+                send_effect(arc.position, EffectKind::Arc { radius: arc.radius });
+            }
+        });
     }
 }
 

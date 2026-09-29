@@ -67,7 +67,7 @@ impl Restarting {
         let Some(vaulter) = harness::arena(global, |arena| arena.vaulter) else {
             return fail("no arena");
         };
-        destroy(vaulter);
+        harness::destroy(vaulter);
         self.stage = Stage::KillPlayer;
         Step::Wait
     }
@@ -82,7 +82,7 @@ impl Restarting {
             return fail("no arena");
         };
         self.generation = generation;
-        destroy(jumper);
+        harness::destroy(jumper);
         self.stage = Stage::GameOver;
         Step::Wait
     }
@@ -141,7 +141,7 @@ impl Restarting {
         if global.player_unit.get() != Some(jumper) {
             return fail("the player does not drive the new arena's Gravit");
         }
-        destroy(jumper);
+        harness::destroy(jumper);
         self.stage = Stage::OverAgain;
         Step::Wait
     }
@@ -152,16 +152,4 @@ impl Restarting {
         }
         Step::Pass
     }
-}
-
-pub fn destroy(unit_id: i32) {
-    let _ = spring::destroy_unit(
-        unit_id,
-        spring::generated::owned::unit_control::DestroyUnitOptions {
-            selfd: false,
-            reclaimed: false,
-            attacker_id: -1,
-            recycle_id: false,
-        },
-    );
 }

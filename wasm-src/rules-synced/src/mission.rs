@@ -1,5 +1,6 @@
 use alloc::vec::Vec;
 use spring::ResultExt;
+use spring::commands;
 
 use crate::level;
 use crate::state::Global;
@@ -143,19 +144,22 @@ fn units_in_area(area: &level::Area) -> Vec<i32> {
     )
 }
 
+/// Once this callin returns: stunning runs the unit's callins.
 fn stun(unit_id: i32) {
-    let Ok(health) = spring::units_info::get_unit_health(unit_id) else {
-        return;
-    };
-    spring::set_unit_health(
-        unit_id,
-        spring::types::UnitHealthValue {
-            health: health.health,
-            capture: health.capture_progress,
-            paralyze: health.max_health * STUN_MULTIPLIER,
-            build: health.build_progress,
-            use_amounts: true,
-        },
-    )
-    .log_err_once("stunning a unit near an electric field");
+    commands::run(move || {
+        let Ok(health) = spring::units_info::get_unit_health(unit_id) else {
+            return;
+        };
+        spring::set_unit_health(
+            unit_id,
+            spring::types::UnitHealthValue {
+                health: health.health,
+                capture: health.capture_progress,
+                paralyze: health.max_health * STUN_MULTIPLIER,
+                build: health.build_progress,
+                use_amounts: true,
+            },
+        )
+        .log_err_once("stunning a unit near an electric field");
+    });
 }

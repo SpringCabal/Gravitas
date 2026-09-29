@@ -1,4 +1,5 @@
 use spring::ResultExt;
+use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
@@ -36,34 +37,38 @@ impl Gadget<Global> for FireGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
-        let (burns, flames) = {
-            let mut fires = self.fires.get(ctx.global());
-            (fires.update(frame), fires.flames(frame))
-        };
+        let mut fires = self.fires.get(ctx.global());
+        let burns = fires.update(frame);
+        let flames = fires.flames(frame);
         for burn in burns {
-            // An earlier burn this frame may have killed it.
-            if !units::valid(burn.unit_id) {
-                continue;
+            commands::run(move || {
+                // An earlier burn this frame may have killed it.
+                if !units::valid(burn.unit_id) {
+                    return;
+                }
+                spring::add_unit_damage(
+                    burn.unit_id,
+                    burn.damage,
+                    0.0,
+                    -1,
+                    burn.attacker_id,
+                    spring::types::Float3::default(),
+                )
+                .log_err_once("fire damage");
+                emit_burn(burn.unit_id, burn.size_mult);
+            });
+        }
+        // Behind the burns: the ui module seeds effects by their order.
+        commands::run(move || {
+            for flame in flames {
+                send_effect(
+                    flame.position,
+                    EffectKind::Flame {
+                        radius: flame.radius,
+                    },
+                );
             }
-            spring::add_unit_damage(
-                burn.unit_id,
-                burn.damage,
-                0.0,
-                -1,
-                burn.attacker_id,
-                spring::types::Float3::default(),
-            )
-            .log_err_once("fire damage");
-            emit_burn(burn.unit_id, burn.size_mult);
-        }
-        for flame in flames {
-            send_effect(
-                flame.position,
-                EffectKind::Flame {
-                    radius: flame.radius,
-                },
-            );
-        }
+        });
     }
 }
 

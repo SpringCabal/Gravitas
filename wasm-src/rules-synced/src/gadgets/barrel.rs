@@ -1,3 +1,4 @@
+use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
@@ -20,8 +21,9 @@ impl Gadget<Global> for BarrelGadget {
             return;
         };
         let barrel = event.unit_id;
-        // The blast damages and destroys other units; do that once this
-        // UnitDestroyed is over.
-        ctx.delay(move |_| effects::explode_barrel(barrel, position));
+        // The blast damages and destroys other units, so it is a command. It
+        // also goes behind the effects queued before it, which the ui module
+        // seeds by their order.
+        commands::run(move || effects::explode_barrel(barrel, position));
     }
 }

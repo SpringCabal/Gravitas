@@ -77,15 +77,7 @@ impl Barrel {
         self.bystander = bystander;
         self.bystander_at = bystander_at;
         self.bystander_health = health;
-        let _ = spring::destroy_unit(
-            barrel,
-            spring::generated::owned::unit_control::DestroyUnitOptions {
-                selfd: false,
-                reclaimed: false,
-                attacker_id: -1,
-                recycle_id: false,
-            },
-        );
+        harness::destroy(barrel);
         Step::Wait
     }
 

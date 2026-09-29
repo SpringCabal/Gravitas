@@ -59,15 +59,7 @@ impl Respawning {
         };
         self.victim = victim;
         self.origin = origin;
-        let _ = spring::destroy_unit(
-            victim,
-            spring::generated::owned::unit_control::DestroyUnitOptions {
-                selfd: false,
-                reclaimed: false,
-                attacker_id: -1,
-                recycle_id: false,
-            },
-        );
+        harness::destroy(victim);
         Step::Wait
     }
 

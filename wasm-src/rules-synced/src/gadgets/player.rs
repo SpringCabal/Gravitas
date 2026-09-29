@@ -76,27 +76,24 @@ impl Gadget<Global> for PlayerGadget {
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
         let global = ctx.global();
-        let (unit_id, orders, jump) = {
-            let mut player = self.player.borrow_mut();
-            let orders = player.update(&global.player_input, frame);
-            (player.unit_id(), orders, player.take_jump_request())
-        };
-        if let Some(unit_id) = unit_id {
+        let mut player = self.player.borrow_mut();
+        let orders = player.update(&global.player_input, frame);
+        if let Some(unit_id) = player.unit_id() {
             player::apply(unit_id, orders, frame);
         }
-        if let Some((unit_id, x, y, z)) = jump {
-            self.jump(global, unit_id, x, y, z);
+        if let Some((unit_id, x, y, z)) = player.take_jump_request() {
+            self.jump(global, &mut player, unit_id, x, y, z);
         }
     }
 }
 
 impl PlayerGadget {
-    fn jump(&self, global: &Global, unit_id: i32, x: f32, y: f32, z: f32) {
+    fn jump(&self, global: &Global, player: &mut Player, unit_id: i32, x: f32, y: f32, z: f32) {
         let refusal = match jump::start(global, unit_id, x, y, z) {
             jump::Outcome::Started => None,
             jump::Outcome::OutOfRange => {
                 // Walking closer; try again next frame.
-                self.player.borrow_mut().retry_jump(x, y, z);
+                player.retry_jump(x, y, z);
                 None
             }
             outcome => Some(outcome.reason()),

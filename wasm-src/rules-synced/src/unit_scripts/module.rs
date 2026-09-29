@@ -26,27 +26,30 @@ impl UnitDefScript for GravitasUnitScript {
     }
 }
 
-/// Attach the script of a unit that was just created. Deferred while the CUS state is in use further up the
-/// stack (a unit created from inside a unit script).
+/// Attach the script of a unit that was just created.
 pub fn attach(unit: i32, def: i32) {
-    crate::with_cus_module_or_defer(move |host| host.unit_created(UnitId(unit), def));
+    with_host("attaching a script", move |host| {
+        host.unit_created(UnitId(unit), def)
+    });
 }
 
 /// Attach the scripts of units that exist when the rules load (after a rules
 /// reload).
 pub fn attach_existing() {
-    crate::with_cus_module_or_defer(|host| host.attach_existing());
+    with_host("attaching the scripts of existing units", |host| {
+        host.attach_existing()
+    });
 }
 
 /// Wake the scripts' sleeping tasks for `frame`.
 pub fn game_frame(frame: i32) {
-    crate::with_cus_module_or_defer(move |host| host.game_frame(frame));
+    with_host("waking the scripts", move |host| host.game_frame(frame));
 }
 
 /// Run one of the jump functions of a unit's script, as `unit_jumpjets.lua`
-/// does through `env`. Deferred in the same cases as [`attach`].
+/// does through `env`.
 pub fn jump(unit: i32, call: JumpCall) {
-    crate::with_cus_module_or_defer(move |host| {
+    with_host("a jump", move |host| {
         let handled = host.with_script(UnitId(unit), |ctx, script| script.jump(ctx, call));
         if handled != Some(true) {
             spring::log_warning!(
@@ -55,4 +58,13 @@ pub fn jump(unit: i32, call: JumpCall) {
             );
         }
     });
+}
+
+/// Run `f` on the scripts. Rules code never runs inside a script: the engine
+/// calls that raise callins are commands, which run once the scripts have
+/// returned.
+fn with_host(what: &str, f: impl FnOnce(&mut GravitasCusModule)) {
+    if crate::with_cus_module(f).is_none() {
+        spring::log_warning!("gravitas-wasm", "unit scripts busy or not loaded: {what}");
+    }
 }
