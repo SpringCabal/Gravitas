@@ -31,6 +31,7 @@ if (gadgetHandler:IsSyncedCode()) then
 	local RecMsg={}-- To bufferize Received Messages bewteen each call to GameFrame
 	local ScoreBoard={}
 	local MovedLast={} -- Just to remember which heroes moved last frame
+	local gunsDown={} -- unit -> {push button down, pull button down}, from the last input
 
 	--function gadget:Initialize()
 	--end
@@ -147,12 +148,7 @@ if (gadgetHandler:IsSyncedCode()) then
 				elseif tx and tz then
 					Spring.SetUnitTarget(u,GunTarget(u,tx,ty or Spring.GetGroundHeight(tx,tz),tz))
 				end
-				if not fa and frame>=Spring.GetUnitWeaponState(u,Game.gameName and 1 or 0,"reloadFrame") then
-					Spring.SetUnitWeaponState(u,Game.gameName and 1 or 0,"reloadFrame",frame+2)
-				end
-				if not fb and frame>=Spring.GetUnitWeaponState(u,Game.gameName and 2 or 1,"reloadFrame") then
-					Spring.SetUnitWeaponState(u,Game.gameName and 2 or 1,"reloadFrame",frame+2)
-				end
+				gunsDown[u]={fa and true or false,fb and true or false}
 				if sd and not usd[u] then
 					Spring.GiveOrderToUnit(u,CMD.SELFD,{},{})
 					usd[u]=frame
@@ -176,6 +172,21 @@ if (gadgetHandler:IsSyncedCode()) then
 			end
 		end
 		RecMsg={}
+
+		-- Hold back each gun whose button is up by pushing its reload ahead,
+		-- on every frame: input messages can arrive two in one frame and none
+		-- in the next, and a frame without one let that gun fire.
+		for u,down in pairs(gunsDown) do
+			if Spring.ValidUnitID(u) then
+				for weapon=1,2 do
+					if not down[weapon] and frame>=Spring.GetUnitWeaponState(u,weapon,"reloadFrame") then
+						Spring.SetUnitWeaponState(u,weapon,"reloadFrame",frame+2)
+					end
+				end
+			else
+				gunsDown[u]=nil
+			end
+		end
 
 		if frame>LastHeroesCheck+139 then
 			LastHeroesCheck=frame
