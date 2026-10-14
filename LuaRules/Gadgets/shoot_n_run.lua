@@ -69,6 +69,27 @@ if (gadgetHandler:IsSyncedCode()) then
 	end
 
 
+	-- The gun refuses targets beyond its range, so such a target is replaced
+	-- by the furthest point on the line towards it that is in range: the gun
+	-- fires that way, and its beam stops short, instead of not firing.
+	local function GunTarget(u,x,y,z)
+		if Spring.GetUnitWeaponTestRange(u,1,x,y,z) then
+			return x,y,z
+		end
+		local ux,uy,uz=Spring.GetUnitPosition(u)
+		local dx,dy,dz=x-ux,y-uy,z-uz
+		-- the fraction of the way to the target that is the gun's range
+		local full=Spring.GetUnitWeaponState(u,1,"range")/math.sqrt(dx*dx+dy*dy+dz*dz)
+		local scale
+		for reach=1,0.8,-0.02 do
+			scale=reach*full
+			if Spring.GetUnitWeaponTestRange(u,1,ux+dx*scale,uy+dy*scale,uz+dz*scale) then
+				break
+			end
+		end
+		return ux+dx*scale,uy+dy*scale,uz+dz*scale
+	end
+
 	local function GiveHero(u,team)
 		local team=team or Spring.GetUnitTeam(u)
 		local PlayerList=GetBetterPlayerList(team,0)
@@ -117,14 +138,14 @@ if (gadgetHandler:IsSyncedCode()) then
 			dz=dz or 0
 			if u and Spring.ValidUnitID(u) then
 				if tu and tu ~= u then
-					Spring.SetUnitTarget(u,tu)
-				elseif tx and tz then
-					if ty then
-						Spring.SetUnitTarget(u,tx,ty,tz)
+					local _,_,_,x,y,z=Spring.GetUnitPosition(tu,true)
+					if Spring.GetUnitWeaponTestRange(u,1,x,y,z) then
+						Spring.SetUnitTarget(u,tu)
 					else
-						local ty=Spring.GetGroundHeight(tx,tz)
-						Spring.SetUnitTarget(u,tx,ty,tz)
+						Spring.SetUnitTarget(u,GunTarget(u,x,y,z))
 					end
+				elseif tx and tz then
+					Spring.SetUnitTarget(u,GunTarget(u,tx,ty or Spring.GetGroundHeight(tx,tz),tz))
 				end
 				if not fa and frame>=Spring.GetUnitWeaponState(u,Game.gameName and 1 or 0,"reloadFrame") then
 					Spring.SetUnitWeaponState(u,Game.gameName and 1 or 0,"reloadFrame",frame+2)
