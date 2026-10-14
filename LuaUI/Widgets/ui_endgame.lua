@@ -197,8 +197,6 @@ local function SetupControls()
             parent = window_endgame;
         }
     end
-    
-	screen0:AddChild(window_endgame)
 
 end
 
