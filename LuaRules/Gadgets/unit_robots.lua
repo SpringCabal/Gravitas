@@ -99,7 +99,7 @@ function GetSafestLocation(unitID,x,y,z,toAvoid)
         --Spring.MarkerAddPoint(ex,ey,ez,tostring(n) .. " " .. tostring(score))
         
         if #goodPoints==0 or score>=goodPoints[1].score then            
-            if #goodPoints>1 and score>goodPoints[1].score then goodPoints = {} end
+            if #goodPoints>0 and score>goodPoints[1].score then goodPoints = {} end
             thisPoint.OK = true
             goodPoints[#goodPoints+1] = thisPoint
         end
@@ -112,6 +112,7 @@ function GetSafestLocation(unitID,x,y,z,toAvoid)
     local bestMatch = 10e10
     for n,t in ipairs(goodPoints) do
         local angleDif = math.atan2(t.x-x,t.z-z)-math.atan2(sx,sz)
+        angleDif = (angleDif + math.pi) % (2*math.pi) - math.pi -- into [-pi, pi)
         if math.abs(angleDif) < bestMatch then
             bestMatch = math.abs(angleDif)
             bestPoint = t
