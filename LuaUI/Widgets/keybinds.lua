@@ -20,7 +20,8 @@ local white = "\255\255\255\255"
 
 function SetBindings()
     local binds = { --real keybinds
-        "Any+esc quitforce",
+        "Any+esc reloadforce",
+        "Ctrl+q reloadforce",
         "Any+pause  pause",
         "Any+p  pause",
         "Alt+b  debug",
@@ -51,6 +52,7 @@ function widget:Initialize()
     bindText={
         purple.."WASD or arrow keys : "..white.." Move",
         purple.."E or Space : "..white.." Jump",
+        purple.."Ctrl+Q : "..white.." Quit",
     }
 
 
