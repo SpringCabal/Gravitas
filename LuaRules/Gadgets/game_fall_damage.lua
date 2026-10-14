@@ -94,29 +94,16 @@ local function LocalSpeedToDamage(unitID, unitDefID, speed)
     end
 end
 
-local function SpringSpeedToDamage(colliderrMass,collideeeMass,relativeSpeed) --Inelastic collision. Reference: Spring/rts/Sim/MoveTypes/GroundMoveType.cpp#875
-    local COLLISION_DAMAGE_MULT = 0.02 --Reference: Spring/rts/Sim/MoveTypes/GroundMoveType.cpp#66
-    local MAX_UNIT_SPEED = 1000 --Reference: Spring/rts/Sim/Misc/GlobalConstants.h 
-    local impactSpeed = relativeSpeed * 0.5; 
-    local colliderRelMass = (colliderrMass / (colliderrMass + collideeeMass));
-    local colliderRelImpactSpeed = impactSpeed * (1 - colliderRelMass);
-    local collideeRelImpactSpeed = impactSpeed * (colliderRelMass);
-    local colliderImpactDmgMult = math.min(colliderRelImpactSpeed * colliderrMass * COLLISION_DAMAGE_MULT, MAX_UNIT_SPEED);
-    local collideeImpactDmgMult = math.min(collideeRelImpactSpeed * colliderrMass * COLLISION_DAMAGE_MULT, MAX_UNIT_SPEED);
-    -- colliderImpactDmgMult = math.modf(colliderImpactDmgMult) --in case fraction need to be removed
-    -- collideeImpactDmgMult = math.modf(collideeImpactDmgMult)
-    
-    return colliderImpactDmgMult, collideeImpactDmgMult
-end
-
-local function IsDamageMatch(collideeeData,colliderrData,relativeSpeed)
-    local colliderrExpected, collideeeExpected = SpringSpeedToDamage(colliderrData.mass,collideeeData.mass,relativeSpeed)
-    for i=1, #colliderrData.givenDamage do
-        for j=1, #collideeeData.givenDamage do
-            local collideWithBuilding = colliderrData.givenDamage[i] == collideeeData.givenDamage[j]
-            local collideWithUnit= colliderrExpected==colliderrData.givenDamage[i] and collideeeExpected==collideeeData.givenDamage[j]
-            if collideWithUnit or collideWithBuilding then
-                return i, j
+-- The engine names the other unit as the attacker of a collision between two
+-- units (a feature collision has none), so the two sides of a collision are
+-- the entries that name each other.
+local function FindCollisionPair(colliderrID,colliderrData,collideeeID,collideeeData)
+    for i=1, #colliderrData.attackers do
+        if colliderrData.attackers[i] == collideeeID then
+            for j=1, #collideeeData.attackers do
+                if collideeeData.attackers[j] == colliderrID then
+                    return i, j
+                end
             end
         end
     end
@@ -182,11 +169,12 @@ function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, w
     end
     
     -- unit or wreck collision
-    if (weaponDefID == -3) and attackerID == nil and not unitPermanentImmune[unitID] then
+    if (weaponDefID == -3) and not unitPermanentImmune[unitID] then
         if unitCollide[unitID] then
             local collisionCount = unitCollide[unitID].collisionCount + 1
             unitCollide[unitID].collisionCount = collisionCount
             unitCollide[unitID].givenDamage[collisionCount] = damage
+            unitCollide[unitID].attackers[collisionCount] = attackerID or false
         else
             local vx,vy,vz = Spring.GetUnitVelocity(unitID)
             local speed = math.sqrt(vx^2 + vy^2 + vz^2)
@@ -197,6 +185,7 @@ function gadget:UnitPreDamaged(unitID, unitDefID, unitTeam, damage, paralyzer, w
                 speed = speed,
                 collisionCount = 1,
                 givenDamage = {damage},
+                attackers = {attackerID or false},
                 mass = attributes[unitDefID].mass,
             }
             clearTable = true
@@ -262,7 +251,7 @@ function gadget:GameFrame(frame)
                 if collideeeID~= colliderrID and collideeeData.collisionCount > 0 then --if collideee not yet processed:
                     local vx,vy,vz = collideeeData.vx, collideeeData.vy, collideeeData.vz
                     local relativeSpeed = math.sqrt((vx - colliderrData.vx)^2 + (vy - colliderrData.vy)^2 + (vz - colliderrData.vz)^2)
-                    local dmgMatchColliderr,dmgMatchCollideee = IsDamageMatch(collideeeData,colliderrData,relativeSpeed)
+                    local dmgMatchColliderr,dmgMatchCollideee = FindCollisionPair(colliderrID,colliderrData,collideeeID,collideeeData)
                     if dmgMatchColliderr then --unit matched by damage
                         local unitDefID = collideeeData.unitDefID
                         local noSelfDamage = false
@@ -315,6 +304,8 @@ function gadget:GameFrame(frame)
                         collideeeData.collisionCount = collideeeData.collisionCount - 1
                         table.remove(colliderrData.givenDamage, dmgMatchColliderr)
                         table.remove(collideeeData.givenDamage, dmgMatchCollideee)
+                        table.remove(colliderrData.attackers, dmgMatchColliderr)
+                        table.remove(collideeeData.attackers, dmgMatchCollideee)
                         if colliderrData.collisionCount == 0 then
                             break;
                         end
