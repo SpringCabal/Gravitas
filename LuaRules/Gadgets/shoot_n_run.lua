@@ -294,6 +294,8 @@ else
 		end
 	end
 
+	local jumpKeyWasDown = false
+
 	local function Unsynced_GameFrame(caller,frame)
 		local u=GetTheOne()
 		if u then
@@ -362,13 +364,18 @@ else
 					MoveZ=MoveZ+1
 				end
 			end
+			-- Jump once per key press, not on every frame the key is held:
+			-- each message gives a new jump order.
+			local jumpKeyDown=false
 			for _,key in ipairs(Spring.GetActionHotKeys("hero_jump")) do
 				if Spring.GetKeyState(Spring.GetKeyCode(key)) then
-					if TargetX and TargetY and TargetZ then
-						JumpX,JumpY,JumpZ=pos[1],pos[2],pos[3]
-					end
+					jumpKeyDown=true
 				end
 			end
+			if jumpKeyDown and not jumpKeyWasDown and TargetX and TargetY and TargetZ then
+				JumpX,JumpY,JumpZ=pos[1],pos[2],pos[3]
+			end
+			jumpKeyWasDown=jumpKeyDown
 			if Spring.GetKeyState(Spring.GetKeyCode('d')) then
 				local alt,ctrl,meta,shift=Spring.GetModKeyState()
 				if ctrl then
