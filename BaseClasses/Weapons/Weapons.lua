@@ -4,7 +4,6 @@ local CannonBase = Weapon:New {
     --noSelfDamage            = true,
     impulseFactor           = 1,
     turret                  = true,
-    onlyTargetCategory      = "INFANTRY",
     
 --     avoidFriendly           = false,
 --     collideFriendly         = false,
@@ -44,7 +43,6 @@ local GravityBase = Weapon:New {
       damage                  = {
         default = 0.001,
       },
-      onlyTargetCategory      = "INFANTRY",
 
       beamTime                = 0.1,
       coreThickness           = 0.5,
@@ -54,8 +52,6 @@ local GravityBase = Weapon:New {
       rgbColor2               = [[1 0.5 1]],
       size                    = 2,
 
-      startsmoke              = [[0]],
-      endsmoke                = [[0]],
       explosionGenerator      = [[custom:NONE]],
       soundTrigger            = true,
       thickness               = 4,
