@@ -65,7 +65,7 @@ local spAreTeamsAllied			= Spring.AreTeamsAllied
 local spGetUnitsInRectangle		= Spring.GetUnitsInRectangle
 local spGetUnitsInCylinder		= Spring.GetUnitsInCylinder
 local spSetUnitRulesParam		= Spring.SetUnitRulesParam
-local spGetCommandQueue     	= Spring.GetCommandQueue
+local spGetUnitCommandCount	= Spring.GetUnitCommandCount
 local spGetUnitWeaponTryTarget	= Spring.GetUnitWeaponTryTarget
 local spGetUnitWeaponTestTarget = Spring.GetUnitWeaponTestTarget
 local spGetUnitWeaponTarget		= Spring.GetUnitWeaponTarget
@@ -469,7 +469,7 @@ function gadget:UnitCmdDone(unitID, unitDefID, teamID, cmdID, cmdTag, cmdParams,
 end
 
 function gadget:AllowCommand(unitID, unitDefID, teamID, cmdID, cmdParams, cmdOptions)
-	if spGetCommandQueue(unitID, -1, false) == 0 or not cmdOptions.meta then
+	if spGetUnitCommandCount(unitID) == 0 or not cmdOptions.meta then
 		if processCommand(unitID, unitDefID, teamID, cmdID, cmdParams, cmdOptions) then
 			return false --command was used & fully processed, so block command
 		elseif cmdID == CMD_STOP then

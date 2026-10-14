@@ -55,7 +55,7 @@ local spGetUnitBasePosition  = Spring.GetUnitBasePosition
 local spInsertUnitCmdDesc  = Spring.InsertUnitCmdDesc
 local spSetUnitRulesParam  = Spring.SetUnitRulesParam
 local spSetUnitNoMinimap   = Spring.SetUnitNoMinimap
-local spGetCommandQueue    = Spring.GetCommandQueue
+local spGetUnitCommands    = Spring.GetUnitCommands
 local spGiveOrderToUnit    = Spring.GiveOrderToUnit
 local spSetUnitNoSelect    = Spring.SetUnitNoSelect
 local spSetUnitBlocking    = Spring.SetUnitBlocking
@@ -319,7 +319,7 @@ local function Jump(unitID, goal, cmdTag)
 	mcDisable(unitID)
 	
 		--mcSetPosition(unitID, start[1] + vector[1],start[2] + vector[2]-6,start[3] + vector[3])
-    local oldQueue = spGetCommandQueue(unitID)
+    local oldQueue = spGetUnitCommands(unitID, -1)
 	
     ReloadQueue(unitID, oldQueue, cmdTag)
 	
@@ -406,7 +406,7 @@ function gadget:AllowCommand(unitID, unitDefID, teamID,
 end
 
 local function PrintCommands(unitID)
-  for pos, command in pairs(Spring.GetUnitCommands(unitID)) do
+  for pos, command in pairs(Spring.GetUnitCommands(unitID, -1)) do
      Spring.Echo("Command: " .. pos .. " is ID " .. command.id)
    end
 end
@@ -466,7 +466,7 @@ function gadget:CommandFallback(unitID, unitDefID, teamID, cmdID, cmdParams, cmd
 		local deltaHeading = newHeading - currHeading
 		if math.abs(deltaHeading) < MINIMUM_TURN then
 			-- don't have to turn, continue as normal
-			local cmdTag = spGetCommandQueue(unitID,1)[1].tag
+			local cmdTag = spGetUnitCommands(unitID,1)[1].tag
 			-- reload perk can change reload before bar is full so check both
 			if true then
 				local coords = table.concat(cmdParams)
