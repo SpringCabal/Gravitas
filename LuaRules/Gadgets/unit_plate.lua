@@ -24,7 +24,7 @@ local PLATE_ACTIVATION_RANGE = 40
 
 function gadget:UnitCreated(unitID, unitDefID, unitTeam, builderID)
     if UnitDefs[unitDefID].name == "plate" then
-        plates[unitID] = { pressed = false }
+        plates[unitID] = { state = false }
         Spring.SetUnitCollisionVolumeData(unitID,
             0, 0, 0,
             0, 0, 0,
@@ -98,12 +98,12 @@ end
 
 local function SetUnitState(unitID, state)
 	local isGate = false
+    local active = GetUnitState(unitID)
     if plates[unitID] then
         plates[unitID].state = state
 	else
 		isGate = true
     end
-    local active = GetUnitState(unitID)
     if active ~= state then
         if state then
             Spring.GiveOrderToUnit(unitID, CMD.ONOFF, { 1 }, {})
