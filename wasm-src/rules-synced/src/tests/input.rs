@@ -10,6 +10,7 @@ pub struct Input {
     origin: Float3,
     goal: Float3,
     stage: Stage,
+    second_jump: bool,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -26,6 +27,7 @@ impl Input {
             origin: Float3::default(),
             goal: Float3::default(),
             stage: Stage::Press,
+            second_jump: false,
         }
     }
 }
@@ -59,7 +61,7 @@ impl Case for Input {
     }
 }
 
-const REACH: f32 = 300.0;
+const REACH: f32 = 150.0;
 const TOLERANCE: f32 = 60.0;
 
 impl Input {
@@ -94,6 +96,14 @@ impl Input {
                 "pressing jump moved the player {travelled} of {REACH}"
             ));
         }
-        Step::Pass
+        if self.second_jump {
+            return Step::Pass;
+        }
+        self.second_jump = true;
+        self.origin = position;
+        self.goal.z -= REACH;
+        harness::press_jump(self.goal.x, self.goal.z);
+        self.stage = Stage::TakeOff;
+        Step::Wait
     }
 }
