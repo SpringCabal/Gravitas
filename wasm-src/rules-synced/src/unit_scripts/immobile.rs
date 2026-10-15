@@ -1,6 +1,7 @@
 use alloc::rc::Rc;
 use core::cell::RefCell;
 
+use spring::ResultExt;
 use spring::cus::{Axis, Duration, InitCtx, Piece, SfxFlags, TaskDefinition, UnitCtx};
 
 use super::ScriptKind;
@@ -49,6 +50,20 @@ impl ImmobileScript {
             ScriptKind::Crate => explode(ctx, p.cube, SfxFlags::EXPLODE),
             ScriptKind::Wall2 => {
                 for piece in p.fragments {
+                    if let Some(fragment) =
+                        spring::units_pieces::get_unit_piece_pos_dir(ctx.unit().0, piece.0 + 1)
+                            .log_err_once("locating a wall fragment's explosion")
+                    {
+                        spring::spawn_ceg(
+                            "flashnuke",
+                            fragment.position,
+                            spring::Float3::default(),
+                            0.0,
+                            0.0,
+                            0.0,
+                        )
+                        .log_err_once("spawning a wall fragment's explosion");
+                    }
                     explode(ctx, piece, SfxFlags(SfxFlags::FALL.0 | SfxFlags::EXPLODE.0));
                 }
             }
