@@ -1,13 +1,14 @@
+pub(crate) mod behavior;
+
 use alloc::rc::Rc;
 
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
 use crate::effects;
-use crate::respawn::{self, Respawns};
+use crate::gadgets::respawn::behavior::{self as respawn, Respawns};
 use crate::state::{Global, PerLevel};
 
-/// Respawnable units come back where they started when they die or get stuck.
 #[derive(Default)]
 pub struct RespawnGadget {
     respawns: Rc<PerLevel<Respawns>>,

@@ -1,18 +1,12 @@
-//! What electric fields and fires have in common: a set of hazard units whose
-//! size is a unit rules param, and a record of the units they touch, which keep
-//! taking damage for a while after contact.
-
 use alloc::vec::Vec;
 
 use spring::types::Float3;
 
 use crate::units;
 
-/// Frames a unit keeps being hurt after it left a hazard.
 const LINGER_FRAMES: i32 = 60;
 const BASE_DAMAGE: f32 = 2.0;
 const PROXIMITY_DAMAGE_SCALE: f32 = 0.1;
-/// Hazard sizes are re-read and their effects sent this often.
 const DRAW_INTERVAL: i32 = 15;
 
 pub struct Fields {
@@ -27,7 +21,6 @@ pub struct Field {
     pub radius: f32,
 }
 
-/// A hazard as the ui module draws it.
 pub struct Visual {
     pub position: Float3,
     pub radius: f32,
@@ -42,8 +35,6 @@ impl Fields {
         }
     }
 
-    /// Track a new hazard unit, giving it the default size if the level did
-    /// not set one.
     pub fn add(&mut self, unit_id: i32) {
         let radius = match spring::get_unit_rules_param_f32(unit_id, self.size_param) {
             Ok(radius) => radius,
@@ -68,9 +59,6 @@ impl Fields {
         self.fields.iter().copied()
     }
 
-    /// Every `DRAW_INTERVAL` frames: re-read each hazard's size (scripts may
-    /// change it) and return what to draw. `fallback` is used when the param
-    /// is gone.
     pub fn refresh(&mut self, frame: i32, fallback: f32) -> Vec<Visual> {
         if frame % DRAW_INTERVAL != 0 {
             return Vec::new();
@@ -104,21 +92,16 @@ struct Exposure {
     last_contact_frame: i32,
 }
 
-/// One unit's damage for this frame.
 pub struct Contact {
     pub unit_id: i32,
     pub attacker_id: i32,
     pub robot: bool,
     pub damage: f32,
-    /// True while the unit is inside a hazard, false while it lingers.
     pub inside: bool,
-    /// 1 on contact, falling to 0 as the lingering effect runs out.
     pub strength: f32,
 }
 
 impl Exposures {
-    /// Note that `unit_id` is `proximity` elmos inside the hazard `field_id`
-    /// (0 when merely near it) this frame.
     pub fn record(&mut self, unit_id: i32, robot: bool, proximity: f32, field_id: i32, frame: i32) {
         if let Some(exposure) = self
             .exposed
@@ -143,8 +126,6 @@ impl Exposures {
         });
     }
 
-    /// The damage every recorded unit takes this frame. Clears this frame's
-    /// proximities and forgets units whose lingering effect ran out.
     pub fn resolve(&mut self, frame: i32) -> Vec<Contact> {
         let mut contacts = Vec::new();
         for exposure in &mut self.exposed {

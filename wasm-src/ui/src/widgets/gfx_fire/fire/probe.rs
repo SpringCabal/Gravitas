@@ -1,0 +1,73 @@
+use core::cell::Cell;
+
+use super::{Fire, emit};
+use crate::state::{Clock, Global};
+
+pub struct Probe {
+    stage: Cell<i32>,
+    shot: Cell<i32>,
+}
+
+impl Default for Probe {
+    fn default() -> Self {
+        Self {
+            stage: Cell::new(-1),
+            shot: Cell::new(-1),
+        }
+    }
+}
+
+impl Probe {
+    pub fn update(&self, global: &Global) {
+        let _ = spring::unsynced_ctrl::warp_mouse(1100, 500);
+        crate::widgets::gui_camera::camera::look_at(4288.0, 600.0, Some(650.0));
+        let frame = spring::game::current_frame();
+        if frame < 30 {
+            return;
+        }
+        let stage = ((frame - 30) / 30).min(4);
+        let target = [90, 105, 120, 150, 180][stage as usize];
+        if self.stage.replace(stage) != stage {
+            let mut fire = global.fire.access_mut();
+            *fire = Fire::default();
+            for n in 30..=target {
+                fire.advance(1.0);
+                emit::raw_burn(
+                    &mut fire,
+                    spring::types::Float3 {
+                        x: 4400.0,
+                        y: 144.25,
+                        z: 531.0,
+                    },
+                    25.0,
+                    1.0,
+                    [0.5, -0.25],
+                    (n * 20) as u64,
+                );
+                if n % 15 == 0 {
+                    emit::raw_flame(
+                        &mut fire,
+                        spring::types::Float3 {
+                            x: 4288.0,
+                            y: 144.25,
+                            z: 531.0,
+                        },
+                        500.0,
+                        0.5,
+                        (n * 10) as u64,
+                    );
+                }
+            }
+        }
+        global.clock.set(Clock {
+            frame: target,
+            elapsed: 0,
+        });
+        if frame >= 45 + 30 * stage && self.shot.replace(stage) != stage {
+            let _ = spring::send_commands("screenshot png", "");
+        }
+        if frame >= 190 {
+            let _ = spring::send_commands("quitforce", "");
+        }
+    }
+}

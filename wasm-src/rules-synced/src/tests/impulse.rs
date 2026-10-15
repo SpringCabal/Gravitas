@@ -49,7 +49,6 @@ impl Case for PushAndPull {
             STILL,
             "the pushing wall",
         ));
-        // The pull decides where the crate ends up; it must stay there.
         rest.extend(Rest::here(self.target, STILL, "the pushed crate"));
         rest
     }

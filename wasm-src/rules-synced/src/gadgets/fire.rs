@@ -1,3 +1,5 @@
+pub(crate) mod behavior;
+
 use spring::ResultExt;
 use spring::commands;
 use spring_addons::AddonContext;
@@ -6,11 +8,10 @@ use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 use gravitas_shared::EffectKind;
 
 use crate::effects::send_effect;
-use crate::fire::Fires;
+use crate::gadgets::fire::behavior::Fires;
 use crate::state::{Global, PerLevel};
 use crate::units;
 
-/// Fire burns what stands in its flames, and keeps burning it for a while.
 #[derive(Default)]
 pub struct FireGadget {
     fires: PerLevel<Fires>,
@@ -42,7 +43,6 @@ impl Gadget<Global> for FireGadget {
         let flames = fires.flames(frame);
         for burn in burns {
             commands::run(move || {
-                // An earlier burn this frame may have killed it.
                 if !units::valid(burn.unit_id) {
                     return;
                 }
@@ -58,7 +58,6 @@ impl Gadget<Global> for FireGadget {
                 emit_burn(burn.unit_id, burn.size_mult);
             });
         }
-        // Behind the burns: the ui module seeds effects by their order.
         commands::run(move || {
             for flame in flames {
                 send_effect(

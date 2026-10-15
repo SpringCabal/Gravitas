@@ -1,5 +1,3 @@
-//! Aiming and firing of the robot scripts.
-
 use alloc::rc::Rc;
 use core::cell::RefCell;
 
@@ -9,8 +7,6 @@ use super::super::common::{SIG_AIM, turn};
 use super::gait::wait_for_turn;
 use super::{RobotAnimationState, RobotKind, spin, stop_spin};
 
-/// The Lua AimWeapon functions aim at once and always allow the shot, moving
-/// or not.
 pub(super) fn aim(
     ctx: &UnitCtx,
     state: Rc<RefCell<RobotAnimationState>>,
@@ -24,17 +20,10 @@ pub(super) fn aim(
         (state_ref.kind, state_ref.pieces)
     };
 
-    // projector.lua uses SIG_RESET for the delayed turret reset.  The direct
-    // CUS task uses SIG_AIM for that same reset, so cancel it when a new aim
-    // starts just as the Lua call-in does.
     ctx.signal(SIG_AIM);
     match kind {
         RobotKind::Wallier => {
             turn(ctx, p.turret, Axis::Y, heading, 19.0);
-            // Wallier's AimWeapon1 also starts ReloadMissiles: after 50 ms it
-            // returns both arm pieces to zero.  This is observable through
-            // their rocket/MG child matrices, even though the turret itself
-            // is the only piece turned by the call-in.
             ctx.spawn(TaskDefinition::with_state(
                 "gravitas-wallier-reload-missiles",
                 Rc::clone(&state),
@@ -76,8 +65,6 @@ pub(super) fn fire(ctx: &UnitCtx, state: Rc<RefCell<RobotAnimationState>>) {
     drop(state_ref);
 
     match kind {
-        // projector.lua's Wallier branch shares the generic FireWeapon1 and
-        // therefore also kicks both arm pieces down.
         RobotKind::Wallier => {
             turn(ctx, p.arm_up_01, Axis::X, -2.0, 5.0);
             turn(ctx, p.arm_up_02, Axis::X, -2.0, 5.0);
@@ -126,15 +113,12 @@ pub(super) fn query_weapon(state: &RobotAnimationState, _weapon: i32, next_gun: 
     match state.kind {
         RobotKind::Boss => state.pieces.turret,
         RobotKind::Wallier => state.pieces.rocket_01,
-        // QueryWeapon2 rotates before returning.  next_gun is incremented by
-        // the caller after this function, so the first query returns gun02.
         RobotKind::Projector => match (next_gun + 1) % 4 {
             0 => state.pieces.gun_01,
             1 => state.pieces.gun_02,
             2 => state.pieces.gun_03,
             _ => state.pieces.gun_04,
         },
-        // QueryWeapon3 likewise returns MG02 on its first call.
         RobotKind::Bob => {
             if next_gun.is_multiple_of(2) {
                 state.pieces.mg_02

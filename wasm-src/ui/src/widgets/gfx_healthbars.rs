@@ -1,14 +1,13 @@
+pub mod healthbars;
 use core::cell::Cell;
 
 use spring_addons::AddonContext;
 use spring_addons::ui::Widget;
 
-use crate::healthbars;
 use crate::state::Global;
 
 #[derive(Default)]
 pub struct GfxHealthbarsWidget {
-    /// Wall-clock time, for the blink of a stunned unit's bar.
     seconds: Cell<f32>,
 }
 

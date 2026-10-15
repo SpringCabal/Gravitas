@@ -1,11 +1,11 @@
+pub(crate) mod behavior;
+
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
+use crate::gadgets::terrain::behavior as terrain;
 use crate::state::Global;
-use crate::terrain;
 
-/// Levels the ground under walls: raised while a wall stands, flat once it is
-/// gone.
 pub struct TerrainGadget;
 
 impl Gadget<Global> for TerrainGadget {

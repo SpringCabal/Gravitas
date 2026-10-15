@@ -41,7 +41,6 @@ impl Case for Falling {
         }
     }
 
-    /// Both went straight up and came straight down.
     fn rest(&self) -> Vec<Rest> {
         alloc::vec![
             Rest::at(self.dropped, self.dropped_at, STILL, "the dropped robot"),

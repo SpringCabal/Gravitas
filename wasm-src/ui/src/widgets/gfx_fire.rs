@@ -1,10 +1,10 @@
+pub mod fire;
 use spring_addons::AddonContext;
 use spring_addons::ui::Widget;
 
-use crate::fire::{self, Distortion};
+use self::fire::Distortion;
 use crate::state::Global;
 
-/// Moves and draws the fire and electric particles.
 #[derive(Default)]
 pub struct GfxFireWidget {
     distortion: Distortion,

@@ -8,9 +8,6 @@ use crate::state::Global;
 use crate::tests::arena;
 use crate::tests::harness::{Case, PHASES, Phase, Step};
 
-/// Build the e2e arena instead of the level, until the level case asks for
-/// the real one. Returns true when the level is replaced, even if the arena
-/// could not be built (the cases then fail).
 pub fn stage_level(global: &Global) -> bool {
     if global.tests.real_level.get() {
         return false;
@@ -43,14 +40,10 @@ pub fn stage_level(global: &Global) -> bool {
     true
 }
 
-/// The arena is built and linked: the cases can start.
 pub fn arena_ready(global: &Global) -> bool {
     global.tests.arena.get().is_some() && !global.tests.pending_link.get()
 }
 
-/// The e2e cases and their verdicts, owned by the tests gadget. The cases
-/// run phase by phase (see [`Phase`]); each case counts its own frames from
-/// its start and waits for what it needs, never for a frame of the suite.
 #[derive(Default)]
 pub struct Runner {
     state: RefCell<State>,
@@ -65,14 +58,11 @@ struct State {
 
 struct Entry {
     case: Box<dyn Case>,
-    /// The frame the case took its first step.
     started: Option<i32>,
     verdict: Option<bool>,
 }
 
-/// A case that has no verdict this many frames after its start fails.
 const CASE_TIMEOUT: i32 = 600;
-/// The arena comes up within a few frames of the game start.
 const ARENA_TIMEOUT: i32 = 300;
 
 impl Runner {
@@ -81,8 +71,6 @@ impl Runner {
         if !self.ready(global, frame) {
             return;
         }
-        // The cases create, destroy and damage units, which raises callins in
-        // this gadget: no borrow of the state is held while they run.
         let mut entries = core::mem::take(&mut self.state.borrow_mut().entries);
         if let Some(phase) = current_phase(&entries) {
             for entry in entries
@@ -99,8 +87,6 @@ impl Runner {
         }
     }
 
-    /// Load the cases once the arena is up, or fail them all if it never
-    /// comes up. False while there is nothing to run.
     fn ready(&self, global: &Global, frame: i32) -> bool {
         let mut state = self.state.borrow_mut();
         if state.done {
@@ -144,7 +130,6 @@ impl Runner {
     }
 }
 
-/// The first phase with a case still running.
 fn current_phase(entries: &[Entry]) -> Option<Phase> {
     PHASES.into_iter().find(|phase| {
         entries
@@ -153,12 +138,10 @@ fn current_phase(entries: &[Entry]) -> Option<Phase> {
     })
 }
 
-/// Ask for the real level on the next restart.
 pub fn use_real_level(global: &Global) {
     global.tests.real_level.set(true);
 }
 
-/// Link the arena's plates and gates on the frame after it was built.
 fn link_arena(global: &Global) {
     if !global.tests.pending_link.replace(false) {
         return;

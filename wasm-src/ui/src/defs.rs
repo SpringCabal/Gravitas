@@ -1,13 +1,9 @@
-//! Per-def customParams the draw and unit callins need, read once.
-
 use alloc::vec::Vec;
 use springcabal::defs::DefCache;
 
 #[derive(Clone, Copy, Default)]
 pub struct UnitDef {
-    /// Players, robots and barrels get healthbars; map machinery does not.
     pub healthbar: bool,
-    /// Fire and electric fields: drawn as particles, not as models.
     pub effect: bool,
 }
 
@@ -24,7 +20,6 @@ pub fn unit(unit_def_id: i32) -> UnitDef {
 
 fn load() -> Vec<UnitDef> {
     let count = spring::unit_defs::get_unit_def_count(0).unwrap_or(0) as i32;
-    // Unit def ids start at 1; index 0 stays empty.
     (0..=count)
         .map(|unit_def_id| {
             let keys =

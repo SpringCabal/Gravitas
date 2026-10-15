@@ -35,8 +35,6 @@ pub(super) fn move_piece(ctx: &UnitCtx, piece: Piece, axis: Axis, target: f32, s
     }
 }
 
-/// A sound heard everywhere, like the scripts' `Spring.PlaySoundFile(name,
-/// volume)` (a zero position means no position).
 pub(super) fn play_sound(name: &str, volume: f32) {
     let none = spring::types::Float3::default();
     let _ = spring::sound::play_sound_file(name, volume, none, none, 0);

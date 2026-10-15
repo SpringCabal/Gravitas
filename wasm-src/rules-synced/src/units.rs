@@ -5,7 +5,7 @@ use spring::commands::{self, Pending};
 use spring::generated::owned::unit_control;
 use spring::types::Float3;
 
-use crate::level::Spawn;
+use crate::gadgets::level::data::Spawn;
 
 pub const RULES_PARAM_PRIVATE: i32 = 1;
 
@@ -20,9 +20,6 @@ pub fn ground_height(x: f32, z: f32) -> f32 {
     spring::get_ground_height(x, z).unwrap_or(0.0)
 }
 
-/// Create a scenario unit, once this callin returns. Its rules params are
-/// handed to the unit setup gadget through `pending_rules`, so they are set
-/// before any other gadget's UnitCreated sees the unit.
 pub fn spawn(spawn: &'static Spawn) -> Pending<Option<i32>> {
     let def_id = crate::defs::get().id(spawn.def_name);
     commands::queue(move || {
@@ -45,24 +42,20 @@ pub fn spawn(spawn: &'static Spawn) -> Pending<Option<i32>> {
         crate::with_global(|global| global.pending_rules.set(spawn.rules));
         let created =
             unit_control::create_unit(&unit_def, position, DEFAULT_FACING, spawn.team, options);
-        // Taken by UnitCreated; cleared here too in case there was none.
         crate::with_global(|global| global.pending_rules.set(&[]));
         let unit_id = created.ok()?;
         if unit_id < 0 {
             return None;
         }
         face(unit_id, spawn.angle);
-        // Queued like the orders UnitCreated gave, and after them.
         order(unit_id, spring::cmd::FIRE_STATE, &[spawn.fire_state as f32]);
         order(unit_id, spring::cmd::MOVE_STATE, &[spawn.move_state as f32]);
         Some(unit_id)
     })
 }
 
-/// Rules params by name, as the scenario sets them.
 pub type RulesParams = &'static [(&'static str, f32)];
 
-/// Set a new unit's scenario rules params.
 pub fn set_rules_params(unit_id: i32, rules: RulesParams) {
     for (name, value) in rules {
         crate::diagnostics::check(
@@ -72,7 +65,6 @@ pub fn set_rules_params(unit_id: i32, rules: RulesParams) {
     }
 }
 
-/// Create a unit once this callin returns; `.then` gets its id.
 pub fn create(def_id: i32, position: Float3, team: i32) -> Pending<Option<i32>> {
     let unit_def = unit_control::DefRef {
         name: crate::defs::get().unit(def_id).name.clone(),
@@ -91,20 +83,15 @@ pub fn create(def_id: i32, position: Float3, team: i32) -> Pending<Option<i32>> 
     })
 }
 
-/// Give `unit_id` an order once this callin returns. The engine refusing one
-/// is logged.
 pub fn order(unit_id: i32, command: i32, params: &[f32]) {
     let _ = order_with(unit_id, command, params, 0);
 }
 
-/// [`order`] with option bits (`spring::cmd::options`).
 pub fn order_with(unit_id: i32, command: i32, params: &[f32], options: u32) -> Pending<()> {
     let params = params.to_vec();
     commands::queue(move || order_now(unit_id, command, &params, options))
 }
 
-/// [`order_with`] right away, for code that already runs as a command. A unit
-/// that died since the order was decided gets none.
 pub fn order_now(unit_id: i32, command: i32, params: &[f32], options: u32) {
     if !valid(unit_id) {
         return;
@@ -115,7 +102,6 @@ pub fn order_now(unit_id: i32, command: i32, params: &[f32], options: u32) {
     );
 }
 
-/// Switch the engine's movement of `unit_id` off (`enable`) or back on.
 pub fn move_ctrl(unit_id: i32, enable: bool) {
     crate::diagnostics::check(spring::move_ctrl::move_ctrl(unit_id, enable), || {
         alloc::format!("move_ctrl({enable}) for unit {unit_id}")

@@ -84,7 +84,6 @@ impl GravitPieces {
 struct GravitAnimationState {
     active: bool,
     jumping: bool,
-    /// The death animation is playing.
     dying: bool,
     pieces: GravitPieces,
 }
@@ -112,8 +111,6 @@ impl GravitScript {
         apply_keyframe(ctx, self.pieces, data::STOP[0], false);
     }
 
-    // Walk, Idle and Stop each signal their own mask first in gravit.lua, so
-    // a new one replaces the one already running.
     pub(super) fn start_moving(&self, ctx: &UnitCtx) {
         ctx.signal(SIG_IDLE);
         ctx.signal(SIG_WALK);
@@ -142,8 +139,6 @@ impl GravitScript {
         self.state.borrow_mut().active = false;
     }
 
-    /// gravit.lua's Killed: the death sound, the death animation, then the
-    /// limbs fly off. The unit stays until the animation is over.
     pub(super) fn killed(&self, ctx: &UnitCtx) -> WreckLevel {
         ctx.signal(SIG_AIM);
         ctx.signal(SIG_WALK);
@@ -187,7 +182,6 @@ impl GravitScript {
         self.pieces.head
     }
 
-    /// The jump gadget's calls. Returns whether `name` is one of them.
     pub(super) fn jump(&self, ctx: &UnitCtx, call: JumpCall) {
         let state = Rc::clone(&self.state);
         let task = match call {
@@ -317,7 +311,6 @@ async fn die(state: Rc<RefCell<GravitAnimationState>>, ctx: UnitCtx) {
     ctx.set_killed_finished(WRECK_LEVEL);
 }
 
-/// gravit.lua's Killed returns 1.
 const WRECK_LEVEL: WreckLevel = WreckLevel::One;
 
 async fn play_animation(ctx: &UnitCtx, pieces: GravitPieces, animation: &[Keyframe], snap: bool) {

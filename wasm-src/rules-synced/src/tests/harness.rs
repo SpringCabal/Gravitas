@@ -14,29 +14,18 @@ pub trait Case {
     fn phase(&self) -> Phase {
         Phase::Arena
     }
-    /// `frame` counts from the case's start: 0 on its first step.
     fn step(&mut self, global: &Global, frame: i32) -> Step;
-    /// Where the case left its units once it passed. The scene case checks
-    /// them on the frame it has the arena shot.
     fn rest(&self) -> Vec<Rest> {
         Vec::new()
     }
 }
 
-/// When a case may start: every case of a phase starts together, once every
-/// case of the phase before has its verdict. A case that changes more than
-/// its own rig (the scene, a restart) gets a phase of its own.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Phase {
-    /// The arena as built, before any case touches it.
     Setup,
-    /// The cases that each play in their own rig.
     Arena,
-    /// The arena at rest, shot and checked.
     Scene,
-    /// Restarts rebuild the arena.
     Restart,
-    /// Restarts into the real level.
     Level,
 }
 
@@ -48,9 +37,7 @@ pub const PHASES: [Phase; 5] = [
     Phase::Level,
 ];
 
-/// Where a unit should be once its case is done.
 pub enum Rest {
-    /// Within `within` elmos of `at`, on the ground plane.
     At {
         unit: i32,
         at: Float3,
@@ -73,7 +60,6 @@ impl Rest {
         }
     }
 
-    /// Where `unit` is now, with `within` of leeway.
     pub fn here(unit: i32, within: f32, what: &'static str) -> Option<Self> {
         position(unit).map(|at| Rest::at(unit, at, within, what))
     }
@@ -85,7 +71,6 @@ pub enum Step {
     Fail(String),
 }
 
-/// Leeway for a unit no case moved: it settles on the ground after spawning.
 pub const STILL: f32 = 10.0;
 
 pub fn fail(reason: &str) -> Step {
@@ -104,14 +89,7 @@ pub fn look(position: Float3, height: f32) {
     });
 }
 
-// Input goes through the ui module, which the headless run also loads: it
-// points its input widget where asked and sends the usual input message, and
-// it presses the HUD's restart button.
-
-/// Point at the ground at `x`, `z` and press jump (the middle button).
 pub fn press_jump(x: f32, z: f32) {
-    // The height matters: a jump is refused as TooHigh unless the goal sits at
-    // the terrain, which is what the ui module's cursor trace supplies.
     let y = units::ground_height(x, z);
     send_to_ui(Request::Pointer {
         target: [x, y, z],
@@ -119,7 +97,6 @@ pub fn press_jump(x: f32, z: f32) {
     });
 }
 
-/// Give the mouse back to the ui module.
 pub fn release_pointer() {
     send_to_ui(Request::PointerOff);
 }
@@ -148,7 +125,6 @@ pub fn paralyze(unit_id: i32) -> Option<f32> {
         .map(|health| health.paralyze_damage)
 }
 
-/// Set the unit's health and clear its stun, once this callin returns.
 pub fn heal(unit_id: i32, value: f32) {
     commands::run(move || {
         let Ok(health) = spring::units_info::get_unit_health(unit_id) else {
@@ -167,8 +143,6 @@ pub fn heal(unit_id: i32, value: f32) {
     });
 }
 
-/// Move the unit there, stopped, once this callin returns: after the orders
-/// given before.
 pub fn place(unit_id: i32, position: Float3) {
     commands::run(move || {
         let _ = spring::set_unit_velocity(unit_id, Float3::default());
@@ -210,7 +184,6 @@ pub fn halt(unit_id: i32) {
     let _ = commands::give_order_to_unit(unit_id, spring::cmd::STOP, &[], 0, 0);
 }
 
-/// Destroy the unit once this callin returns.
 pub fn destroy(unit_id: i32) {
     let _ = commands::destroy_unit(
         unit_id,

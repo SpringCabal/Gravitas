@@ -14,8 +14,6 @@ pub fn tag_on_create(unit_id: i32, unit_def_id: i32) {
     }
 }
 
-/// Respawnable units come back when they die or get stuck. No def is; the
-/// scenario marks units with this rules param.
 pub fn mark_respawnable(unit_id: i32) {
     set_rules_param(unit_id, RESPAWNABLE, 1.0);
 }
@@ -25,7 +23,6 @@ pub fn is_respawnable(unit_id: i32) -> bool {
 }
 
 const RESPAWNABLE: &str = "respawnable";
-/// Rules params: the def's flags, which the scenario can override per unit.
 pub const INVULNERABLE: &str = "invulnerable";
 const NONPARALYZABLE: &str = "nonparalyzable";
 
@@ -41,8 +38,6 @@ pub fn blocks_damage(unit_id: i32, paralyzer: bool) -> bool {
     }
 }
 
-/// The blast of a barrel that was destroyed at `position`. Its damage runs
-/// the damaged units' callins: call it as a command.
 pub fn explode_barrel(barrel: i32, position: spring::types::Float3) {
     let _ = spring::sound::play_sound_file(
         EXPLOSION_SOUND,
@@ -66,7 +61,6 @@ pub fn explode_barrel(barrel: i32, position: spring::types::Float3) {
         },
     );
     for nearby in units::units_in_cylinder(position.x, position.z, EXPLOSION_RADIUS) {
-        // An earlier hit may have set off another barrel that killed it.
         if !units::valid(nearby) {
             continue;
         }
@@ -140,7 +134,6 @@ fn rules_flag(unit_id: i32, name: &str) -> bool {
     spring::get_unit_rules_param_f32(unit_id, name).unwrap_or(0.0) >= 1.0
 }
 
-/// Ask the ui module to draw a fire or electric effect at `position`.
 pub fn send_effect(position: spring::types::Float3, kind: EffectKind) {
     let effect = Effect {
         position: [position.x, position.y, position.z],

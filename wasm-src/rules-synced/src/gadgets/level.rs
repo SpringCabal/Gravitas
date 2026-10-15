@@ -1,12 +1,18 @@
+pub(crate) mod restart;
+
+pub(crate) mod setup;
+
+pub(crate) mod data;
+
 use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
+use crate::diagnostics;
+use crate::gadgets::level::data as level;
+use crate::gadgets::mission::behavior as mission;
 use crate::state::{Global, Phase};
-use crate::{diagnostics, level, mission, restart, setup};
 
-/// Spawns the level at the end of a frame, links it at the start of the next, restarts it on request, and
-/// wins the game when the boss dies. (The player gadget ends it when the player's unit dies.)
 pub struct LevelGadget;
 
 impl Gadget<Global> for LevelGadget {
@@ -23,8 +29,6 @@ impl Gadget<Global> for LevelGadget {
         }
         let phase = global.level.access().phase;
         match phase {
-            // After every gadget has run this frame, so they all see the new
-            // level from the next frame on.
             Phase::Spawn => commands::run(|| crate::with_global(setup::spawn)),
             Phase::Link => setup::link(global),
             Phase::Running => {}

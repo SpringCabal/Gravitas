@@ -4,7 +4,6 @@ use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 use crate::state::Global;
 use crate::tests;
 
-/// Runs the in-game e2e cases (only with the `e2e` feature).
 #[derive(Default)]
 pub struct TestsGadget {
     runner: tests::Runner,

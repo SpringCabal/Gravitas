@@ -9,16 +9,11 @@ use crate::state::Global;
 use crate::tests::arena::RIG_SPACING;
 use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
 
-/// A robot on an assault that gets hurt by a hazard steps aside and then
-/// carries on: the escape goes in front of its FIGHT order (unit_robots.lua
-/// inserts it), and a second escape replaces the first.
 pub struct Fleeing {
     robot: i32,
     origin: Float3,
     fire: i32,
     fire_at: Float3,
-    /// The verdict of the last hit, reached right after its damage and
-    /// reported on the next step.
     verdict: Rc<RefCell<Option<Step>>>,
 }
 
@@ -46,13 +41,11 @@ impl Case for Fleeing {
         match frame {
             ASSAULT_FRAME => self.assault(global),
             FIRST_HIT_FRAME => self.hit_and_check("the first escape", false),
-            // After the flee cooldown, while the first escape is still queued.
             SECOND_HIT_FRAME => self.hit_and_check("the second escape", true),
             _ => Step::Wait,
         }
     }
 
-    /// The escapes decide where the robot stops; it stays in its rig.
     fn rest(&self) -> Vec<Rest> {
         alloc::vec![
             Rest::at(
@@ -91,7 +84,6 @@ impl Fleeing {
         self.origin = origin;
         self.fire = fire;
         self.fire_at = fire_at;
-        // Up the arena screenshot, away from the HUD.
         let z = origin.z - ASSAULT_DISTANCE;
         let target = Float3 {
             x: origin.x,
@@ -102,9 +94,6 @@ impl Fleeing {
         Step::Wait
     }
 
-    /// Hurt the robot with the fire as the attacker, then read its queue
-    /// once the escape orders its UnitPreDamaged queued have run. The `last`
-    /// hit passes the case.
     fn hit_and_check(&mut self, what: &'static str, last: bool) -> Step {
         let (robot, verdict) = (self.robot, Rc::clone(&self.verdict));
         commands::add_unit_damage(robot, HIT_DAMAGE, 0.0, -1, self.fire, Float3::default()).then(

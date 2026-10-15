@@ -1,6 +1,3 @@
-//! Unit and weapon defs, resolved once: ids for the defs the rules refer to by
-//! name, and the per-def customParams and values the hot paths need.
-
 use alloc::string::String;
 use alloc::vec::Vec;
 use springcabal::defs::DefCache;
@@ -14,25 +11,20 @@ pub struct Defs {
     pub fire: Option<i32>,
     pub electrafi: Option<i32>,
     units: Vec<UnitDef>,
-    /// The `impulse` customParam, by weapon def id.
     weapon_impulses: Vec<Option<f32>>,
 }
 
-/// What the rules need to know about one unit def.
 #[derive(Default)]
 pub struct UnitDef {
     pub name: String,
     pub player: bool,
     pub robot: bool,
-    /// Scenery drawn as particles (fire, electric fields): never an obstacle.
     pub effect: bool,
     pub barrel: bool,
     pub wall: bool,
     pub gate: bool,
     pub plate_toggler: bool,
-    /// customParams `invulnerable == 1`.
     pub invulnerable: bool,
-    /// customParams `nonparalyzable == 1`.
     pub nonparalyzable: bool,
     pub radius: Option<f32>,
     pub elasticity: Option<f32>,
@@ -65,13 +57,11 @@ static NO_DEF: UnitDef = UnitDef {
 
 static DEFS: DefCache<Defs> = DefCache::new(Defs::load);
 
-/// The resolved defs. Loaded on first use; defs never change during a game.
 pub fn get() -> &'static Defs {
     DEFS.get()
 }
 
 impl Defs {
-    /// A unit def by id; an empty def for an unknown id.
     pub fn unit(&self, unit_def_id: i32) -> &UnitDef {
         usize::try_from(unit_def_id)
             .ok()
@@ -79,7 +69,6 @@ impl Defs {
             .unwrap_or(&NO_DEF)
     }
 
-    /// The id of the unit def called `name`.
     pub fn id(&self, name: &str) -> Option<i32> {
         self.units
             .iter()
@@ -97,7 +86,6 @@ impl Defs {
 
     fn load() -> Self {
         let count = spring::unit_defs::get_unit_def_count(0).unwrap_or(0) as i32;
-        // Unit def ids start at 1; index 0 stays empty.
         let units: Vec<UnitDef> = (0..=count).map(UnitDef::load).collect();
         let weapons = spring::weapon_defs::get_weapon_def_count(0).unwrap_or(0) as i32;
         let weapon_impulses = (0..weapons)

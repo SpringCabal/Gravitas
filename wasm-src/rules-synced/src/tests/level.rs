@@ -1,16 +1,11 @@
 use alloc::format;
 
-use crate::level;
+use crate::gadgets::level::data as level;
 use crate::state::{Global, Phase as LevelPhase};
 use crate::tests::harness::{self, Case, Phase, Step, fail};
 use crate::tests::{record, runner};
 use crate::units;
 
-/// The real level, after every other case: restart into it and check that it
-/// spawned whole, linked its plates, handed the player its Gravit, and gave
-/// the hazards their scenario sizes before any gadget's UnitCreated. The
-/// restart makes a round trip through the ui module, so the case waits for
-/// the level to be up instead of counting frames.
 pub struct RealLevel {
     restarted: bool,
 }
@@ -45,8 +40,6 @@ impl Case for RealLevel {
     }
 }
 
-/// The real level has spawned and linked (the arena spawns nothing into
-/// the level's list).
 fn level_up(global: &Global) -> bool {
     let level = global.level.access();
     level.phase == LevelPhase::Running && !level.spawned.is_empty()
@@ -88,7 +81,8 @@ fn check(global: &Global) -> Step {
     }
     for spawn in level::SPAWNS {
         let Some(&(_, wanted)) = spawn.rules.iter().find(|(name, _)| {
-            *name == crate::fire::SIZE_PARAM || *name == crate::electrafi::SIZE_PARAM
+            *name == crate::gadgets::fire::behavior::SIZE_PARAM
+                || *name == crate::gadgets::electrafi::behavior::SIZE_PARAM
         }) else {
             continue;
         };

@@ -1,6 +1,5 @@
 use crate::state::Global;
 
-/// Without the `e2e` feature there is no test state.
 #[derive(Default)]
 pub struct Shared;
 

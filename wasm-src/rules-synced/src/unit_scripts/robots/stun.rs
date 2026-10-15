@@ -1,6 +1,3 @@
-//! The spasm of a paralyzed robot, from `stunDetect` and `stunned` in
-//! projector.lua and projector_boss.lua.
-
 use alloc::rc::Rc;
 use alloc::vec::Vec;
 use core::cell::RefCell;
@@ -12,8 +9,6 @@ use super::super::common::{move_piece, turn};
 use super::gait::{turn_degrees, wait_for_turn};
 use super::{DEGREES, RobotAnimationState, RobotKind, RobotPieces};
 
-/// `stunDetect`: flag the robot as stunned while its paralyze damage exceeds
-/// its health, re-checking every half second.
 pub(super) async fn detect(state: Rc<RefCell<RobotAnimationState>>, ctx: UnitCtx) {
     loop {
         ctx.sleep(Duration::from_millis(50)).await;
@@ -30,7 +25,6 @@ fn paralyzed(unit: spring::UnitId) -> bool {
         .is_ok_and(|health| health.health < health.paralyze_damage)
 }
 
-/// `while boolStunned do stunned() end` in the walk and idle loops.
 pub(super) async fn while_stunned(state: &Rc<RefCell<RobotAnimationState>>, ctx: &UnitCtx) {
     while state.borrow().stunned {
         let (pieces, kind) = {
@@ -41,8 +35,6 @@ pub(super) async fn while_stunned(state: &Rc<RefCell<RobotAnimationState>>, ctx:
     }
 }
 
-/// `stunned()`: a few contracting spasms of decreasing strength, then a slow
-/// wave through the body until the stun wears off.
 async fn spasm(
     ctx: &UnitCtx,
     p: RobotPieces,
@@ -51,10 +43,7 @@ async fn spasm(
 ) {
     let mut decrease: f32 = 44.0;
     while decrease > 1.0 {
-        // Contract.
         twitch_legs(ctx, p).await;
-        // `tP(piece, x_axis, angle, 5)` passes the axis as the X angle and
-        // no speed, so these snap to (1, angle, 5) degrees.
         for (piece, angle) in [
             (p.leg_front_01, -decrease),
             (p.leg_front_02, -decrease),
@@ -75,7 +64,6 @@ async fn spasm(
                 }
             }
         }
-        // Release.
         let spread = decrease as i32;
         opposite(
             ctx,
@@ -110,7 +98,6 @@ async fn spasm(
     }
     let body = body_pieces(p, kind);
     while state.borrow().stunned {
-        // `math.random(11, 11.5)` truncates to 11.
         let offset = random::int(11, 11) as f32 * WAVE_PHASE;
         let step = core::f32::consts::TAU / body.len() as f32;
         for (index, piece) in body.iter().enumerate() {
@@ -130,14 +117,12 @@ const WAVE_PHASE: f32 = core::f32::consts::PI * 0.45;
 const WAVE_AMPLITUDE: f32 = 8.5;
 const WAVE_SPEED: f32 = 0.14;
 const RESET_SPEED: f32 = 15.0;
-/// Lua's `x_axis`, used by the script as an angle by mistake.
 const X_AXIS_INDEX: f32 = 1.0;
 
 fn jitter(low: i32, high: i32) -> f32 {
     random::int(low, high) as f32
 }
 
-/// The four legs jerk to random angles; waits for the last one.
 async fn twitch_legs(ctx: &UnitCtx, p: RobotPieces) {
     for piece in [p.leg_front_02, p.leg_front_01, p.leg_rear_01, p.leg_rear_02] {
         turn_all(ctx, piece, jitter(-10, 10), SPASM_SPEED);
@@ -145,7 +130,6 @@ async fn twitch_legs(ctx: &UnitCtx, p: RobotPieces) {
     wait_for_turn(ctx, p.leg_rear_02).await;
 }
 
-/// `tP(piece, x, 0, 0, speed)`.
 fn turn_all(ctx: &UnitCtx, piece: Piece, x_degrees: f32, speed: f32) {
     turn_degrees(ctx, piece, Axis::X, x_degrees, speed);
     turn(ctx, piece, Axis::Y, 0.0, speed);
@@ -158,13 +142,11 @@ fn snap(ctx: &UnitCtx, piece: Piece, degrees: [f32; 3]) {
     }
 }
 
-/// `equiTurn`: two pieces turn about X by opposite angles.
 fn opposite(ctx: &UnitCtx, first: Piece, second: Piece, degrees: f32) {
     turn_degrees(ctx, first, Axis::X, degrees, RELEASE_SPEED);
     turn_degrees(ctx, second, Axis::X, -degrees, RELEASE_SPEED);
 }
 
-/// `resetPiece(piece, 15)`.
 fn reset(ctx: &UnitCtx, piece: Piece) {
     for axis in [Axis::X, Axis::Y, Axis::Z] {
         turn(ctx, piece, axis, 0.0, RESET_SPEED);
@@ -172,7 +154,6 @@ fn reset(ctx: &UnitCtx, piece: Piece) {
     }
 }
 
-/// The script's `piecesTable`, in its order.
 fn body_pieces(p: RobotPieces, kind: RobotKind) -> Vec<Piece> {
     let mut pieces = alloc::vec![
         p.center,

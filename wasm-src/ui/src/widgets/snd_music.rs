@@ -1,6 +1,5 @@
 use springcabal::music::MusicLoop;
 
-/// `snd_music.lua`: the one track, looped.
 pub fn music() -> MusicLoop {
     MusicLoop::new(TRACK, VOLUME)
 }

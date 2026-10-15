@@ -4,8 +4,6 @@ use spring_addons::rules::{Gadget, UnitPreDamagedEvent};
 use crate::effects;
 use crate::state::Global;
 
-/// Units with the `invulnerable` rules param take no damage, and those with
-/// `nonparalyzable` can't be stunned.
 pub struct InvulnerableGadget;
 
 impl Gadget<Global> for InvulnerableGadget {

@@ -1,3 +1,4 @@
+pub mod falldamage;
 use core::cell::RefCell;
 
 use alloc::vec::Vec;
@@ -7,21 +8,11 @@ use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent, UnitPreDamagedEvent};
 
+use crate::effects;
 use crate::state::Global;
-use crate::{effects, falldamage};
 
-/// Units bounce off the ground and take damage from hard landings; units that
-/// fall off the map die.
-///
-/// A collision with another unit (a robot thrown into a crate or at the
-/// player) carries the other unit as the attacker and does the engine's
-/// damage. A collision without one (a feature) does nothing at once and the
-/// multiplied engine damage on the next frame, as `game_fall_damage.lua` does.
-/// Walls don't block: they raise the terrain, so hitting one is a ground
-/// collision.
 #[derive(Default)]
 pub struct FallDamageGadget {
-    /// Collisions without an attacker this frame: unit and engine damage.
     debris: RefCell<Vec<(i32, f32)>>,
 }
 

@@ -6,9 +6,6 @@ use crate::state::Global;
 use crate::tests::arena::RIG_SPACING;
 use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
 
-/// A robot thrown into a crate takes the engine's collision damage. The robot
-/// is immune to fall damage for the throw, so a hard landing can't pass for
-/// the collision.
 pub struct Collision {
     thrown: i32,
     anvil: i32,
@@ -40,8 +37,6 @@ impl Case for Collision {
         }
     }
 
-    /// The bounce decides where the robot and the crate stop; they stay in
-    /// the rig.
     fn rest(&self) -> Vec<Rest> {
         let mut rest = alloc::vec![Rest::at(
             self.thrown,
@@ -57,7 +52,6 @@ impl Case for Collision {
 const THROW_FRAME: i32 = 2;
 const VERDICT_FRAME: i32 = 60;
 const IMMUNITY_FRAMES: i32 = 120;
-/// Towards the crate, and up enough that the robot leaves the ground.
 const THROW: Float3 = Float3 {
     x: -8.0,
     y: 3.0,

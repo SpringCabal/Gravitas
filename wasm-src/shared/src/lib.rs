@@ -1,7 +1,3 @@
-//! What the rules and ui modules must agree on: the messages between them.
-//! Rules to ui: [`Status`], [`Effect`] and [`game_over`]. Ui to rules:
-//! [`Input`] and [`RESTART`]. The e2e scenario's messages are in [`e2e`].
-
 #![no_std]
 
 extern crate alloc;
@@ -12,7 +8,6 @@ use alloc::string::String;
 
 use springcabal::message::{Encoder, fields, key_values};
 
-/// Ui to rules: start the level again (the end panel's restart button).
 pub const RESTART: &str = "gravitas_restart";
 
 const STATUS: &str = "GRAVITAS_STATUS";
@@ -20,14 +15,11 @@ const EFFECT: &str = "GRAVITAS_FX";
 const GAME_OVER: &str = "GRAVITAS_OVER";
 const INPUT: &str = "gravitas";
 
-/// Rules to ui: what the HUD shows. Sent when it changes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Status {
-    /// The unit the player controls, if there is one.
     pub player_unit: Option<i32>,
     pub health: i32,
     pub max_health: i32,
-    /// Whether the push and pull guns are loaded.
     pub push_ready: bool,
     pub pull_ready: bool,
 }
@@ -43,7 +35,6 @@ impl Status {
             .finish()
     }
 
-    /// `None` unless `message` is a status with every field.
     pub fn parse(message: &str) -> Option<Self> {
         let (mut player_unit, mut health, mut max_health) = (None, None, None);
         let (mut push_ready, mut pull_ready) = (None, None);
@@ -67,17 +58,14 @@ impl Status {
     }
 }
 
-/// Rules to ui: the game is over, won or lost.
 pub fn game_over(victory: bool) -> String {
     Encoder::new(GAME_OVER).flag(victory).finish()
 }
 
-/// Whether `message` ends the game, and with a victory.
 pub fn parse_game_over(message: &str) -> Option<bool> {
     fields(message, GAME_OVER)?.flag()
 }
 
-/// Rules to ui: a fire or electric effect to draw at `position`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Effect {
     pub position: [f32; 3],
@@ -86,18 +74,17 @@ pub struct Effect {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum EffectKind {
-    /// A burning unit of this radius; `strength` fades from 1 as the burn
-    /// runs out; the unit's horizontal velocity drifts the flames.
     Burn {
         radius: f32,
         strength: f32,
         velocity: [f32; 2],
     },
-    /// A fire (or a barrel's blast) of this radius.
-    Flame { radius: f32 },
-    /// An electric field of this radius.
-    Arc { radius: f32 },
-    /// A spark on a shocked unit, scattered over `spread` around it.
+    Flame {
+        radius: f32,
+    },
+    Arc {
+        radius: f32,
+    },
     Spark {
         intensity: f32,
         velocity: [f32; 2],
@@ -106,7 +93,6 @@ pub enum EffectKind {
 }
 
 impl Effect {
-    /// `GRAVITAS_FX|kind|x|y|z|values...`
     pub fn encode(&self) -> String {
         let [x, y, z] = self.position;
         let message = Encoder::new(EFFECT);
@@ -162,7 +148,6 @@ impl Effect {
         })
     }
 
-    /// How far the effect reaches, for the ui's visibility check.
     pub fn magnitude(&self) -> f32 {
         match self.kind {
             EffectKind::Burn { radius, .. }
@@ -173,23 +158,18 @@ impl Effect {
     }
 }
 
-/// Ui to rules: the player's input. Sent when it changes.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Input {
-    /// The held movement keys, each -1, 0 or 1.
     pub move_x: f32,
     pub move_z: f32,
-    /// Where the cursor points, and the unit under it (-1 for none).
     pub target: [f32; 3],
     pub target_unit: i32,
     pub push: bool,
     pub pull: bool,
-    /// Jump was pressed: set only on the message sent when the key went down.
     pub jump: bool,
 }
 
 impl Input {
-    /// `gravitas|move_x|move_z|target_x|target_y|target_z|target_unit|push|pull|jump`
     pub fn encode(&self) -> String {
         Encoder::new(INPUT)
             .fields([self.move_x, self.move_z])

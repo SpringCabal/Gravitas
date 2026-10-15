@@ -1,3 +1,4 @@
+pub mod behavior;
 use spring::ResultExt;
 use spring::commands;
 use spring_addons::AddonContext;
@@ -5,12 +6,11 @@ use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
 use gravitas_shared::EffectKind;
 
+use self::behavior::Electrafi;
 use crate::effects::send_effect;
-use crate::electrafi::Electrafi;
 use crate::state::{Global, PerLevel};
 use crate::units;
 
-/// Electric fields shock the player and stun robots.
 #[derive(Default)]
 pub struct ElectrafiGadget {
     electrafi: PerLevel<Electrafi>,
@@ -44,7 +44,6 @@ impl Gadget<Global> for ElectrafiGadget {
         let arcs = electrafi.arcs(frame);
         for shock in shocks {
             commands::run(move || {
-                // An earlier shock this frame may have killed it.
                 if !units::valid(shock.unit_id) {
                     return;
                 }
@@ -66,7 +65,6 @@ impl Gadget<Global> for ElectrafiGadget {
                 });
             });
         }
-        // Behind the sparks: the ui module seeds effects by their order.
         commands::run(move || {
             for arc in arcs {
                 send_effect(arc.position, EffectKind::Arc { radius: arc.radius });
@@ -77,7 +75,6 @@ impl Gadget<Global> for ElectrafiGadget {
 
 const PARALYZING: f32 = 1.0;
 
-/// The ui module scatters the sparks over a cube of half the unit's radius.
 fn emit_spark(unit_id: i32, intensity: f32) {
     let Some(position) = units::position(unit_id) else {
         return;

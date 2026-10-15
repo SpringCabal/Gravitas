@@ -5,13 +5,8 @@ use crate::tests::harness::{self, Case, Phase, Step, fail};
 use crate::tests::{record, runner};
 use crate::units;
 
-/// Losing the player's Gravit ends the game, and the HUD's restart button
-/// (a round trip through the ui module) brings the arena back. The case
-/// waits for each of those instead of counting frames.
 pub struct Restarting {
     generation: u32,
-    /// The units alive when restart was pressed, and the destroyed-unit mark
-    /// then.
     old_units: Vec<i32>,
     destroyed_mark: usize,
     stage: Stage,
@@ -42,7 +37,6 @@ impl Case for Restarting {
         "restart"
     }
 
-    /// A restart rebuilds the whole arena.
     fn phase(&self) -> Phase {
         Phase::Restart
     }
@@ -59,7 +53,6 @@ impl Case for Restarting {
     }
 }
 
-/// A few frames after the other Gravit died, the game must still be on.
 const KILL_FRAME: i32 = 4;
 
 impl Restarting {
@@ -91,8 +84,6 @@ impl Restarting {
         if global.outcome.get() != Some(false) {
             return fail("losing the player unit won the game");
         }
-        // Ids come back after a restart, so look for each unit's UnitDestroyed
-        // (a dying unit already had its own).
         self.destroyed_mark = record::destroyed_count(global);
         self.old_units = spring::get_all_units()
             .unwrap_or_default()

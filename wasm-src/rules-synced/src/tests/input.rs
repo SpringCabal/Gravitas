@@ -5,9 +5,6 @@ use spring::types::Float3;
 use crate::state::Global;
 use crate::tests::harness::{self, Case, Rest, Step, fail};
 
-/// The jump button, pressed through the ui module, makes the player's Gravit
-/// jump. The press makes a round trip through the ui module, so the case
-/// waits for the jump to start instead of counting frames.
 pub struct Input {
     unit_id: i32,
     origin: Float3,
@@ -43,7 +40,6 @@ impl Case for Input {
         match self.stage {
             Stage::Press => self.press(global),
             Stage::TakeOff if jumping => {
-                // Let go, or the held button jumps again after the landing.
                 harness::release_pointer();
                 self.stage = Stage::Land;
                 Step::Wait
@@ -79,7 +75,6 @@ impl Input {
         };
         self.unit_id = unit_id;
         self.origin = origin;
-        // Up, out of the grid: the cursor trace must find bare ground there.
         self.goal = Float3 {
             z: origin.z - REACH,
             ..origin

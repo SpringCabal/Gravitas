@@ -82,7 +82,6 @@ impl Barrel {
     }
 
     fn check(&mut self, global: &Global) -> Step {
-        // A robot the blast killed plays its death stages before it goes.
         self.bystander_killed = crate::tests::record::destroyed(global, self.bystander);
         let Some(health) = harness::health(self.bystander) else {
             return Step::Pass;

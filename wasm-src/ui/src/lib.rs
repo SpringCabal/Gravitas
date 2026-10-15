@@ -1,17 +1,8 @@
 extern crate alloc;
 
-mod camera;
 mod defs;
 mod diagnostics;
-mod fire;
-mod fx;
 mod health;
-mod healthbars;
-mod hud;
-mod input;
-mod mapedge;
-mod selection;
-mod shots;
 mod state;
 mod widgets;
 

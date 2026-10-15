@@ -1,3 +1,4 @@
+pub mod behavior;
 use core::cell::{Cell, RefCell};
 
 use alloc::format;
@@ -5,18 +6,17 @@ use alloc::format;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
-use crate::player::{self, Player};
+use self::behavior::Player;
+use crate::diagnostics;
+use crate::gadgets::jump::behavior as jump;
+use crate::gadgets::mission::behavior as mission;
 use crate::state::Global;
-use crate::{diagnostics, jump, mission};
 
 const ENEMY_ALLY_TEAM: i32 = 1;
 
-/// Takes the ui module's input and drives the player unit with it: moving,
-/// aiming, holding fire and jumping. The game is lost with that unit.
 #[derive(Default)]
 pub struct PlayerGadget {
     player: RefCell<Player>,
-    /// The last refusal logged, so a held jump key logs it once.
     last_refusal: Cell<Option<&'static str>>,
 }
 
@@ -38,8 +38,8 @@ impl Gadget<Global> for PlayerGadget {
             global.restart.request();
             return;
         }
-        if let Some(command) = player::parse(data) {
-            player::accept(&global.player_input, command);
+        if let Some(command) = behavior::parse(data) {
+            behavior::accept(&global.player_input, command);
         }
     }
 
@@ -54,12 +54,10 @@ impl Gadget<Global> for PlayerGadget {
         let adopted = self.player.borrow_mut().adopt(unit_id, unit_def_id, team);
         if adopted {
             ctx.global().player_unit.set(Some(unit_id));
-            player::disable_auto_fire(unit_id);
+            behavior::disable_auto_fire(unit_id);
         }
     }
 
-    /// Losing the player's unit loses the game. Other Gravits (the e2e arena
-    /// has several) are just units.
     fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
         let global = ctx.global();
         let lost = {
@@ -79,7 +77,7 @@ impl Gadget<Global> for PlayerGadget {
         let mut player = self.player.borrow_mut();
         let orders = player.update(&global.player_input, frame);
         if let Some(unit_id) = player.unit_id() {
-            player::apply(unit_id, orders, frame);
+            behavior::apply(unit_id, orders, frame);
         }
         if let Some((unit_id, x, y, z)) = player.take_jump_request() {
             self.jump(global, &mut player, unit_id, x, y, z);
@@ -92,7 +90,6 @@ impl PlayerGadget {
         let refusal = match jump::start(global, unit_id, x, y, z) {
             jump::Outcome::Started => None,
             jump::Outcome::OutOfRange => {
-                // Walking closer; try again next frame.
                 player.retry_jump(x, y, z);
                 None
             }

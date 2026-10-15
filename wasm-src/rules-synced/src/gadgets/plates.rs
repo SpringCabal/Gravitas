@@ -1,10 +1,12 @@
+pub(crate) mod behavior;
+
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
+use crate::gadgets::plates::behavior as plate;
 use crate::state::Global;
-use crate::{plate, tests};
+use crate::tests;
 
-/// Pressure plates open and close the gates they are linked to.
 pub struct PlatesGadget;
 
 impl Gadget<Global> for PlatesGadget {
@@ -56,5 +58,4 @@ impl Gadget<Global> for PlatesGadget {
     }
 }
 
-/// How long a closing gate takes to come back up.
 const GATE_CLOSE_FRAMES: i32 = 27;

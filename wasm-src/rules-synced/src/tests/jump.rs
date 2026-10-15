@@ -66,7 +66,7 @@ impl Jumping {
         self.origin = origin;
         set_speed(unit_id, 0.0);
         let still = request(global, unit_id, origin.x + REACH, origin.z);
-        set_speed(unit_id, crate::jump::SPEED);
+        set_speed(unit_id, crate::gadgets::jump::behavior::SPEED);
         if still {
             return fail("a jump with jumpSpeed 0 was accepted");
         }
@@ -122,7 +122,8 @@ fn request(global: &Global, unit_id: i32, x: f32, z: f32) -> bool {
 }
 
 fn request_at(global: &Global, unit_id: i32, x: f32, y: f32, z: f32) -> bool {
-    crate::jump::start(global, unit_id, x, y, z) == crate::jump::Outcome::Started
+    crate::gadgets::jump::behavior::start(global, unit_id, x, y, z)
+        == crate::gadgets::jump::behavior::Outcome::Started
 }
 
 fn set_speed(unit_id: i32, speed: f32) {

@@ -7,8 +7,6 @@ use spring_addons::ui::{HideDefaultInterface, WidgetHandler};
 use super::*;
 use crate::state::Global;
 
-/// The engine interface parts the Lua game hid; the FPS counter and speed
-/// indicator stay, as there. The map edge grid replaces the border.
 pub const HIDDEN_INTERFACE: u32 = CONSOLE
     | RESOURCE_BAR
     | TOOLTIP
@@ -20,7 +18,7 @@ pub const HIDDEN_INTERFACE: u32 = CONSOLE
     | MAP_BORDER;
 
 pub fn setup(handler: &mut WidgetHandler<Global>) {
-    if springcabal::gallery::active() {
+    if springcabal::verification::world_only() {
         gallery::setup(handler);
         return;
     }
@@ -28,11 +26,9 @@ pub fn setup(handler: &mut WidgetHandler<Global>) {
         handler,
         [
             HideDefaultInterface::new(HIDDEN_INTERFACE),
-            // Before the fire widget: it reads the frame this records.
             GameClockWidget::default(),
             GfxRulesEffectsWidget,
             DbgScreenshotsWidget,
-            // Before the camera: it records the player unit from the status.
             GuiHudWidget,
             GuiCameraWidget::default(),
             GuiInputWidget::default(),

@@ -5,11 +5,8 @@ use spring_addons::ui::Widget;
 
 use crate::state::{Clock, Global};
 
-/// At most this many game frames are simulated in one Update after a stall.
 const MAX_CATCH_UP_FRAMES: i32 = 30;
 
-/// Runs first in Update: records the game frame and how many frames passed
-/// since the last Update, for the widgets that advance with the game.
 #[derive(Default)]
 pub struct GameClockWidget {
     last_frame: Cell<i32>,

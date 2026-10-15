@@ -1,8 +1,10 @@
+mod mapedge;
+
 use spring_addons::AddonContext;
 use spring_addons::ui::Widget;
 
-use crate::mapedge::MapEdge;
 use crate::state::Global;
+use crate::widgets::gfx_mapedge::mapedge::MapEdge;
 
 #[derive(Default)]
 pub struct GfxMapEdgeWidget {

@@ -7,13 +7,7 @@ use crate::state::Global;
 use crate::tests::harness::{self, Case, Phase, Rest, Step, fail};
 use crate::tests::record;
 
-/// Once every rig's case is done and the arena is at rest, point the camera
-/// at it and have the ui module take the screenshot the shots suite
-/// compares. On the frame the shot is asked for, every unit must be where its
-/// case left it: the golden only checks that the scene renders, and can't
-/// see a unit out of place.
 pub struct Visuals {
-    /// The arena's units last frame; when the shot is asked for, then.
     positions: Vec<(i32, Float3)>,
     misplaced: Option<String>,
     asked: bool,
@@ -67,15 +61,11 @@ impl Case for Visuals {
     }
 }
 
-/// Time for the camera to get there.
 const CAMERA_FRAMES: i32 = 15;
-/// The arena comes to rest within this many frames of the last case.
 const SETTLE_LIMIT: i32 = 300;
-/// A unit at rest moves less than this in a frame.
 const STILL_PER_FRAME: f32 = 0.05;
 const ARENA_SHOT: &str = "arena";
 const CAMERA_HEIGHT: f32 = 1800.0;
-/// Units at rest move less than this while the shot is taken.
 const AT_REST: f32 = 1.0;
 
 impl Visuals {
@@ -98,8 +88,6 @@ impl Visuals {
         Step::Wait
     }
 
-    /// The ui module took the shot. It rendered the frame after the request,
-    /// so everything must still be at rest.
     fn check(&mut self) -> Step {
         if let Some(reason) = self.misplaced.take() {
             return Step::Fail(reason);
@@ -124,7 +112,6 @@ fn positions(units: &[i32]) -> Vec<(i32, Float3)> {
         .collect()
 }
 
-/// A unit that moved since `before` (or appeared or went).
 fn moving(before: &[(i32, Float3)], now: &[(i32, Float3)]) -> Option<i32> {
     if before.len() != now.len() {
         return Some(now.first().or(before.first())?.0);
@@ -143,7 +130,6 @@ fn describe(unit_id: i32) -> String {
     alloc::format!("{name} (unit {unit_id})")
 }
 
-/// The first unit that is not where its case left it.
 fn misplaced(global: &Global) -> Option<String> {
     let rests = global.tests.rests.borrow();
     for rest in rests.iter() {

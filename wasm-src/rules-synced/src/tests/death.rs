@@ -6,8 +6,6 @@ use crate::state::Global;
 use crate::tests::harness::{self, Case, Rest, Step, fail};
 use crate::units;
 
-/// A Gravit that dies plays gravit.lua's death animation before it goes, and
-/// a robot throws its parts off in three stages (projector.lua).
 pub struct Dying {
     unit_id: i32,
     head: Float3,
@@ -54,7 +52,6 @@ impl Case for Dying {
 
 const KILL_FRAME: i32 = 2;
 const ANIMATING_FRAME: i32 = KILL_FRAME + 10;
-/// The animation is 25 frames long.
 const GONE_FRAME: i32 = KILL_FRAME + 33;
 const HEAD: &str = "head";
 const MOVED: f32 = 0.5;
@@ -85,8 +82,6 @@ impl Dying {
         if !harness::moved(Some(self.head), head, MOVED) {
             return fail("the dying Gravit's head did not move");
         }
-        // 10 frames in: past the second of the robot's three stages (6 frames
-        // apart), not yet at the last.
         if !units::valid(self.robot) {
             return fail("the robot was removed before its last death stage");
         }

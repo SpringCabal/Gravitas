@@ -1,7 +1,3 @@
-//! The e2e scenario's messages. Only the e2e builds send them: the rules'
-//! cases ask the ui module for camera moves, screenshots and scripted input,
-//! and the ui module reports each screenshot taken.
-
 use alloc::string::String;
 
 use springcabal::message::{Encoder, command, fields};
@@ -10,21 +6,13 @@ const SHOT: &str = "GRAVITAS_SHOT";
 const INPUT: &str = "GRAVITAS_E2E";
 const TAKEN: &str = "gravitas_e2e";
 
-/// Rules to ui.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Request<'a> {
-    /// Point the camera straight at `x`, `z`, from `height` if given.
     Look { x: f32, z: f32, height: Option<f32> },
-    /// Take a screenshot and report it as `name`.
     Shot(&'a str),
-    /// The scenario is over: quit.
     Done,
-    /// Point the scripted cursor at the ground there; `jump` holds the jump
-    /// button.
     Pointer { target: [f32; 3], jump: bool },
-    /// Give the mouse back.
     PointerOff,
-    /// Press the HUD's restart button.
     Restart,
 }
 
@@ -84,7 +72,6 @@ impl Request<'_> {
     }
 }
 
-/// Ui to rules: the screenshot `name` was taken.
 pub fn shot_taken(name: &str) -> String {
     Encoder::new(TAKEN).field("shot").field(name).finish()
 }

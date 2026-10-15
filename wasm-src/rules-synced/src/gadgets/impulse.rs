@@ -1,10 +1,11 @@
+pub(crate) mod behavior;
+
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent, UnitPreDamagedEvent};
 
-use crate::impulse;
+use crate::gadgets::impulse::behavior as impulse;
 use crate::state::Global;
 
-/// The gravity guns push and pull what they hit.
 pub struct ImpulseGadget;
 
 impl Gadget<Global> for ImpulseGadget {

@@ -1,11 +1,11 @@
+pub(crate) mod behavior;
+
 use spring_addons::AddonContext;
 use spring_addons::rules::Gadget;
 
-use crate::mission::{self, Mission};
+use crate::gadgets::mission::behavior::{self as mission, Mission};
 use crate::state::{Global, PerLevel};
 
-/// Sends the level's robots into their assaults as the player enters trigger
-/// areas.
 #[derive(Default)]
 pub struct MissionGadget {
     mission: PerLevel<Mission>,

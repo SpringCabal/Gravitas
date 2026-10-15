@@ -1,5 +1,3 @@
-//! The walk and idle cycles of projector.lua and projector_boss.lua.
-
 use alloc::rc::Rc;
 use core::cell::RefCell;
 
@@ -77,8 +75,6 @@ async fn animate_boss(state: Rc<RefCell<RobotAnimationState>>, ctx: UnitCtx) {
             }
             walk_phase += 1;
             if !state.borrow().moving {
-                // projector_boss.lua has no boolMove check between its A and
-                // B halves. Preserve that final B half after StopMoving.
                 if !second {
                     let wait_frames = match walk_phase {
                         0 => 0,
@@ -96,10 +92,6 @@ async fn animate_boss(state: Rc<RefCell<RobotAnimationState>>, ctx: UnitCtx) {
         }
 
         while !state.borrow().moving {
-            // This is the two-half idle loop from projector_boss.lua.  The
-            // phase function contains the script's WaitForTurn and Sleep
-            // calls, so the next half starts only at the same suspension
-            // points as Lua.
             boss_idle_phase(&state, &ctx, false).await;
             boss_idle_phase(&state, &ctx, true).await;
             stun::while_stunned(&state, &ctx).await;
@@ -166,8 +158,6 @@ async fn projector_idle_phase(
     ] {
         turn_x(ctx, piece, degrees * sign, 0.25);
     }
-    // tP(..., true) on rblade02 is a real Lua WaitForTurn.  Preserve that
-    // yield instead of replacing it with a guessed timer.
     wait_for_turn(ctx, p.r_blade_02).await;
     if !state.borrow().aiming {
         turn_x(ctx, p.arm_up_01, if second { 10.0 } else { 5.0 }, 0.05);
@@ -288,7 +278,6 @@ pub(super) fn turn_degrees(ctx: &UnitCtx, piece: Piece, axis: Axis, degrees: f32
     turn(ctx, piece, axis, degrees * DEGREES, speed);
 }
 
-/// The Lua toolkit's `tP(piece, x, 0, 0, speed)`: turn about X, zero Y and Z.
 fn turn_x(ctx: &UnitCtx, piece: Piece, x_degrees: f32, speed: f32) {
     turn_degrees(ctx, piece, Axis::X, x_degrees, speed);
     turn(ctx, piece, Axis::Y, 0.0, speed);
@@ -315,13 +304,6 @@ async fn reset_piece(ctx: &UnitCtx, piece: Piece, speed: f32, wait_frames: u64) 
     move_piece(ctx, piece, Axis::Y, 0.0, speed);
     move_piece(ctx, piece, Axis::Z, 0.0, speed);
     if wait_frames > 0 {
-        // The Lua helper waits for all three turns, but only the X turn can
-        // take time in these gait phases.  The native CUS listener currently
-        // loses the completion callback for this exact reset, so use the
-        // engine's fixed 30 Hz step directly.  The opposite blade is still
-        // part-way through the preceding 89-degree turn when this reset is
-        // issued.  The first three waits are 0/3/6 frames as the two blades
-        // settle into alternation; steady-state waits are 9 frames at speed5.
         ctx.sleep_frames(wait_frames).await;
     }
 }

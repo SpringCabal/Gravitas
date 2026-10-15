@@ -6,12 +6,9 @@ use spring::types::Float3;
 
 use crate::units;
 
-/// The e2e cases' units. Each case has its own rig, an area of the arena no
-/// other case's units reach, so the cases can run at the same time.
 #[derive(Clone, Copy, Default)]
 pub struct Arena {
     pub centre: Float3,
-    /// Bumped every time the arena is built (a restart builds it again).
     pub generation: u32,
     pub plate: i32,
     pub gate: i32,
@@ -44,8 +41,6 @@ pub struct Arena {
     pub terrain_toggler: i32,
 }
 
-/// Build the arena once this callin returns; `built` gets it, or `None` if a
-/// unit could not be created.
 pub fn build(generation: u32, built: impl FnOnce(Option<Arena>) + 'static) {
     let centre = flat_centre();
     let arena = Rc::new(Cell::new(Arena {
@@ -100,24 +95,30 @@ pub fn build(generation: u32, built: impl FnOnce(Option<Arena>) + 'static) {
             0.0,
             PARK_OFFSET,
         ),
-        // Last of the Gravits: the player gadget adopts it.
         (|a| &mut a.jumper, GRAVIT, Rig::Input, 0.0, 0.0),
     ];
     for (field, name, rig, offset_x, offset_z) in layout {
         spawn(&arena, field, name, centre, rig, offset_x, offset_z);
     }
-    // After every unit above was created.
     commands::run(move || {
         let arena = arena.get();
         if arena.missing() {
             built(None);
             return;
         }
-        size_field(arena.fire, crate::fire::SIZE_PARAM, FIRE_SIZE);
-        size_field(arena.scare, crate::fire::SIZE_PARAM, SCARE_SIZE);
+        size_field(
+            arena.fire,
+            crate::gadgets::fire::behavior::SIZE_PARAM,
+            FIRE_SIZE,
+        );
+        size_field(
+            arena.scare,
+            crate::gadgets::fire::behavior::SIZE_PARAM,
+            SCARE_SIZE,
+        );
         size_field(
             arena.electrafi,
-            crate::electrafi::SIZE_PARAM,
+            crate::gadgets::electrafi::behavior::SIZE_PARAM,
             ELECTRAFI_SIZE,
         );
         size_field(arena.revivable, RESPAWNABLE_PARAM, 1.0);
@@ -162,7 +163,6 @@ impl Arena {
         ]
     }
 
-    /// Link each plate to its gate (on the frame after the build).
     pub fn links(&self) -> [(i32, i32); 2] {
         [
             (self.plate, self.gate),
@@ -171,8 +171,6 @@ impl Arena {
     }
 }
 
-/// The rigs, laid out on a grid. The shoot and flee rigs are on the top row:
-/// their robots walk up, out of the grid.
 #[derive(Clone, Copy)]
 enum Rig {
     Flee,
@@ -192,8 +190,6 @@ enum Rig {
     Respawn,
 }
 
-/// Rig centres are this far apart, so a robot that reacts to a hazard and
-/// walks off stays in its own rig.
 pub const RIG_SPACING: f32 = 450.0;
 const RIG_COLUMNS: usize = 5;
 const RIG_ROWS: usize = 3;
@@ -201,7 +197,6 @@ const PARK_OFFSET: f32 = 90.0;
 const PUSH_SEPARATION: f32 = 120.0;
 const TARGET_OFFSET: f32 = 200.0;
 const THROW_DISTANCE: f32 = 70.0;
-/// Behind the fleeing robot (it walks up), and small enough not to reach it.
 const SCARE_OFFSET: f32 = 150.0;
 const SCARE_SIZE: f32 = 50.0;
 
@@ -225,8 +220,6 @@ const ELECTRAFI_SIZE: f32 = 100.0;
 const PLAYER_TEAM: i32 = 0;
 const ENEMY_TEAM: i32 = 1;
 const SAMPLE_STEP: f32 = 128.0;
-/// How far past the outer rig centres the flat ground has to reach: the
-/// top row's robots walk and jump up to 300 elmos up.
 const ARENA_MARGIN: f32 = 400.0;
 
 impl Arena {
@@ -235,10 +228,8 @@ impl Arena {
     }
 }
 
-/// The field of [`Arena`] a unit goes in.
 type Field = fn(&mut Arena) -> &mut i32;
 
-/// Create a unit of the arena into `field`, which is -1 if that failed.
 fn spawn(
     arena: &Rc<Cell<Arena>>,
     field: Field,
@@ -269,7 +260,6 @@ fn spawn(
             store(-1);
             return;
         };
-        // Queued like the orders UnitCreated gave, and after them.
         let _ = commands::give_order_to_unit(
             unit_id,
             spring::cmd::FIRE_STATE,
@@ -301,7 +291,6 @@ fn rig_position(centre: Float3, rig: Rig, offset_x: f32, offset_z: f32) -> Float
     }
 }
 
-/// Half the arena's width and depth: the rig grid, and a margin around it.
 fn half_extents() -> (f32, f32) {
     (
         (RIG_COLUMNS - 1) as f32 * 0.5 * RIG_SPACING + ARENA_MARGIN,
@@ -309,7 +298,6 @@ fn half_extents() -> (f32, f32) {
     )
 }
 
-/// The flattest spot on the map for the whole arena.
 fn flat_centre() -> Float3 {
     let Ok(map) = spring::game::get_game_map_info(0) else {
         return Float3::default();

@@ -3,8 +3,9 @@ local modinfo = {
 	shortname = "GRRW",
 	game = "Gravitas WASM",
 	shortgame = "GRRW",
-	version = "0.1.0-wasm",
-	description = "Gravitas gameplay ported to Rust Core-WASM and RmlUi",
+	version = "$VERSION",
+	description = "Spring Cabals Ludum Dare entry: Gravitas",
+	url = "https://github.com/SpringCabal/Gravitas",
 	modtype = "1",
 	-- Single-player only: without this the engine binds a UDP socket and warns
 	-- that nobody else can reach it. Nothing here is ever hosted or joined.

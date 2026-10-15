@@ -46,7 +46,6 @@ impl Case for Shocking {
     fn rest(&self) -> Vec<Rest> {
         alloc::vec![
             Rest::at(self.field, self.field_at, STILL, "the electric field"),
-            // Once the stun wears off it walks on, away from the field.
             Rest::at(
                 self.victim,
                 self.clear(),
@@ -58,7 +57,6 @@ impl Case for Shocking {
 }
 
 const VERDICT_FRAME: i32 = 45;
-/// Within the 60 frames of sparks after leaving the field.
 const LINGER_FRAME: i32 = 75;
 const CLEAR_OF_FIELD: f32 = 200.0;
 
@@ -90,7 +88,6 @@ impl Shocking {
         let Some(paralyze) = harness::paralyze(self.victim) else {
             return fail("lost the shocked unit");
         };
-        // Clear of the field: the robot's own spot is inside its reach.
         harness::place(self.victim, self.clear());
         if paralyze <= self.entry_paralyze {
             return fail("standing in an electric field did not stun the robot");
@@ -109,7 +106,6 @@ impl Shocking {
         }
     }
 
-    /// A robot that left the field keeps sparking for a while, unhurt.
     fn check_lingering(&mut self, global: &Global) -> Step {
         if !record::sparked_unhurt(global, self.victim) {
             return fail("the robot stopped sparking as soon as it left the field");

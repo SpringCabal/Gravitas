@@ -1,17 +1,20 @@
+pub mod hud;
 use spring_addons::AddonContext;
 use spring_addons::ui::Widget;
 
 use gravitas_shared::Status;
 
-use crate::hud;
 use crate::state::Global;
 
-/// The RmlUi HUD: health, gun readiness, pause and the end-of-game panel.
 pub struct GuiHudWidget;
 
 impl Widget<Global> for GuiHudWidget {
     fn name(&self) -> &'static str {
         "GuiHud"
+    }
+
+    fn shutdown(&self, ctx: &AddonContext<'_, Global>) {
+        hud::shutdown(&mut ctx.global().hud.access_mut());
     }
 
     fn update(&self, ctx: &AddonContext<'_, Global>, _dt: f32) {

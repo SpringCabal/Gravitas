@@ -3,28 +3,23 @@ use alloc::vec::Vec;
 
 use crate::state::Global;
 
-/// What the gadgets report to the e2e cases: deaths and plate/gate toggles.
 #[derive(Default)]
 pub struct Record {
     deaths: u32,
     first_death: Option<String>,
     destroyed: Vec<i32>,
     toggles: Vec<(i32, bool)>,
-    /// Fire and electric-field units and their size when UnitCreated reached
-    /// the tests gadget.
     hazard_sizes: Vec<(i32, Option<f32>)>,
-    /// Screenshots the ui module reported taken.
     shots: Vec<String>,
-    /// Units that sparked in an electric field without being hurt.
     unhurt_sparks: Vec<i32>,
 }
 
 pub fn note_created(global: &Global, unit_id: i32, unit_def_id: i32) {
     let defs = crate::defs::get();
     let param = if defs.fire == Some(unit_def_id) {
-        crate::fire::SIZE_PARAM
+        crate::gadgets::fire::behavior::SIZE_PARAM
     } else if defs.electrafi == Some(unit_def_id) {
-        crate::electrafi::SIZE_PARAM
+        crate::gadgets::electrafi::behavior::SIZE_PARAM
     } else {
         return;
     };
@@ -37,8 +32,6 @@ pub fn note_created(global: &Global, unit_id: i32, unit_def_id: i32) {
         .push((unit_id, size));
 }
 
-/// The hazard's size when it was created, if it was recorded (the latest
-/// record: ids are reused after a restart).
 pub fn hazard_size_at_creation(global: &Global, unit_id: i32) -> Option<Option<f32>> {
     global
         .tests
@@ -51,7 +44,6 @@ pub fn hazard_size_at_creation(global: &Global, unit_id: i32) -> Option<Option<f
         .map(|(_, size)| *size)
 }
 
-/// A message from the ui module: it took the screenshot `name`.
 pub fn note_message(global: &Global, data: &[u8]) {
     let Some(name) = core::str::from_utf8(data)
         .ok()
@@ -94,7 +86,6 @@ pub fn note_toggled(global: &Global, unit_id: i32, active: bool) {
     record.toggles.push((unit_id, active));
 }
 
-/// An electric field's spark on `unit_id`, and whether it came with damage.
 pub fn note_spark(global: &Global, unit_id: i32, hurt: bool) {
     let mut record = global.tests.record.borrow_mut();
     if !hurt && !record.unhurt_sparks.contains(&unit_id) {
@@ -119,18 +110,14 @@ pub fn first_death(global: &Global) -> Option<String> {
     global.tests.record.borrow().first_death.clone()
 }
 
-/// Forget the toggles of `units` (other cases' plates keep theirs).
-/// Whether `unit_id` was destroyed (ids are reused after a restart).
 pub fn destroyed(global: &Global, unit_id: i32) -> bool {
     global.tests.record.borrow().destroyed.contains(&unit_id)
 }
 
-/// How many units were destroyed so far: a mark for [`destroyed_since`].
 pub fn destroyed_count(global: &Global) -> usize {
     global.tests.record.borrow().destroyed.len()
 }
 
-/// Whether `unit_id` was destroyed after `mark`.
 pub fn destroyed_since(global: &Global, mark: usize, unit_id: i32) -> bool {
     global.tests.record.borrow().destroyed[mark..].contains(&unit_id)
 }

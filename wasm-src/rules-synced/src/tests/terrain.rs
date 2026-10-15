@@ -6,8 +6,6 @@ use crate::state::Global;
 use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
 use crate::units;
 
-/// A closed gate raises the ground under it, opening lowers it and shutting
-/// raises it again. The case opens its own gate with its own plate.
 pub struct Terrain {
     plate: i32,
     gate: i32,
@@ -67,8 +65,6 @@ impl Case for Terrain {
 }
 
 const CLOSED_FRAME: i32 = 1;
-/// A pressed plate opens its gate, and a released one shuts it, well within
-/// this many frames.
 const TOGGLE_FRAMES: i32 = 60;
 const LEVEL_MARGIN: f32 = 5.0;
 

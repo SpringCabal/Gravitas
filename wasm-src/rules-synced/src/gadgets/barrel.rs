@@ -5,7 +5,6 @@ use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 use crate::effects;
 use crate::state::Global;
 
-/// Barrels and canisters explode when they are destroyed.
 pub struct BarrelGadget;
 
 impl Gadget<Global> for BarrelGadget {
@@ -21,9 +20,6 @@ impl Gadget<Global> for BarrelGadget {
             return;
         };
         let barrel = event.unit_id;
-        // The blast damages and destroys other units, so it is a command. It
-        // also goes behind the effects queued before it, which the ui module
-        // seeds by their order.
         commands::run(move || effects::explode_barrel(barrel, position));
     }
 }

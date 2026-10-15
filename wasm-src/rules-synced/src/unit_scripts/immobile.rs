@@ -1,6 +1,3 @@
-//! The scenery scripts: gate, plate and the pieces that break off crates,
-//! canisters and walls.
-
 use alloc::rc::Rc;
 use core::cell::RefCell;
 
@@ -14,8 +11,6 @@ const WALL2_FRAGMENTS: [&str; 11] = [
     "frag11",
 ];
 
-/// The pieces the scenery scripts move or throw, resolved once. A model
-/// without one gets `Piece::INVALID`, which the helpers skip.
 #[derive(Clone, Copy)]
 struct Pieces {
     gate: Piece,

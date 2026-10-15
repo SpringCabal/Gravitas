@@ -1,11 +1,9 @@
+pub mod behavior;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
-use crate::jump;
 use crate::state::Global;
 
-/// Flies jumping units along their arc and lands them, briefly immune to fall
-/// damage.
 pub struct JumpGadget;
 
 impl Gadget<Global> for JumpGadget {
@@ -15,10 +13,10 @@ impl Gadget<Global> for JumpGadget {
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
         let global = ctx.global();
-        let landed = jump::fly(global);
+        let landed = behavior::fly(global);
         let mut immunity = global.fall_immunity.access_mut();
         for unit_id in landed {
-            immunity.set_immunity(unit_id, frame + jump::LANDING_IMMUNITY_FRAMES);
+            immunity.set_immunity(unit_id, frame + behavior::LANDING_IMMUNITY_FRAMES);
         }
     }
 
