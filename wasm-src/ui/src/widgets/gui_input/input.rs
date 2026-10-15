@@ -33,6 +33,7 @@ impl Input {
             return;
         };
         let held = self.jump.get() || pointer.middle;
+        let was_held = self.jump_held.replace(held);
         let (move_x, move_z) = self.movement.axis();
         let input = InputMessage {
             move_x: move_x as f32,
@@ -41,7 +42,7 @@ impl Input {
             target_unit: pointer.target_unit,
             push: pointer.left,
             pull: pointer.right,
-            jump: held && !self.jump_held.replace(held),
+            jump: held && !was_held,
         };
         self.sent
             .send_if_changed((player_unit, input), |(_, input)| {
@@ -60,7 +61,10 @@ impl Input {
 }
 
 pub fn mouse_press(_x: i32, _y: i32, button: i32) -> bool {
-    matches!(button, spring::mouse::LEFT | spring::mouse::RIGHT)
+    matches!(
+        button,
+        spring::mouse::LEFT | spring::mouse::MIDDLE | spring::mouse::RIGHT
+    )
 }
 
 pub fn mouse_release(_x: i32, _y: i32, _button: i32) {}
