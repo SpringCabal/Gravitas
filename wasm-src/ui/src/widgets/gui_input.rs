@@ -52,10 +52,6 @@ impl Widget<Global> for GuiInputWidget {
         _ctx: &spring_addons::AddonContext<'_, Global>,
         event: &KeyEvent<'_>,
     ) -> EventResult {
-        if event.matches("enter") {
-            return EventResult::Handled;
-        }
-
         if springcabal::menu::is_quit_to_menu(event) {
             springcabal::menu::quit_to_menu();
             return EventResult::Handled;
