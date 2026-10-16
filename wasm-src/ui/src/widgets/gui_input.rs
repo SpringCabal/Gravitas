@@ -1,6 +1,5 @@
 mod input;
 
-use spring::ResultExt;
 use spring_addons::event::{EventResult, KeyEvent};
 use spring_addons::ui::Widget;
 
@@ -53,11 +52,6 @@ impl Widget<Global> for GuiInputWidget {
         _ctx: &spring_addons::AddonContext<'_, Global>,
         event: &KeyEvent<'_>,
     ) -> EventResult {
-        if event.matches("f11") || event.matches("f12") {
-            spring::send_command("screenshot").log_err("screenshot key");
-            return EventResult::Handled;
-        }
-
         if event.matches("enter") {
             return EventResult::Handled;
         }

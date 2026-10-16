@@ -52,27 +52,6 @@ pub fn shutdown(hud: &mut Hud) {
     }
 }
 
-pub fn apply_bindings(hud: &mut Hud) {
-    if hud.keys_bound {
-        return;
-    }
-    let _ = spring::send_commands("unbindall", "");
-    for binding in [
-        "Any+esc reloadforce",
-        "Any+pause  pause",
-        "Any+p  pause",
-        "Alt+b  debug",
-        "Alt+v  debugcolvol",
-        "f12 screenshot",
-    ] {
-        let _ = spring::send_commands("bind", binding);
-    }
-    let _ = spring::send_commands("unbindkeyset", "enter chat");
-    let _ = spring::send_commands("unbind", "enter");
-    let _ = spring::send_commands("unbindaction", "chat");
-    hud.keys_bound = true;
-}
-
 pub fn render(hud: &Hud, width: i32, height: i32) {
     if hud.context != 0 {
         let _ = spring::context_set_dimensions(hud.context, width, height);

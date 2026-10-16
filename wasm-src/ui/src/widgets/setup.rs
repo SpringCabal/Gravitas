@@ -18,6 +18,10 @@ pub const HIDDEN_INTERFACE: u32 = CONSOLE
     | MAP_BORDER;
 
 pub fn setup(handler: &mut WidgetHandler<Global>) {
+    register_widgets!(
+        handler,
+        [springcabal::controls::GameControls::new().with_pause_key("p")]
+    );
     if springcabal::verification::world_only() {
         gallery::setup(handler);
         return;

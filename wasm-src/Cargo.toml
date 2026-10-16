@@ -10,7 +10,7 @@ all = { level = "deny", priority = -1 }
 too_many_arguments = "allow"
 
 [workspace.dependencies]
-spring = { git = "https://github.com/gajop/spring-rust", rev = "c77a8b7054394507716f15e580f7d05f11876e44", features = ["alloc"] }
-spring-addons = { git = "https://github.com/gajop/spring-rust", rev = "c77a8b7054394507716f15e580f7d05f11876e44" }
-springcabal = { git = "https://github.com/gajop/springcabal-rs", rev = "a83ec8e5fde35d9143f7c080ad456c9a8a7baf3d" }
-springcabal-control = { git = "https://github.com/gajop/springcabal-rs", rev = "a83ec8e5fde35d9143f7c080ad456c9a8a7baf3d" }
+spring = { git = "https://github.com/gajop/spring-rust", rev = "a0d7652ad9d8e84ace7ee0414118946a72f06d0d", features = ["alloc"] }
+spring-addons = { git = "https://github.com/gajop/spring-rust", rev = "a0d7652ad9d8e84ace7ee0414118946a72f06d0d" }
+springcabal = { git = "https://github.com/gajop/springcabal-rs", rev = "dcb1a9b3cd6cdbccbc101f1dc8fc89f527671bd4" }
+springcabal-control = { git = "https://github.com/gajop/springcabal-rs", rev = "dcb1a9b3cd6cdbccbc101f1dc8fc89f527671bd4" }
