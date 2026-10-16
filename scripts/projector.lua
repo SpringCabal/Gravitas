@@ -336,7 +336,6 @@
 
     function ReloadMissiles()
         Sleep(50)
-        boolMGLoaded=true
         Turn(armup01,x_axis,0,0.1,true)
         Turn(armup02,x_axis,0,0.1,true)
     end
@@ -402,37 +401,25 @@
         return rotateMG 
     end
 	
-	function ReloadMG()
-        Sleep(5000)
-        boolMGLoaded=true
-		StopSpin(MG_B01,z_axis,0.15)
-		StopSpin(MG_B02,z_axis,0.15)
-	end
-	quartPI_Innt= 8192
-	boolMGLoaded=true
-    
 	function AimWeapon3( Heading ,pitch)	
-		if boolRay2Type==false then return false end
+		if boolMGType==false then return false end
 		Signal(SIG_RESET)
 		Spin(MG_B01,z_axis,5,5)
 		Spin(MG_B02,z_axis,5,5)
 		boolAiming=true
 		
-		--Turn(armup01, x_axis, -pitch,19)
 		Turn(turret, y_axis, Heading,19)
-		--Turn(armup02, x_axis, -pitch,19,true)
-		return boolMGType and boolMGLoaded
+		return boolMGType
 	end
 	 
-	 function FireWeapon3()	
-	boolMGLoaded=false
-	 boolAiming=false
-	 Signal(SIG_RESET); StartThread(resetTurret); 
-	 StartThread(ReloadMG)
-	 
-	 return true; 
-	 
-	 end
+	function FireWeapon3()
+		boolAiming=false
+		StopSpin(MG_B01,z_axis,0.15)
+		StopSpin(MG_B02,z_axis,0.15)
+		Signal(SIG_RESET)
+		StartThread(resetTurret)
+		return true
+	end
      
      function script.AimFromWeapon1()
         if boolRocketType then
