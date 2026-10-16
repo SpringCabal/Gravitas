@@ -82,18 +82,6 @@ local positionCmds = {
 }
 
 
-function widget:Initialize()
-	if not requiresAlt[CMD.ATTACK] then
-		Spring.SendCommands('bind Alt+a areaattack')
-	end
-end
-
-function widget:ShutDown()
-	if not requiresAlt[CMD.ATTACK] then
-		Spring.SendCommands('unbind Alt+a areaattack')
-	end
-end
-
 --------------------------------------------------------------------------------
 -- Globals
 --------------------------------------------------------------------------------

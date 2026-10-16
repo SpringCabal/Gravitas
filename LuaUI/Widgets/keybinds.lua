@@ -18,28 +18,16 @@ local x,y,h
 local purple = "\255\255\10\255"
 local white = "\255\255\255\255"
 
-function SetBindings()
-    local binds = { --real keybinds
-        "Any+esc reloadforce",
-        "Ctrl+q reloadforce",
-        "Any+pause  pause",
-        "Any+p  pause",
-        "Alt+b  debug",
-        "Alt+v  debugcolvol",
-    }
-    for _,binding in pairs(binds) do
-        Spring.SendCommands("bind ".. binding)
-    end
+local function SetBindings()
+    Spring.SendCommands({
+        "bind Any+esc reloadforce",
+        "bind Any+p pause",
+        "bind Alt+b debug",
+        "bind Alt+v debugcolvol",
+    })
 end
 
 function widget:Initialize()
-    local devMode = (tonumber(Spring.GetModOptions().play_mode) or 0) == 0
-    if not devMode then
-        Spring.SendCommands("unbindall") --muahahahaha
-        Spring.SendCommands("unbindkeyset enter chat") --because because.
-    else
-        --Spring.SendCommands("unbindkeyset w", "unbindkeyset p", "unbindkeyset q", "unbindkeyset a", "unbindkeyset s") --why p?
-    end
     SetBindings()
 
 
