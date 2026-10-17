@@ -25,15 +25,20 @@ impl Case for RealLevel {
         Phase::Level
     }
 
-    fn step(&mut self, global: &Global, _frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        _frame: i32,
+    ) -> Step {
         if !self.restarted {
             runner::use_real_level(global);
-            harness::press_restart();
+            harness::press_restart(spring);
             self.restarted = true;
             return Step::Wait;
         }
         if level_up(global) {
-            check(global)
+            check(spring, global)
         } else {
             Step::Wait
         }
@@ -46,7 +51,7 @@ fn level_up(global: &Global) -> bool {
 }
 const PLAYER_DEF: &str = "gravit";
 
-fn check(global: &Global) -> Step {
+fn check(spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Step {
     let (spawned, link_failures, player_spawn, boss) = {
         let level = global.level.access();
         let player_spawn = level::SPAWNS
@@ -73,7 +78,7 @@ fn check(global: &Global) -> Step {
     if player_spawn.is_none() || global.player_unit.get() != player_spawn {
         return fail("the player does not drive the level's Gravit");
     }
-    if !boss.is_some_and(units::valid) {
+    if !boss.is_some_and(|id| units::valid(spring, id)) {
         return fail("the boss is missing");
     }
     if global.outcome.get().is_some() {

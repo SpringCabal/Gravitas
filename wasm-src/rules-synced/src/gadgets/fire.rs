@@ -1,7 +1,7 @@
 pub(crate) mod behavior;
 
 use spring::ResultExt;
-use spring::commands;
+
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
@@ -30,7 +30,9 @@ impl Gadget<Global> for FireGadget {
         _team: i32,
         _builder: i32,
     ) {
-        self.fires.get(ctx.global()).created(unit_id, unit_def_id);
+        self.fires
+            .get(ctx.global())
+            .created(ctx.spring(), unit_id, unit_def_id);
     }
 
     fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
@@ -38,48 +40,63 @@ impl Gadget<Global> for FireGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
+        let spring = ctx.spring();
         let mut fires = self.fires.get(ctx.global());
-        let burns = fires.update(frame);
-        let flames = fires.flames(frame);
+        let burns = fires.update(spring, frame);
+        let flames = fires.flames(spring, frame);
         for burn in burns {
-            commands::run(move || {
-                if !units::valid(burn.unit_id) {
-                    return;
-                }
-                spring::add_unit_damage(
-                    burn.unit_id,
-                    burn.damage,
-                    0.0,
-                    -1,
-                    burn.attacker_id,
-                    spring::types::Float3::default(),
-                )
-                .log_err_once("fire damage");
-                emit_burn(burn.unit_id, burn.size_mult);
+            crate::with_addon_context(|ctx| {
+                ctx.commands().run(move |spring| {
+                    if !units::valid(spring, burn.unit_id) {
+                        return;
+                    }
+                    spring
+                        .unit_control()
+                        .add_unit_damage(
+                            burn.unit_id,
+                            burn.damage,
+                            0.0,
+                            -1,
+                            burn.attacker_id,
+                            spring::Float3::default(),
+                        )
+                        .log_err_once(spring, "fire damage");
+                    emit_burn(spring, burn.unit_id, burn.size_mult);
+                })
             });
         }
-        commands::run(move || {
-            for flame in flames {
-                send_effect(
-                    flame.position,
-                    EffectKind::Flame {
-                        radius: flame.radius,
-                    },
-                );
-            }
+        crate::with_addon_context(|ctx| {
+            ctx.commands().run(move |spring| {
+                for flame in flames {
+                    send_effect(
+                        spring,
+                        flame.position,
+                        EffectKind::Flame {
+                            radius: flame.radius,
+                        },
+                    );
+                }
+            })
         });
     }
 }
 
 const DEFAULT_BURN_RADIUS: f32 = 20.0;
 
-fn emit_burn(unit_id: i32, size_mult: f32) {
-    let Some(position) = units::position(unit_id) else {
+fn emit_burn(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32, size_mult: f32) {
+    let Some(position) = units::position(spring, unit_id) else {
         return;
     };
-    let radius = spring::units_info::get_unit_radius(unit_id).unwrap_or(DEFAULT_BURN_RADIUS);
-    let velocity = spring::units_info::get_unit_velocity(unit_id).unwrap_or_default();
+    let radius = spring
+        .units_info()
+        .get_unit_radius(unit_id)
+        .unwrap_or(DEFAULT_BURN_RADIUS);
+    let velocity = spring
+        .units_info()
+        .get_unit_velocity(unit_id)
+        .unwrap_or_default();
     send_effect(
+        spring,
         position,
         EffectKind::Burn {
             radius,

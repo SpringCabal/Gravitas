@@ -16,7 +16,8 @@ impl Gadget<Global> for InvulnerableGadget {
         _ctx: &AddonContext<'_, Global>,
         event: &UnitPreDamagedEvent,
     ) -> Option<spring::DamageResult> {
-        effects::blocks_damage(event.unit_id, event.paralyzer)
+        let spring = _ctx.spring();
+        effects::blocks_damage(spring, event.unit_id, event.paralyzer)
             .then(|| spring::DamageResult::unchanged(0.0))
     }
 }

@@ -16,7 +16,8 @@ impl Widget<Global> for GfxMapEdgeWidget {
         "GfxMapEdge"
     }
 
-    fn draw_world_pre_unit(&self, _ctx: &AddonContext<'_, Global>) {
-        self.edge.draw();
+    fn draw_world_pre_unit(&self, _ctx: &AddonContext<'_, Global, spring::Ui>) {
+        let spring = _ctx.spring();
+        self.edge.draw(spring);
     }
 }

@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::state::Global;
 use crate::tests::harness::{self, Case, Rest, Step, fail};
@@ -37,21 +37,26 @@ impl Case for Input {
         "input"
     }
 
-    fn step(&mut self, global: &Global, _frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        _frame: i32,
+    ) -> Step {
         let jumping = global.jumps.access().is_jumping(self.unit_id);
         match self.stage {
-            Stage::Press => self.press(global),
+            Stage::Press => self.press(spring, global),
             Stage::TakeOff if jumping => {
-                harness::release_pointer();
+                harness::release_pointer(spring);
                 self.stage = Stage::Land;
                 Step::Wait
             }
-            Stage::Land if !jumping => self.check(),
+            Stage::Land if !jumping => self.check(spring),
             _ => Step::Wait,
         }
     }
 
-    fn rest(&self) -> Vec<Rest> {
+    fn rest(&self, _spring: &spring::Spring<'_, spring::RulesSynced>) -> Vec<Rest> {
         alloc::vec![Rest::at(
             self.unit_id,
             self.goal,
@@ -65,14 +70,14 @@ const REACH: f32 = 150.0;
 const TOLERANCE: f32 = 60.0;
 
 impl Input {
-    fn press(&mut self, global: &Global) -> Step {
+    fn press(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Step {
         let Some(unit_id) = harness::arena(global, |arena| arena.jumper) else {
             return fail("no arena");
         };
         if global.player_unit.get() != Some(unit_id) {
             return fail("the player does not drive the arena's last Gravit");
         }
-        let Some(origin) = harness::position(unit_id) else {
+        let Some(origin) = harness::position(spring, unit_id) else {
             return fail("no player position");
         };
         self.unit_id = unit_id;
@@ -81,13 +86,13 @@ impl Input {
             z: origin.z - REACH,
             ..origin
         };
-        harness::press_jump(self.goal.x, self.goal.z);
+        harness::press_jump(spring, self.goal.x, self.goal.z);
         self.stage = Stage::TakeOff;
         Step::Wait
     }
 
-    fn check(&mut self) -> Step {
-        let Some(position) = harness::position(self.unit_id) else {
+    fn check(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Step {
+        let Some(position) = harness::position(spring, self.unit_id) else {
             return fail("no player position");
         };
         let travelled = harness::planar_distance(self.origin, position);
@@ -102,7 +107,7 @@ impl Input {
         self.second_jump = true;
         self.origin = position;
         self.goal.z -= REACH;
-        harness::press_jump(self.goal.x, self.goal.z);
+        harness::press_jump(spring, self.goal.x, self.goal.z);
         self.stage = Stage::TakeOff;
         Step::Wait
     }

@@ -15,71 +15,108 @@ pub struct HudBindings {
 
 pub const HEALTH_FULL_COLOR: &str = "#00bf00";
 
-pub fn create(context: u64) -> Option<HudBindings> {
-    let model = spring::context_create_data_model(context, "gravitas").ok()?;
+pub fn create(spring: &spring::Spring<'_, spring::Ui>, context: u64) -> Option<HudBindings> {
+    let model = spring
+        .rml_ui()
+        .context_create_data_model(context, "gravitas")
+        .ok()?;
     if !model.success || model.data_model_handle == 0 {
         return None;
     }
     let model = model.data_model_handle;
-    bind_event(model, "endgameRestart", restart)?;
-    bind_event(model, "endgameExit", |_| springcabal::menu::quit_to_menu())?;
+    bind_event(spring, model, "endgameRestart", restart)?;
+    bind_event(spring, model, "endgameExit", |spring, _| {
+        springcabal::menu::quit_to_menu(spring)
+    })?;
     Some(HudBindings {
-        health_percent: bind_percent(model, "healthPercent", 100.0)?,
-        health_caption: bind_string(model, "healthCaption", "")?,
-        health_color: bind_string(model, "healthColor", HEALTH_FULL_COLOR)?,
-        push_ready: bind_bool(model, "pushReady", true)?,
-        pull_ready: bind_bool(model, "pullReady", true)?,
-        paused: bind_bool(model, "paused", false)?,
-        endgame_visible: bind_bool(model, "endgameVisible", false)?,
-        endgame_victory: bind_bool(model, "endgameVictory", false)?,
-        endgame_title: bind_string(model, "endgameTitle", "")?,
+        health_percent: bind_percent(spring, model, "healthPercent", 100.0)?,
+        health_caption: bind_string(spring, model, "healthCaption", "")?,
+        health_color: bind_string(spring, model, "healthColor", HEALTH_FULL_COLOR)?,
+        push_ready: bind_bool(spring, model, "pushReady", true)?,
+        pull_ready: bind_bool(spring, model, "pullReady", true)?,
+        paused: bind_bool(spring, model, "paused", false)?,
+        endgame_visible: bind_bool(spring, model, "endgameVisible", false)?,
+        endgame_victory: bind_bool(spring, model, "endgameVictory", false)?,
+        endgame_title: bind_string(spring, model, "endgameTitle", "")?,
     })
 }
 
-pub fn set_percent(handle: u64, value: f32) {
+pub fn set_percent(spring: &spring::Spring<'_, spring::Ui>, handle: u64, value: f32) {
     if handle != 0 {
-        let _ = spring::data_model_set_percent(handle, value.clamp(0.0, 100.0));
+        let _ = spring
+            .rml_ui()
+            .data_model_set_percent(handle, value.clamp(0.0, 100.0));
     }
 }
 
-pub fn set_bool(handle: u64, value: bool) {
+pub fn set_bool(spring: &spring::Spring<'_, spring::Ui>, handle: u64, value: bool) {
     if handle != 0 {
-        let _ = spring::data_model_set_bool(handle, value);
+        let _ = spring.rml_ui().data_model_set_bool(handle, value);
     }
 }
 
-pub fn set_string(handle: u64, value: &str) {
+pub fn set_string(spring: &spring::Spring<'_, spring::Ui>, handle: u64, value: &str) {
     if handle != 0 {
-        let _ = spring::data_model_set_string(handle, value);
+        let _ = spring.rml_ui().data_model_set_string(handle, value);
     }
 }
 
-fn bind_event(model: u64, name: &str, handler: impl FnMut(&Global) + 'static) -> Option<()> {
-    let callback = crate::register_callback(handler);
-    let bound = spring::data_model_bind_event(model, name, callback, &[])
-        .is_ok_and(|registration| registration.success);
-    if !bound {
-        crate::unregister_callback(callback);
-    }
-    bound.then_some(())
+fn bind_event(
+    spring: &spring::Spring<'_, spring::Ui>,
+    model: u64,
+    name: &str,
+    handler: impl Fn(&spring::Spring<'_, spring::Ui>, &Global) + spring::RetainedCapture + 'static,
+) -> Option<()> {
+    spring
+        .rml_ui()
+        .data_model_bind_event(model, name, &[], move |spring, _| {
+            crate::with_global(|global| handler(spring, global));
+            Ok(())
+        })
+        .is_ok_and(|registration| registration.success)
+        .then_some(())
 }
 
-fn bind_percent(model: u64, name: &str, initial: f32) -> Option<u64> {
-    let binding = spring::data_model_bind_percent(model, name, initial).ok()?;
+fn bind_percent(
+    spring: &spring::Spring<'_, spring::Ui>,
+    model: u64,
+    name: &str,
+    initial: f32,
+) -> Option<u64> {
+    let binding = spring
+        .rml_ui()
+        .data_model_bind_percent(model, name, initial)
+        .ok()?;
     binding.success.then_some(binding.variable_handle)
 }
 
-fn bind_bool(model: u64, name: &str, initial: bool) -> Option<u64> {
-    let binding = spring::data_model_bind_bool(model, name, initial).ok()?;
+fn bind_bool(
+    spring: &spring::Spring<'_, spring::Ui>,
+    model: u64,
+    name: &str,
+    initial: bool,
+) -> Option<u64> {
+    let binding = spring
+        .rml_ui()
+        .data_model_bind_bool(model, name, initial)
+        .ok()?;
     binding.success.then_some(binding.variable_handle)
 }
 
-fn bind_string(model: u64, name: &str, initial: &str) -> Option<u64> {
-    let binding = spring::data_model_bind_string(model, name, initial).ok()?;
+fn bind_string(
+    spring: &spring::Spring<'_, spring::Ui>,
+    model: u64,
+    name: &str,
+    initial: &str,
+) -> Option<u64> {
+    let binding = spring
+        .rml_ui()
+        .data_model_bind_string(model, name, initial)
+        .ok()?;
     binding.success.then_some(binding.variable_handle)
 }
 
-pub fn restart(global: &Global) {
-    springcabal::message::send_to_rules(gravitas_shared::RESTART);
-    super::overlays::hide_game_over(&mut global.hud.access_mut());
+pub fn restart(spring: &spring::Spring<'_, spring::Ui>, global: &Global) {
+    springcabal::message::send_to_rules(spring, gravitas_shared::RESTART);
+    super::overlays::hide_game_over(spring, &mut global.hud.access_mut());
 }

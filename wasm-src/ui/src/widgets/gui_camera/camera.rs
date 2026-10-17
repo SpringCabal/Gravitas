@@ -1,6 +1,6 @@
 use core::cell::Cell;
 
-use spring::types::Float3;
+use spring::Float3;
 use springcabal_control::camera::{Aim, CameraFollow, FocusY, Follow, View, place_camera};
 
 use crate::state::Global;
@@ -43,29 +43,30 @@ impl Camera {
         }
     }
 
-    pub fn follow(&self, global: &Global, dt: f32) {
+    pub fn follow(&self, spring: &spring::Spring<'_, spring::Ui>, global: &Global, dt: f32) {
         if let Some((x, z, height)) = self.scripted.get() {
-            place_camera(&VIEW.height(height), Float3 { x, y: 0.0, z });
+            place_camera(spring, &VIEW.height(height), Float3 { x, y: 0.0, z });
             return;
         }
-        self.follow.update(player_unit(global), dt);
+        self.follow.update(spring, player_unit(spring, global), dt);
     }
 }
 
 #[cfg(feature = "fire-probe")]
-pub fn look_at(x: f32, z: f32, height: Option<f32>) {
+pub fn look_at(spring: &spring::Spring<'_, spring::Ui>, x: f32, z: f32, height: Option<f32>) {
     place_camera(
+        spring,
         &VIEW.height(height.unwrap_or(HEIGHT)),
         Float3 { x, y: 0.0, z },
     );
 }
 
-fn player_unit(global: &Global) -> Option<i32> {
+fn player_unit(spring: &spring::Spring<'_, spring::Ui>, global: &Global) -> Option<i32> {
     if let Some(unit_id) = global.player_unit.get() {
         return Some(unit_id);
     }
-    let player_id = spring::player::get_local_player_id(0).ok()?;
-    let controlled = spring::teams::get_player_controlled_unit(player_id).ok()?;
+    let player_id = spring.player().get_local_player_id().ok()?;
+    let controlled = spring.teams().get_player_controlled_unit(player_id).ok()?;
     if !controlled.has_unit || controlled.unit_id < 0 {
         return None;
     }

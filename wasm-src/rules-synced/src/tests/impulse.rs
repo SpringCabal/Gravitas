@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::state::Global;
 use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
@@ -31,17 +31,22 @@ impl Case for PushAndPull {
         "impulse"
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         match frame {
-            0 => self.adopt(global),
-            PUSH_FRAME => self.push(global),
-            PULL_FRAME => self.pull(global),
-            VERDICT_FRAME => self.check_pulled(),
-            _ => self.keep_firing(global, frame),
+            0 => self.adopt(spring, global),
+            PUSH_FRAME => self.push(spring, global),
+            PULL_FRAME => self.pull(spring, global),
+            VERDICT_FRAME => self.check_pulled(spring),
+            _ => self.keep_firing(spring, global, frame),
         }
     }
 
-    fn rest(&self) -> Vec<Rest> {
+    fn rest(&self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Vec<Rest> {
         let mut rest = Vec::new();
         rest.push(Rest::at(
             self.attacker,
@@ -49,7 +54,7 @@ impl Case for PushAndPull {
             STILL,
             "the pushing wall",
         ));
-        rest.extend(Rest::here(self.target, STILL, "the pushed crate"));
+        rest.extend(Rest::here(spring, self.target, STILL, "the pushed crate"));
         rest
     }
 }
@@ -63,12 +68,12 @@ const PUSH_WEAPON: &str = "gravity_pos";
 const PULL_WEAPON: &str = "gravity_neg";
 
 impl PushAndPull {
-    fn adopt(&mut self, global: &Global) -> Step {
+    fn adopt(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Step {
         let Some((target, attacker)) = harness::arena(global, |arena| (arena.pushed, arena.pusher))
         else {
             return fail("no arena");
         };
-        let Some(wall_at) = harness::position(attacker) else {
+        let Some(wall_at) = harness::position(spring, attacker) else {
             return fail("no position for the wall");
         };
         self.target = target;
@@ -77,26 +82,31 @@ impl PushAndPull {
         Step::Wait
     }
 
-    fn keep_firing(&mut self, global: &Global, frame: i32) -> Step {
+    fn keep_firing(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         if frame > PUSH_FRAME && frame <= PUSH_FRAME + BURST_FRAMES {
-            return self.strike(global, PUSH_WEAPON);
+            return self.strike(spring, global, PUSH_WEAPON);
         }
         if frame > PULL_FRAME && frame <= PULL_FRAME + BURST_FRAMES {
-            return self.strike(global, PULL_WEAPON);
+            return self.strike(spring, global, PULL_WEAPON);
         }
         Step::Wait
     }
 
-    fn push(&mut self, global: &Global) -> Step {
-        let Some(separation) = self.separation() else {
+    fn push(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Step {
+        let Some(separation) = self.separation(spring) else {
             return fail("lost the crate or the attacker");
         };
         self.pushed_from = separation;
-        self.strike(global, PUSH_WEAPON)
+        self.strike(spring, global, PUSH_WEAPON)
     }
 
-    fn pull(&mut self, global: &Global) -> Step {
-        let Some(separation) = self.separation() else {
+    fn pull(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Step {
+        let Some(separation) = self.separation(spring) else {
             return fail("lost the crate or the attacker");
         };
         if separation <= self.pushed_from + MARGIN {
@@ -106,11 +116,11 @@ impl PushAndPull {
             ));
         }
         self.pulled_from = separation;
-        self.strike(global, PULL_WEAPON)
+        self.strike(spring, global, PULL_WEAPON)
     }
 
-    fn check_pulled(&mut self) -> Step {
-        let Some(separation) = self.separation() else {
+    fn check_pulled(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Step {
+        let Some(separation) = self.separation(spring) else {
             return fail("lost the crate or the attacker");
         };
         if separation >= self.pulled_from - MARGIN {
@@ -122,23 +132,28 @@ impl PushAndPull {
         Step::Pass
     }
 
-    fn strike(&self, global: &Global, weapon_name: &str) -> Step {
+    fn strike(
+        &self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        weapon_name: &str,
+    ) -> Step {
         let (Ok(weapon), Some(def_id)) = (
-            spring::weapon_defs::get_weapon_def_id(weapon_name),
-            units::def_of(self.target),
+            spring.weapon_defs().get_weapon_def_id(weapon_name),
+            units::def_of(spring, self.target),
         ) else {
             return Step::Fail(alloc::format!("no weapon def for {weapon_name}"));
         };
         global
             .impulses
             .access_mut()
-            .damaged(self.target, def_id, weapon, self.attacker);
+            .damaged(spring, self.target, def_id, weapon, self.attacker);
         Step::Wait
     }
 
-    fn separation(&self) -> Option<f32> {
-        let target = harness::position(self.target)?;
-        let attacker = harness::position(self.attacker)?;
+    fn separation(&self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Option<f32> {
+        let target = harness::position(spring, self.target)?;
+        let attacker = harness::position(spring, self.attacker)?;
         Some(harness::planar_distance(attacker, target))
     }
 }

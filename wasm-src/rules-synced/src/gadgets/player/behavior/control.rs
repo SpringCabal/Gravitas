@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 use core::cell::Cell;
 
-use spring::types::Float3;
+use spring::Float3;
 use springcabal_control::goal::{Bounds, MoveGoal};
 
 use crate::units::{self, WEAPON_PULL, WEAPON_PUSH};
@@ -51,8 +51,14 @@ impl Player {
         self.unit_id
     }
 
-    pub fn adopt(&mut self, unit_id: i32, unit_def_id: i32, unit_team: i32) -> bool {
-        if unit_team != PLAYER_TEAM || crate::defs::get().gravit != Some(unit_def_id) {
+    pub fn adopt(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        unit_id: i32,
+        unit_def_id: i32,
+        unit_team: i32,
+    ) -> bool {
+        if unit_team != PLAYER_TEAM || crate::defs::get(spring).gravit != Some(unit_def_id) {
             return false;
         }
         self.unit_id = Some(unit_id);
@@ -68,7 +74,12 @@ impl Player {
         }
     }
 
-    pub fn update(&mut self, input: &Cell<Option<PlayerCommand>>, frame: i32) -> Vec<Order> {
+    pub fn update(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        input: &Cell<Option<PlayerCommand>>,
+        frame: i32,
+    ) -> Vec<Order> {
         let mut orders = Vec::new();
         let Some(unit_id) = self.unit_id else {
             return orders;
@@ -84,7 +95,7 @@ impl Player {
         let Some(command) = self.latest else {
             return orders;
         };
-        self.aim(unit_id, &command, &mut orders);
+        self.aim(spring, unit_id, &command, &mut orders);
         if !command.push {
             orders.push(Order::HoldWeapon(WEAPON_PUSH));
         }
@@ -92,7 +103,7 @@ impl Player {
             orders.push(Order::HoldWeapon(WEAPON_PULL));
         }
         if frame % MOVE_INTERVAL == 0 {
-            self.drive(unit_id, &command, &mut orders);
+            self.drive(spring, unit_id, &command, &mut orders);
         }
         orders
     }
@@ -108,22 +119,27 @@ impl Player {
     }
 }
 
-pub fn apply(unit_id: i32, orders: Vec<Order>, frame: i32) {
+pub fn apply(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    orders: Vec<Order>,
+    frame: i32,
+) {
     for order in orders {
         match order {
-            Order::ClearTarget => set_target(unit_id, NO_TARGET, Float3::default(), false),
+            Order::ClearTarget => set_target(spring, unit_id, NO_TARGET, Float3::default(), false),
             Order::TargetUnit(target_id) => {
-                set_target(unit_id, target_id, Float3::default(), false);
+                set_target(spring, unit_id, target_id, Float3::default(), false);
             }
             Order::TargetGround(x, y, z) => {
-                set_target(unit_id, NO_TARGET, Float3 { x, y, z }, true)
+                set_target(spring, unit_id, NO_TARGET, Float3 { x, y, z }, true)
             }
-            Order::HoldWeapon(weapon) => hold_weapon(unit_id, weapon, frame),
+            Order::HoldWeapon(weapon) => hold_weapon(spring, unit_id, weapon, frame),
             Order::Stop => {
-                units::order(unit_id, spring::cmd::STOP, &[]);
+                units::order(spring, unit_id, spring::cmd::STOP, &[]);
             }
             Order::MoveTo(goal) => {
-                crate::diagnostics::check(STEER.set(unit_id, goal), || {
+                crate::diagnostics::check(spring, STEER.set(spring, unit_id, goal), || {
                     alloc::format!("move goal for the player unit {unit_id}")
                 });
             }
@@ -131,8 +147,8 @@ pub fn apply(unit_id: i32, orders: Vec<Order>, frame: i32) {
     }
 }
 
-pub fn disable_auto_fire(unit_id: i32) {
-    units::order(unit_id, spring::cmd::FIRE_STATE, &[FIRE_STATE_HOLD]);
+pub fn disable_auto_fire(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) {
+    units::order(spring, unit_id, spring::cmd::FIRE_STATE, &[FIRE_STATE_HOLD]);
 }
 
 const PLAYER_TEAM: i32 = 0;
@@ -148,7 +164,13 @@ const NO_TARGET: i32 = -1;
 const BEAM_RANGE: f32 = 420.0;
 
 impl Player {
-    fn aim(&mut self, unit_id: i32, command: &PlayerCommand, orders: &mut Vec<Order>) {
+    fn aim(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        unit_id: i32,
+        command: &PlayerCommand,
+        orders: &mut Vec<Order>,
+    ) {
         if !command.push && !command.pull {
             if self.aiming {
                 orders.push(Order::ClearTarget);
@@ -160,8 +182,8 @@ impl Player {
         self.aiming = true;
         if command.target_unit >= 0
             && let (Some(origin), Some(target)) = (
-                units::position(unit_id),
-                units::position(command.target_unit),
+                units::position(spring, unit_id),
+                units::position(spring, command.target_unit),
             )
         {
             let dx = target.x - origin.x;
@@ -174,7 +196,7 @@ impl Player {
                 return;
             }
             self.target_unit = None;
-            let (x, y, z) = clamp_target(origin, target.x, target.y, target.z);
+            let (x, y, z) = clamp_target(spring, unit_id, origin, target.x, target.y, target.z);
             orders.push(Order::TargetGround(x, y, z));
             return;
         }
@@ -182,16 +204,29 @@ impl Player {
         let y = if command.target_y.abs() > f32::EPSILON {
             command.target_y
         } else {
-            units::ground_height(command.target_x, command.target_z)
+            units::ground_height(spring, command.target_x, command.target_z)
         };
-        let Some(origin) = units::position(unit_id) else {
+        let Some(origin) = units::position(spring, unit_id) else {
             return;
         };
-        let (x, y, z) = clamp_target(origin, command.target_x, y, command.target_z);
+        let (x, y, z) = clamp_target(
+            spring,
+            unit_id,
+            origin,
+            command.target_x,
+            y,
+            command.target_z,
+        );
         orders.push(Order::TargetGround(x, y, z));
     }
 
-    fn drive(&mut self, unit_id: i32, command: &PlayerCommand, orders: &mut Vec<Order>) {
+    fn drive(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        unit_id: i32,
+        command: &PlayerCommand,
+        orders: &mut Vec<Order>,
+    ) {
         if command.move_x == 0.0 && command.move_z == 0.0 {
             if self.moved_last {
                 orders.push(Order::Stop);
@@ -199,10 +234,10 @@ impl Player {
             }
             return;
         }
-        let Some(position) = units::position(unit_id) else {
+        let Some(position) = units::position(spring, unit_id) else {
             return;
         };
-        let Some(goal) = STEER.goal(position, (command.move_x, command.move_z)) else {
+        let Some(goal) = STEER.goal(spring, position, (command.move_x, command.move_z)) else {
             return;
         };
         orders.push(Order::MoveTo(goal));
@@ -210,26 +245,68 @@ impl Player {
     }
 }
 
-fn clamp_target(origin: Float3, x: f32, y: f32, z: f32) -> (f32, f32, f32) {
-    let dx = x - origin.x;
-    let dz = z - origin.z;
-    let distance = (dx * dx + dz * dz).sqrt();
-    if distance <= BEAM_RANGE || distance <= f32::EPSILON {
+fn clamp_target(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    origin: Float3,
+    x: f32,
+    y: f32,
+    z: f32,
+) -> (f32, f32, f32) {
+    let target = Float3 { x, y, z };
+    let in_range = |position| {
+        spring
+            .units_weapons()
+            .get_unit_weapon_test_range(unit_id, WEAPON_PUSH, position)
+            .unwrap_or(false)
+    };
+    if in_range(target) {
         return (x, y, z);
     }
-    let scale = BEAM_RANGE / distance;
-    let x = origin.x + dx * scale;
-    let z = origin.z + dz * scale;
-    (x, units::ground_height(x, z), z)
+    // Match the Lua gun: preserve the aim direction, including height, and
+    // ask the weapon whether the endpoint is actually reachable. Its muzzle
+    // and height modifiers can make a horizontal radius test too generous.
+    let dx = x - origin.x;
+    let dy = y - origin.y;
+    let dz = z - origin.z;
+    let distance = (dx * dx + dy * dy + dz * dz).sqrt();
+    if distance <= f32::EPSILON {
+        return (x, y, z);
+    }
+    let range = spring
+        .units_weapons()
+        .get_unit_weapon_state(unit_id, WEAPON_PUSH, "range")
+        .map_or(BEAM_RANGE, |state| state.range);
+    let full = range / distance;
+    let mut point = target;
+    for step in 0..=10 {
+        let scale = (1.0 - step as f32 * 0.02) * full;
+        point = Float3 {
+            x: origin.x + dx * scale,
+            y: origin.y + dy * scale,
+            z: origin.z + dz * scale,
+        };
+        if in_range(point) {
+            break;
+        }
+    }
+    (point.x, point.y, point.z)
 }
 
-fn hold_weapon(unit_id: i32, weapon: i32, frame: i32) {
-    let Ok(state) = spring::units_weapons::get_unit_weapon_state(unit_id, weapon, "reloadFrame")
+fn hold_weapon(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    weapon: i32,
+    frame: i32,
+) {
+    let Ok(state) = spring
+        .units_weapons()
+        .get_unit_weapon_state(unit_id, weapon, "reloadFrame")
     else {
         return;
     };
     if frame as f32 >= state.reload_frame {
-        let _ = spring::set_unit_weapon_state(
+        let _ = spring.unit_control().set_unit_weapon_state(
             unit_id,
             weapon - 1,
             "reloadFrame",
@@ -238,15 +315,21 @@ fn hold_weapon(unit_id: i32, weapon: i32, frame: i32) {
     }
 }
 
-fn set_target(unit_id: i32, target_id: i32, pos: Float3, is_ground_target: bool) {
-    let _ = spring::set_unit_target(
+fn set_target(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    target_id: i32,
+    pos: Float3,
+    is_ground_target: bool,
+) {
+    let _ = spring.unit_control().set_unit_target(
         unit_id,
-        spring::types::UnitTargetRef {
+        spring::unit_control::UnitTargetRef {
             target_id,
             pos,
             is_ground_target,
         },
-        spring::types::SetUnitTargetOptions {
+        spring::unit_control::SetUnitTargetOptions {
             manual_fire: false,
             user_target: true,
         },

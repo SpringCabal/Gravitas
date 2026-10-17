@@ -27,12 +27,14 @@ impl Gadget<Global> for RespawnGadget {
         team: i32,
         _builder: i32,
     ) {
-        if effects::is_respawnable(unit_id) {
+        let spring = ctx.spring();
+        if effects::is_respawnable(spring, unit_id) {
             self.respawns.get(ctx.global()).adopt(
+                spring,
                 unit_id,
                 unit_def_id,
                 team,
-                spring::game::current_frame(),
+                spring.game().current_frame().unwrap_or(0),
             );
         }
     }
@@ -45,18 +47,19 @@ impl Gadget<Global> for RespawnGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
+        let spring = ctx.spring();
         let mut respawns = self.respawns.get(ctx.global());
         if frame == respawn::SCAN_FRAME {
-            respawns.scan(frame);
+            respawns.scan(spring, frame);
         }
-        for rebirth in respawns.update(frame) {
+        for rebirth in respawns.update(spring, frame) {
             let respawns = Rc::clone(&self.respawns);
             let (unit_def_id, team_id) = (rebirth.unit_def_id, rebirth.team_id);
-            respawn::rebirth(&rebirth, move |unit_id| {
+            respawn::rebirth(spring, &rebirth, move |spring, unit_id| {
                 crate::with_global(|global| {
                     respawns
                         .get(global)
-                        .adopt(unit_id, unit_def_id, team_id, frame);
+                        .adopt(spring, unit_id, unit_def_id, team_id, frame);
                 });
             });
         }

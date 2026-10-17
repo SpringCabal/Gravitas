@@ -17,45 +17,48 @@ impl Widget<Global> for GuiUnselectableWidget {
         "GuiUnselectable"
     }
 
-    fn init(&self, _ctx: &AddonContext<'_, Global>) {
-        configure_all();
+    fn init(&self, _ctx: &AddonContext<'_, Global, spring::Ui>) {
+        let spring = _ctx.spring();
+        configure_all(spring);
     }
 
     fn unit_created(
         &self,
-        _ctx: &AddonContext<'_, Global>,
+        _ctx: &AddonContext<'_, Global, spring::Ui>,
         unit_id: i32,
         unit_def_id: i32,
         _unit_team: i32,
         _builder_id: i32,
     ) {
-        configure(unit_id, unit_def_id);
+        let spring = _ctx.spring();
+        configure(spring, unit_id, unit_def_id);
     }
 
     fn unit_entered_los(
         &self,
-        _ctx: &AddonContext<'_, Global>,
+        _ctx: &AddonContext<'_, Global, spring::Ui>,
         unit_id: i32,
         unit_def_id: i32,
         _unit_team: i32,
         _ally_team: i32,
     ) {
-        configure(unit_id, unit_def_id);
+        let spring = _ctx.spring();
+        configure(spring, unit_id, unit_def_id);
     }
 }
 
-fn configure(unit_id: i32, unit_def_id: i32) {
-    let _ = spring::unsynced_ctrl::set_unit_no_select(unit_id, true);
-    if crate::defs::unit(unit_def_id).effect {
-        let _ = spring::unsynced_ctrl::set_unit_no_draw(unit_id, true);
+fn configure(spring: &spring::Spring<'_, spring::Ui>, unit_id: i32, unit_def_id: i32) {
+    let _ = spring.unsynced_ctrl().set_unit_no_select(unit_id, true);
+    if crate::defs::unit(spring, unit_def_id).effect {
+        let _ = spring.unsynced_ctrl().set_unit_no_draw(unit_id, true);
     }
-    let _ = spring::selection::select_unit_array(&[], false);
+    let _ = spring.selection().select_unit_array(&[], false);
 }
 
-fn configure_all() {
-    for unit_id in spring::get_all_units().unwrap_or_default() {
-        if let Ok(unit_def_id) = spring::units_info::get_unit_def_id(unit_id) {
-            configure(unit_id, unit_def_id);
+fn configure_all(spring: &spring::Spring<'_, spring::Ui>) {
+    for unit_id in spring.units_query().get_all_units().unwrap_or_default() {
+        if let Ok(unit_def_id) = spring.units_info().get_unit_def_id(unit_id) {
+            configure(spring, unit_id, unit_def_id);
         }
     }
 }

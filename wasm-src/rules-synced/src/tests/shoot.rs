@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::state::Global;
 use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
@@ -31,15 +31,20 @@ impl Case for Shooting {
         "shoot"
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         match frame {
-            WALK_FRAME => self.walk(global),
-            VERDICT_FRAME => self.check(),
+            WALK_FRAME => self.walk(spring, global),
+            VERDICT_FRAME => self.check(spring),
             _ => Step::Wait,
         }
     }
 
-    fn rest(&self) -> Vec<Rest> {
+    fn rest(&self, _spring: &spring::Spring<'_, spring::RulesSynced>) -> Vec<Rest> {
         let walk_middle = Float3 {
             z: self.origin.z - WALK_DISTANCE * 0.5,
             ..self.origin
@@ -70,15 +75,15 @@ const PUSHED_BACK: f32 = 80.0;
 const MOVED: f32 = 20.0;
 
 impl Shooting {
-    fn walk(&mut self, global: &Global) -> Step {
+    fn walk(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Step {
         let Some((gunner, target)) = harness::arena(global, |arena| (arena.gunner, arena.target))
         else {
             return fail("no arena");
         };
         let (Some(origin), Some(target_at), Some(health)) = (
-            harness::position(gunner),
-            harness::position(target),
-            harness::health(target),
+            harness::position(spring, gunner),
+            harness::position(spring, target),
+            harness::health(spring, target),
         ) else {
             return fail("no position or health reading");
         };
@@ -87,30 +92,36 @@ impl Shooting {
         self.target = target;
         self.origin = origin;
         self.target_health = health;
-        units::order(gunner, spring::cmd::FIRE_STATE, &[FIRE_AT_WILL]);
+        units::order(spring, gunner, spring::cmd::FIRE_STATE, &[FIRE_AT_WILL]);
         let z = origin.z - WALK_DISTANCE;
         units::order(
+            spring,
             gunner,
             spring::cmd::MOVE,
-            &[origin.x, units::ground_height(origin.x, z), z],
+            &[origin.x, units::ground_height(spring, origin.x, z), z],
         );
         Step::Wait
     }
 
-    fn check(&mut self) -> Step {
-        let still_walking = spring::get_unit_commands(self.gunner, 1)
+    fn check(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Step {
+        let still_walking = spring
+            .units_commands()
+            .get_unit_commands(self.gunner, 1)
             .is_ok_and(|queue| queue.first().is_some_and(|c| c.cmd_id == spring::cmd::MOVE));
-        if !harness::moved(Some(self.origin), harness::position(self.gunner), MOVED)
-            || !still_walking
+        if !harness::moved(
+            Some(self.origin),
+            harness::position(spring, self.gunner),
+            MOVED,
+        ) || !still_walking
         {
             return fail("the robot was not walking at the verdict");
         }
-        let health = harness::health(self.target).unwrap_or(0.0);
+        let health = harness::health(spring, self.target).unwrap_or(0.0);
         if health >= self.target_health {
             return fail("the walking robot never hit its target");
         }
         harness::halt(self.gunner);
-        units::order(self.gunner, spring::cmd::FIRE_STATE, &[HOLD_FIRE]);
+        units::order(spring, self.gunner, spring::cmd::FIRE_STATE, &[HOLD_FIRE]);
         Step::Pass
     }
 }

@@ -2,8 +2,7 @@ use alloc::rc::Rc;
 use alloc::vec::Vec;
 use core::cell::RefCell;
 
-use spring::commands;
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::state::Global;
 use crate::tests::arena::RIG_SPACING;
@@ -34,19 +33,24 @@ impl Case for Fleeing {
         "flee"
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         if let Some(verdict) = self.verdict.take() {
             return verdict;
         }
         match frame {
-            ASSAULT_FRAME => self.assault(global),
-            FIRST_HIT_FRAME => self.hit_and_check("the first escape", false),
-            SECOND_HIT_FRAME => self.hit_and_check("the second escape", true),
+            ASSAULT_FRAME => self.assault(spring, global),
+            FIRST_HIT_FRAME => self.hit_and_check(spring, "the first escape", false),
+            SECOND_HIT_FRAME => self.hit_and_check(spring, "the second escape", true),
             _ => Step::Wait,
         }
     }
 
-    fn rest(&self) -> Vec<Rest> {
+    fn rest(&self, _spring: &spring::Spring<'_, spring::RulesSynced>) -> Vec<Rest> {
         alloc::vec![
             Rest::at(
                 self.fire,
@@ -71,13 +75,19 @@ const ASSAULT_DISTANCE: f32 = 300.0;
 const HIT_DAMAGE: f32 = 1.0;
 
 impl Fleeing {
-    fn assault(&mut self, global: &Global) -> Step {
+    fn assault(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+    ) -> Step {
         let Some((robot, fire)) = harness::arena(global, |arena| (arena.fleeing, arena.scare))
         else {
             return fail("no arena");
         };
-        let (Some(origin), Some(fire_at)) = (harness::position(robot), harness::position(fire))
-        else {
+        let (Some(origin), Some(fire_at)) = (
+            harness::position(spring, robot),
+            harness::position(spring, fire),
+        ) else {
             return fail("no robot or fire position");
         };
         self.robot = robot;
@@ -87,19 +97,33 @@ impl Fleeing {
         let z = origin.z - ASSAULT_DISTANCE;
         let target = Float3 {
             x: origin.x,
-            y: crate::units::ground_height(origin.x, z),
+            y: crate::units::ground_height(spring, origin.x, z),
             z,
         };
-        crate::units::order(robot, spring::cmd::FIGHT, &[target.x, target.y, target.z]);
+        crate::units::order(
+            spring,
+            robot,
+            spring::cmd::FIGHT,
+            &[target.x, target.y, target.z],
+        );
         Step::Wait
     }
 
-    fn hit_and_check(&mut self, what: &'static str, last: bool) -> Step {
+    fn hit_and_check(
+        &mut self,
+        _spring: &spring::Spring<'_, spring::RulesSynced>,
+        what: &'static str,
+        last: bool,
+    ) -> Step {
         let (robot, verdict) = (self.robot, Rc::clone(&self.verdict));
-        commands::add_unit_damage(robot, HIT_DAMAGE, 0.0, -1, self.fire, Float3::default()).then(
-            move |_| {
-                commands::run(move || {
-                    let checked = check_escape(robot, what);
+        crate::with_addon_context(|ctx| {
+            ctx.commands()
+                .add_unit_damage(robot, HIT_DAMAGE, 0.0, -1, self.fire, Float3::default())
+        })
+        .then(move |_spring, _| {
+            crate::with_addon_context(|ctx| {
+                ctx.commands().run(move |spring| {
+                    let checked = check_escape(spring, robot, what);
                     let checked = match checked {
                         Step::Wait if last => {
                             harness::halt(robot);
@@ -109,15 +133,15 @@ impl Fleeing {
                         failed => failed,
                     };
                     *verdict.borrow_mut() = Some(checked);
-                });
-            },
-        );
+                })
+            });
+        });
         Step::Wait
     }
 }
 
-fn check_escape(robot: i32, what: &str) -> Step {
-    let Ok(queue) = spring::get_unit_commands(robot, QUEUE_READ) else {
+fn check_escape(spring: &spring::Spring<'_, spring::RulesSynced>, robot: i32, what: &str) -> Step {
+    let Ok(queue) = spring.units_commands().get_unit_commands(robot, QUEUE_READ) else {
         return fail("could not read the robot's orders");
     };
     let ids: alloc::vec::Vec<i32> = queue.iter().map(|command| command.cmd_id).collect();

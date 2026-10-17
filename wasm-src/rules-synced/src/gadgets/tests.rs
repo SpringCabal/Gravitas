@@ -15,7 +15,8 @@ impl Gadget<Global> for TestsGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
-        self.runner.game_frame(ctx.global(), frame);
+        let spring = ctx.spring();
+        self.runner.game_frame(spring, ctx.global(), frame);
     }
 
     fn handle_lua_msg(
@@ -37,10 +38,12 @@ impl Gadget<Global> for TestsGadget {
         _team: i32,
         _builder: i32,
     ) {
-        tests::note_created(ctx.global(), unit_id, unit_def_id);
+        let spring = ctx.spring();
+        tests::note_created(spring, ctx.global(), unit_id, unit_def_id);
     }
 
     fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
-        tests::note_destroyed(ctx.global(), event.unit_id, event.unit_def_id);
+        let spring = ctx.spring();
+        tests::note_destroyed(spring, ctx.global(), event.unit_id, event.unit_def_id);
     }
 }

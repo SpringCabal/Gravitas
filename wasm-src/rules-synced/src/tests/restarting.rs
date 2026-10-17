@@ -41,12 +41,17 @@ impl Case for Restarting {
         Phase::Restart
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         match self.stage {
             Stage::KillOther => self.kill_other_gravit(global),
             Stage::KillPlayer if frame >= KILL_FRAME => self.kill(global),
-            Stage::GameOver if global.outcome.get().is_some() => self.press(global),
-            Stage::Rebuilt if self.rebuilt(global) => self.check(global),
+            Stage::GameOver if global.outcome.get().is_some() => self.press(spring, global),
+            Stage::Rebuilt if self.rebuilt(global) => self.check(spring, global),
             Stage::OverAgain if global.outcome.get().is_some() => self.check_over_again(global),
             _ => Step::Wait,
         }
@@ -80,17 +85,19 @@ impl Restarting {
         Step::Wait
     }
 
-    fn press(&mut self, global: &Global) -> Step {
+    fn press(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Step {
         if global.outcome.get() != Some(false) {
             return fail("losing the player unit won the game");
         }
         self.destroyed_mark = record::destroyed_count(global);
-        self.old_units = spring::get_all_units()
+        self.old_units = spring
+            .units()
+            .get_all_units()
             .unwrap_or_default()
             .into_iter()
             .filter(|unit_id| !record::destroyed(global, *unit_id))
             .collect();
-        harness::press_restart();
+        harness::press_restart(spring);
         self.stage = Stage::Rebuilt;
         Step::Wait
     }
@@ -100,7 +107,7 @@ impl Restarting {
             && harness::arena(global, |arena| arena.generation) != Some(self.generation)
     }
 
-    fn check(&mut self, global: &Global) -> Step {
+    fn check(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Step {
         let kept = self
             .old_units
             .iter()
@@ -118,7 +125,7 @@ impl Restarting {
         };
         let missing = units
             .iter()
-            .filter(|unit_id| !units::valid(**unit_id))
+            .filter(|unit_id| !units::valid(spring, **unit_id))
             .count();
         if missing != 0 {
             return Step::Fail(alloc::format!(

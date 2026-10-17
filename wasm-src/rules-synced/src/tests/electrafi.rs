@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::state::Global;
 use crate::tests::arena::RIG_SPACING;
@@ -34,16 +34,21 @@ impl Case for Shocking {
         "electrafi"
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         match frame {
-            0 => self.enter(global),
-            VERDICT_FRAME => self.check(),
-            LINGER_FRAME => self.check_lingering(global),
+            0 => self.enter(spring, global),
+            VERDICT_FRAME => self.check(spring),
+            LINGER_FRAME => self.check_lingering(spring, global),
             _ => Step::Wait,
         }
     }
 
-    fn rest(&self) -> Vec<Rest> {
+    fn rest(&self, _spring: &spring::Spring<'_, spring::RulesSynced>) -> Vec<Rest> {
         alloc::vec![
             Rest::at(self.field, self.field_at, STILL, "the electric field"),
             Rest::at(
@@ -61,16 +66,16 @@ const LINGER_FRAME: i32 = 75;
 const CLEAR_OF_FIELD: f32 = 200.0;
 
 impl Shocking {
-    fn enter(&mut self, global: &Global) -> Step {
+    fn enter(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Step {
         let Some((field, victim)) =
             harness::arena(global, |arena| (arena.electrafi, arena.shocked))
         else {
             return fail("no arena");
         };
         let (Some(park), Some(centre), Some(paralyze)) = (
-            harness::position(victim),
-            harness::position(field),
-            harness::paralyze(victim),
+            harness::position(spring, victim),
+            harness::position(spring, field),
+            harness::paralyze(spring, victim),
         ) else {
             return fail("no position or health reading");
         };
@@ -80,19 +85,19 @@ impl Shocking {
         self.park = park;
         self.entry_paralyze = paralyze;
         harness::halt(victim);
-        harness::place(victim, centre);
+        harness::place(spring, victim, centre);
         Step::Wait
     }
 
-    fn check(&mut self) -> Step {
-        let Some(paralyze) = harness::paralyze(self.victim) else {
+    fn check(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Step {
+        let Some(paralyze) = harness::paralyze(spring, self.victim) else {
             return fail("lost the shocked unit");
         };
-        harness::place(self.victim, self.clear());
+        harness::place(spring, self.victim, self.clear());
         if paralyze <= self.entry_paralyze {
             return fail("standing in an electric field did not stun the robot");
         }
-        let Some(health) = harness::health(self.victim) else {
+        let Some(health) = harness::health(spring, self.victim) else {
             return fail("no health reading");
         };
         self.exit_health = health;
@@ -106,11 +111,15 @@ impl Shocking {
         }
     }
 
-    fn check_lingering(&mut self, global: &Global) -> Step {
+    fn check_lingering(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+    ) -> Step {
         if !record::sparked_unhurt(global, self.victim) {
             return fail("the robot stopped sparking as soon as it left the field");
         }
-        match harness::health(self.victim) {
+        match harness::health(spring, self.victim) {
             Some(health) if health < self.exit_health => {
                 fail("the field kept hurting the robot after it left")
             }

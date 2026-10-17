@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::state::Global;
 use crate::tests::arena::RIG_SPACING;
@@ -29,22 +29,32 @@ impl Case for Collision {
         "collision"
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         match frame {
-            THROW_FRAME => self.throw(global, frame),
-            VERDICT_FRAME => self.check(),
+            THROW_FRAME => self.throw(spring, global, frame),
+            VERDICT_FRAME => self.check(spring),
             _ => Step::Wait,
         }
     }
 
-    fn rest(&self) -> Vec<Rest> {
+    fn rest(&self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Vec<Rest> {
         let mut rest = alloc::vec![Rest::at(
             self.thrown,
             self.origin,
             RIG_SPACING * 0.5,
             "the thrown robot"
         )];
-        rest.extend(Rest::here(self.anvil, STILL, "the crate the robot hit"));
+        rest.extend(Rest::here(
+            spring,
+            self.anvil,
+            STILL,
+            "the crate the robot hit",
+        ));
         rest
     }
 }
@@ -59,13 +69,20 @@ const THROW: Float3 = Float3 {
 };
 
 impl Collision {
-    fn throw(&mut self, global: &Global, frame: i32) -> Step {
+    fn throw(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         let Some((thrown, anvil)) = harness::arena(global, |arena| (arena.thrown, arena.anvil))
         else {
             return fail("no arena");
         };
-        let (Some(health), Some(origin)) = (harness::health(thrown), harness::position(thrown))
-        else {
+        let (Some(health), Some(origin)) = (
+            harness::health(spring, thrown),
+            harness::position(spring, thrown),
+        ) else {
             return fail("no health or position reading");
         };
         self.thrown = thrown;
@@ -76,14 +93,18 @@ impl Collision {
             .fall_immunity
             .access_mut()
             .set_immunity(thrown, frame + IMMUNITY_FRAMES);
-        if spring::add_unit_impulse(thrown, THROW, 0.0).is_err() {
+        if spring
+            .unit_control()
+            .add_unit_impulse(thrown, THROW, 0.0)
+            .is_err()
+        {
             return fail("the throw was refused");
         }
         Step::Wait
     }
 
-    fn check(&mut self) -> Step {
-        match harness::health(self.thrown) {
+    fn check(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Step {
+        match harness::health(spring, self.thrown) {
             Some(health) if health >= self.health => fail("hitting the crate did no damage"),
             _ => Step::Pass,
         }

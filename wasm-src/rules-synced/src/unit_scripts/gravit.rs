@@ -143,7 +143,7 @@ impl GravitScript {
         ctx.signal(SIG_AIM);
         ctx.signal(SIG_WALK);
         ctx.signal(SIG_IDLE);
-        play_sound("sounds/death.ogg", 1.0);
+        play_sound(ctx, "sounds/death.ogg", 1.0);
         self.state.borrow_mut().dying = true;
         ctx.spawn(TaskDefinition::with_state(
             "gravitas-gravit-die",

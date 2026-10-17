@@ -55,10 +55,10 @@ static NO_DEF: UnitDef = UnitDef {
     script: None,
 };
 
-static DEFS: DefCache<Defs> = DefCache::new(Defs::load);
+static DEFS: DefCache<Defs> = DefCache::new();
 
-pub fn get() -> &'static Defs {
-    DEFS.get()
+pub fn get(spring: &spring::Spring<'_, spring::RulesSynced>) -> &'static Defs {
+    DEFS.get_or_init(|| Defs::load(spring))
 }
 
 impl Defs {
@@ -84,13 +84,15 @@ impl Defs {
             .flatten()
     }
 
-    fn load() -> Self {
-        let count = spring::unit_defs::get_unit_def_count(0).unwrap_or(0) as i32;
-        let units: Vec<UnitDef> = (0..=count).map(UnitDef::load).collect();
-        let weapons = spring::weapon_defs::get_weapon_def_count(0).unwrap_or(0) as i32;
+    fn load(spring: &spring::Spring<'_, spring::RulesSynced>) -> Self {
+        let count = spring.unit_defs().get_unit_def_count().unwrap_or(0) as i32;
+        let units: Vec<UnitDef> = (0..=count).map(|id| UnitDef::load(spring, id)).collect();
+        let weapons = spring.weapon_defs().get_weapon_def_count().unwrap_or(0) as i32;
         let weapon_impulses = (0..weapons)
             .map(|weapon_def_id| {
-                spring::weapon_defs::get_weapon_def_custom_param(weapon_def_id, "impulse")
+                spring
+                    .weapon_defs()
+                    .get_weapon_def_custom_param(weapon_def_id, "impulse")
                     .ok()
                     .and_then(|value| value.parse().ok())
             })
@@ -114,21 +116,22 @@ impl Defs {
 }
 
 impl UnitDef {
-    fn load(unit_def_id: i32) -> Self {
-        let Some(name) = spring::unit_defs::get_unit_def_name_bytes(unit_def_id)
-            .ok()
-            .and_then(|bytes| String::from_utf8(bytes).ok())
-        else {
+    fn load(spring: &spring::Spring<'_, spring::RulesSynced>, unit_def_id: i32) -> Self {
+        let Some(name) = spring.unit_defs().get_unit_def_name(unit_def_id).ok() else {
             return Self::default();
         };
-        let keys =
-            spring::unit_defs::get_unit_def_custom_param_keys(unit_def_id).unwrap_or_default();
+        let keys = spring
+            .unit_defs()
+            .get_unit_def_custom_param_keys(unit_def_id)
+            .unwrap_or_default();
         let has = |key: &str| keys.iter().any(|candidate| candidate == key);
         let number = |key: &str| -> Option<f32> {
             if !has(key) {
                 return None;
             }
-            spring::unit_defs::get_unit_def_custom_param(unit_def_id, key)
+            spring
+                .unit_defs()
+                .get_unit_def_custom_param(unit_def_id, key)
                 .ok()
                 .and_then(|value| value.parse().ok())
         };
@@ -145,9 +148,18 @@ impl UnitDef {
             radius: number("radius"),
             elasticity: number("elasticity"),
             friction: number("friction"),
-            mass: spring::get_unit_def_param_float(unit_def_id, "mass").unwrap_or(0.0),
-            health: spring::get_unit_def_health(unit_def_id).unwrap_or(0.0),
-            speed: spring::get_unit_def_speed(unit_def_id).unwrap_or(0.0),
+            mass: spring
+                .unit_defs()
+                .get_unit_def_param_float(unit_def_id, "mass")
+                .unwrap_or(0.0),
+            health: spring
+                .unit_defs()
+                .get_unit_def_health(unit_def_id)
+                .unwrap_or(0.0),
+            speed: spring
+                .unit_defs()
+                .get_unit_def_speed(unit_def_id)
+                .unwrap_or(0.0),
             script: ScriptKind::for_def_name(&name),
             name,
         }

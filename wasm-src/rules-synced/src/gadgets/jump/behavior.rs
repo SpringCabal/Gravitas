@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 use spring::ResultExt;
 
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::state::Global;
 use crate::unit_scripts::JumpCall;
@@ -105,20 +105,27 @@ impl Jumps {
     }
 }
 
-pub fn start(global: &Global, unit_id: i32, goal_x: f32, goal_y: f32, goal_z: f32) -> Outcome {
+pub fn start(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    global: &Global,
+    unit_id: i32,
+    goal_x: f32,
+    goal_y: f32,
+    goal_z: f32,
+) -> Outcome {
     if global.jumps.access().is_jumping(unit_id) {
         return Outcome::Busy;
     }
-    let Some(def_id) = units::def_of(unit_id) else {
+    let Some(def_id) = units::def_of(spring, unit_id) else {
         return Outcome::Invalid;
     };
-    if crate::defs::get().gravit != Some(def_id) {
+    if crate::defs::get(spring).gravit != Some(def_id) {
         return Outcome::Invalid;
     }
-    let Some(start) = units::position(unit_id) else {
+    let Some(start) = units::position(spring, unit_id) else {
         return Outcome::Invalid;
     };
-    if !on_map(goal_x, goal_z) {
+    if !on_map(spring, goal_x, goal_z) {
         return Outcome::OutsideMap;
     }
     if (start.y - goal_y).abs() > CLIMB_LIMIT {
@@ -126,7 +133,7 @@ pub fn start(global: &Global, unit_id: i32, goal_x: f32, goal_y: f32, goal_z: f3
     }
     let goal = Float3 {
         x: goal_x,
-        y: units::ground_height(goal_x, goal_z),
+        y: units::ground_height(spring, goal_x, goal_z),
         z: goal_z,
     };
     let vector = Float3 {
@@ -134,11 +141,14 @@ pub fn start(global: &Global, unit_id: i32, goal_x: f32, goal_y: f32, goal_z: f3
         y: goal.y - start.y,
         z: goal.z - start.z,
     };
-    let range = rules_param(unit_id, RANGE_PARAM).unwrap_or(RANGE);
+    let range = rules_param(spring, unit_id, RANGE_PARAM).unwrap_or(RANGE);
     let planar_distance = (vector.x * vector.x + vector.z * vector.z).sqrt();
     if planar_distance > range {
         crate::diagnostics::check(
-            spring::set_unit_move_goal(unit_id, goal, range, 0.0, false),
+            spring,
+            spring
+                .unit_control()
+                .set_unit_move_goal(unit_id, goal, range, 0.0, false),
             || alloc::format!("move goal towards a jump for unit {unit_id}"),
         );
         return Outcome::OutOfRange;
@@ -153,19 +163,22 @@ pub fn start(global: &Global, unit_id: i32, goal_x: f32, goal_y: f32, goal_z: f3
     if flight_distance <= 0.0 {
         return Outcome::Invalid;
     }
-    let speed =
-        rules_param(unit_id, SPEED_PARAM).unwrap_or(SPEED) * line_distance / flight_distance;
+    let speed = rules_param(spring, unit_id, SPEED_PARAM).unwrap_or(SPEED) * line_distance
+        / flight_distance;
     let step = speed / line_distance;
     if !(step > 0.0 && step.is_finite()) {
         return Outcome::Invalid;
     }
-    if blocked(start, vector, step) {
+    if blocked(spring, start, vector, step) {
         return Outcome::Blocked;
     }
-    let heading = spring::units_info::get_unit_heading(unit_id, true).unwrap_or(0.0);
+    let heading = spring
+        .units_info()
+        .get_unit_heading(unit_id, true)
+        .unwrap_or(0.0);
     let turn = shortest_turn(heading, vector.x.atan2(vector.z));
-    units::move_ctrl(unit_id, true);
-    crate::unit_scripts::jump(unit_id, JumpCall::PreJump);
+    units::move_ctrl(spring, unit_id, true);
+    crate::unit_scripts::jump(spring, unit_id, JumpCall::PreJump);
     global.jumps.access_mut().active.push(Jump {
         unit_id,
         start,
@@ -181,25 +194,27 @@ pub fn start(global: &Global, unit_id: i32, goal_x: f32, goal_y: f32, goal_z: f3
     Outcome::Started
 }
 
-pub fn fly(global: &Global) -> Vec<i32> {
+pub fn fly(spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Vec<i32> {
     let flights = global.jumps.access_mut().advance();
     let mut landed = Vec::new();
     for flight in flights {
         if let Some((position, heading)) = flight.pose {
-            spring::set_unit_position(flight.unit_id, position)
-                .log_err_once("moving a jumping unit");
-            units::face_radians(flight.unit_id, heading);
+            spring
+                .unit_control()
+                .set_unit_position(flight.unit_id, position)
+                .log_err_once(spring, "moving a jumping unit");
+            units::face_radians(spring, flight.unit_id, heading);
         }
         for call in flight.calls {
-            crate::unit_scripts::jump(flight.unit_id, call);
+            crate::unit_scripts::jump(spring, flight.unit_id, call);
         }
         if flight.landed {
             landed.push(flight.unit_id);
         }
     }
     for unit_id in &landed {
-        crate::unit_scripts::jump(*unit_id, JumpCall::StopJump);
-        units::move_ctrl(*unit_id, false);
+        crate::unit_scripts::jump(spring, *unit_id, JumpCall::StopJump);
+        units::move_ctrl(spring, *unit_id, false);
     }
     landed
 }
@@ -217,8 +232,8 @@ const MAP_MARGIN: f32 = 32.0;
 const RANGE_PARAM: &str = "jumpRange";
 const SPEED_PARAM: &str = "jumpSpeed";
 
-fn on_map(x: f32, z: f32) -> bool {
-    let Ok(map) = spring::game::get_game_map_info(0) else {
+fn on_map(spring: &spring::Spring<'_, spring::RulesSynced>, x: f32, z: f32) -> bool {
+    let Ok(map) = spring.game().get_game_map_info() else {
         return true;
     };
     x >= MAP_MARGIN
@@ -227,11 +242,23 @@ fn on_map(x: f32, z: f32) -> bool {
         && z <= map.map_size_z as f32 - MAP_MARGIN
 }
 
-fn rules_param(unit_id: i32, name: &str) -> Option<f32> {
-    spring::get_unit_rules_param_f32(unit_id, name).ok()
+fn rules_param(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    name: &str,
+) -> Option<f32> {
+    spring
+        .rules_params()
+        .get_unit_rules_param_f32(unit_id, name)
+        .ok()
 }
 
-fn blocked(start: Float3, vector: Float3, step: f32) -> bool {
+fn blocked(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    start: Float3,
+    vector: Float3,
+    step: f32,
+) -> bool {
     let mut progress = 0.0;
     let mut x = start.x;
     let mut z = start.z;
@@ -240,7 +267,7 @@ fn blocked(start: Float3, vector: Float3, step: f32) -> bool {
         z += vector.z * step;
         let arc = 1.0 - (2.0 * progress - 1.0) * (2.0 * progress - 1.0);
         let arc_height = start.y + vector.y * progress + arc * HEIGHT;
-        if units::ground_height(x, z) - WALL_CLEARANCE > arc_height {
+        if units::ground_height(spring, x, z) - WALL_CLEARANCE > arc_height {
             return true;
         }
         progress += step;

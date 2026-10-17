@@ -4,7 +4,6 @@ pub(crate) mod setup;
 
 pub(crate) mod data;
 
-use spring::commands;
 use spring_addons::AddonContext;
 use spring_addons::rules::{Gadget, UnitDestroyedEvent};
 
@@ -21,28 +20,33 @@ impl Gadget<Global> for LevelGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, _frame: i32) {
+        let spring = ctx.spring();
         let global = ctx.global();
         if global.restart.take_request() {
-            restart::perform(global);
-            diagnostics::info("restarting the level");
+            restart::perform(spring, global);
+            diagnostics::info(spring, "restarting the level");
             return;
         }
         let phase = global.level.access().phase;
         match phase {
-            Phase::Spawn => commands::run(|| crate::with_global(setup::spawn)),
-            Phase::Link => setup::link(global),
+            Phase::Spawn => crate::with_addon_context(|ctx| {
+                ctx.commands()
+                    .run(|spring| crate::with_global(|global| setup::spawn(spring, global)))
+            }),
+            Phase::Link => setup::link(spring, global),
             Phase::Running => {}
         }
     }
 
     fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
+        let spring = ctx.spring();
         let global = ctx.global();
         if global.restart.wiping() {
             return;
         }
         let boss = global.level.access().unit_of(level::BOSS_UNIT);
         if boss == Some(event.unit_id) {
-            mission::win(global, &[PLAYER_ALLY_TEAM]);
+            mission::win(spring, global, &[PLAYER_ALLY_TEAM]);
         }
     }
 }

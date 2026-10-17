@@ -14,8 +14,9 @@ impl Gadget<Global> for ImpulseGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, _frame: i32) {
+        let spring = ctx.spring();
         let pending = ctx.global().impulses.access_mut().take();
-        impulse::apply(pending);
+        impulse::apply(spring, pending);
     }
 
     fn unit_pre_damaged(
@@ -23,7 +24,9 @@ impl Gadget<Global> for ImpulseGadget {
         ctx: &AddonContext<'_, Global>,
         event: &UnitPreDamagedEvent,
     ) -> Option<spring::DamageResult> {
+        let spring = ctx.spring();
         ctx.global().impulses.access_mut().damaged(
+            spring,
             event.unit_id,
             event.unit_def_id,
             event.weapon_def_id,

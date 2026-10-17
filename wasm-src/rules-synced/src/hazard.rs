@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::units;
 
@@ -35,11 +35,14 @@ impl Fields {
         }
     }
 
-    pub fn add(&mut self, unit_id: i32) {
-        let radius = match spring::get_unit_rules_param_f32(unit_id, self.size_param) {
+    pub fn add(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) {
+        let radius = match spring
+            .rules_params()
+            .get_unit_rules_param_f32(unit_id, self.size_param)
+        {
             Ok(radius) => radius,
             Err(_) => {
-                let _ = spring::set_unit_rules_param_f32(
+                let _ = spring.rules_params().set_unit_rules_param_f32(
                     unit_id,
                     self.size_param,
                     self.default_size,
@@ -59,16 +62,23 @@ impl Fields {
         self.fields.iter().copied()
     }
 
-    pub fn refresh(&mut self, frame: i32, fallback: f32) -> Vec<Visual> {
+    pub fn refresh(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        frame: i32,
+        fallback: f32,
+    ) -> Vec<Visual> {
         if frame % DRAW_INTERVAL != 0 {
             return Vec::new();
         }
         let mut visuals = Vec::new();
         for field in &mut self.fields {
-            let Some(position) = units::position(field.unit_id) else {
+            let Some(position) = units::position(spring, field.unit_id) else {
                 continue;
             };
-            field.radius = spring::get_unit_rules_param_f32(field.unit_id, self.size_param)
+            field.radius = spring
+                .rules_params()
+                .get_unit_rules_param_f32(field.unit_id, self.size_param)
                 .unwrap_or(fallback);
             visuals.push(Visual {
                 position,

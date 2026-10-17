@@ -20,7 +20,12 @@ impl Case for Spawned {
         Phase::Setup
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         if frame < VERDICT_FRAME {
             return Step::Wait;
         }
@@ -29,7 +34,7 @@ impl Case for Spawned {
         };
         let missing = units
             .iter()
-            .filter(|unit_id| !units::valid(**unit_id))
+            .filter(|unit_id| !units::valid(spring, **unit_id))
             .count();
         if missing != 0 {
             return Step::Fail(alloc::format!(

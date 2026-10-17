@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::state::Global;
 use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
@@ -37,16 +37,21 @@ impl Case for PlateAndGate {
         "plate"
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         match frame {
-            0 => self.press(global),
-            PRESS_VERDICT_FRAME => self.check_pressed(global),
+            0 => self.press(spring, global),
+            PRESS_VERDICT_FRAME => self.check_pressed(spring, global),
             RELEASE_VERDICT_FRAME => self.check_released(global),
             _ => Step::Wait,
         }
     }
 
-    fn rest(&self) -> Vec<Rest> {
+    fn rest(&self, _spring: &spring::Spring<'_, spring::RulesSynced>) -> Vec<Rest> {
         alloc::vec![
             Rest::at(self.plate, self.plate_at, STILL, "the plate"),
             Rest::at(self.gate, self.gate_at, STILL, "the plate's gate"),
@@ -62,16 +67,16 @@ const GATE_PIECE: &str = "Gate";
 const PIECE_DISPLACEMENT: f32 = 1.0;
 
 impl PlateAndGate {
-    fn press(&mut self, global: &Global) -> Step {
+    fn press(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Step {
         let Some((plate, gate, toggler)) =
             harness::arena(global, |arena| (arena.plate, arena.gate, arena.toggler))
         else {
             return fail("no arena");
         };
         let (Some(plate_position), Some(gate_position), Some(park)) = (
-            harness::position(plate),
-            harness::position(gate),
-            harness::position(toggler),
+            harness::position(spring, plate),
+            harness::position(spring, gate),
+            harness::position(spring, toggler),
         ) else {
             return fail("no position for plate, gate or crate");
         };
@@ -81,17 +86,21 @@ impl PlateAndGate {
         self.gate = gate;
         self.toggler = toggler;
         self.park = park;
-        self.plate_piece = harness::piece_position(plate, PLATE_PIECE);
-        self.gate_piece = harness::piece_position(gate, GATE_PIECE);
+        self.plate_piece = harness::piece_position(spring, plate, PLATE_PIECE);
+        self.gate_piece = harness::piece_position(spring, gate, GATE_PIECE);
         if self.plate_piece.is_none() || self.gate_piece.is_none() {
             return fail("plate or gate has no moving piece");
         }
         record::clear_toggles(global, &[plate, gate]);
-        harness::place(toggler, plate_position);
+        harness::place(spring, toggler, plate_position);
         Step::Wait
     }
 
-    fn check_pressed(&mut self, global: &Global) -> Step {
+    fn check_pressed(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+    ) -> Step {
         if !record::toggled_to(global, self.plate, true) {
             return fail("crate on the plate did not press it");
         }
@@ -100,20 +109,20 @@ impl PlateAndGate {
         }
         if !harness::moved(
             self.plate_piece,
-            harness::piece_position(self.plate, PLATE_PIECE),
+            harness::piece_position(spring, self.plate, PLATE_PIECE),
             PIECE_DISPLACEMENT,
         ) {
             return fail("pressed plate did not animate");
         }
         if !harness::moved(
             self.gate_piece,
-            harness::piece_position(self.gate, GATE_PIECE),
+            harness::piece_position(spring, self.gate, GATE_PIECE),
             PIECE_DISPLACEMENT,
         ) {
             return fail("opened gate did not animate");
         }
         record::clear_toggles(global, &[self.plate, self.gate]);
-        harness::place(self.toggler, self.park);
+        harness::place(spring, self.toggler, self.park);
         Step::Wait
     }
 

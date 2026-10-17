@@ -32,9 +32,14 @@ impl Default for Electrafi {
 }
 
 impl Electrafi {
-    pub fn created(&mut self, unit_id: i32, unit_def_id: i32) {
-        if crate::defs::get().electrafi == Some(unit_def_id) {
-            self.fields.add(unit_id);
+    pub fn created(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        unit_id: i32,
+        unit_def_id: i32,
+    ) {
+        if crate::defs::get(spring).electrafi == Some(unit_def_id) {
+            self.fields.add(spring, unit_id);
         }
     }
 
@@ -43,8 +48,12 @@ impl Electrafi {
         self.exposures.remove(unit_id);
     }
 
-    pub fn update(&mut self, frame: i32) -> Vec<Shock> {
-        self.gather(frame);
+    pub fn update(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        frame: i32,
+    ) -> Vec<Shock> {
+        self.gather(spring, frame);
         self.exposures
             .resolve(frame)
             .into_iter()
@@ -58,24 +67,28 @@ impl Electrafi {
             .collect()
     }
 
-    pub fn arcs(&mut self, frame: i32) -> Vec<Visual> {
-        self.fields.refresh(frame, FALLBACK_RADIUS)
+    pub fn arcs(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        frame: i32,
+    ) -> Vec<Visual> {
+        self.fields.refresh(spring, frame, FALLBACK_RADIUS)
     }
 
-    fn gather(&mut self, frame: i32) {
+    fn gather(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, frame: i32) {
         for field in self.fields.iter() {
-            let Some(centre) = units::position(field.unit_id) else {
+            let Some(centre) = units::position(spring, field.unit_id) else {
                 continue;
             };
-            for unit_id in units::units_in_sphere(centre, field.radius + PROXIMITY_MARGIN) {
-                let Some(def_id) = units::def_of(unit_id) else {
+            for unit_id in units::units_in_sphere(spring, centre, field.radius + PROXIMITY_MARGIN) {
+                let Some(def_id) = units::def_of(spring, unit_id) else {
                     continue;
                 };
-                let def = crate::defs::get().unit(def_id);
+                let def = crate::defs::get(spring).unit(def_id);
                 if !def.player && !def.robot {
                     continue;
                 }
-                let proximity = proximity_inside(unit_id, centre, field.radius);
+                let proximity = proximity_inside(spring, unit_id, centre, field.radius);
                 self.exposures
                     .record(unit_id, def.robot, proximity, field.unit_id, frame);
             }
@@ -83,8 +96,13 @@ impl Electrafi {
     }
 }
 
-fn proximity_inside(unit_id: i32, centre: spring::types::Float3, radius: f32) -> f32 {
-    let Some(position) = units::position(unit_id) else {
+fn proximity_inside(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    centre: spring::Float3,
+    radius: f32,
+) -> f32 {
+    let Some(position) = units::position(spring, unit_id) else {
         return 0.0;
     };
     let dx = position.x - centre.x;

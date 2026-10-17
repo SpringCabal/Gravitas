@@ -8,7 +8,7 @@ use crate::state::Global;
 use crate::tests::arena;
 use crate::tests::harness::{Case, PHASES, Phase, Step};
 
-pub fn stage_level(global: &Global) -> bool {
+pub fn stage_level(spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> bool {
     if global.tests.real_level.get() {
         return false;
     }
@@ -17,20 +17,20 @@ pub fn stage_level(global: &Global) -> bool {
         .arena
         .get()
         .map_or(0, |arena| arena.generation + 1);
-    arena::build(generation, |built| {
+    arena::build(spring, generation, |spring, built| {
         crate::with_global(|global| match built {
             Some(built) => {
-                diagnostics::info(&alloc::format!(
-                    "E2E arena at {:.0} {:.0}",
-                    built.centre.x,
-                    built.centre.z
-                ));
+                diagnostics::info(
+                    spring,
+                    &alloc::format!("E2E arena at {:.0} {:.0}", built.centre.x, built.centre.z),
+                );
                 global.tests.arena.set(Some(built));
                 global.tests.pending_link.set(true);
             }
             None => {
                 global.tests.arena.set(None);
                 spring::log_warning!(
+                    spring,
                     crate::diagnostics::LOG_SECTION,
                     "E2E arena could not be built"
                 );
@@ -66,9 +66,14 @@ const CASE_TIMEOUT: i32 = 600;
 const ARENA_TIMEOUT: i32 = 300;
 
 impl Runner {
-    pub fn game_frame(&self, global: &Global, frame: i32) {
-        link_arena(global);
-        if !self.ready(global, frame) {
+    pub fn game_frame(
+        &self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) {
+        link_arena(spring, global);
+        if !self.ready(spring, global, frame) {
             return;
         }
         let mut entries = core::mem::take(&mut self.state.borrow_mut().entries);
@@ -77,17 +82,22 @@ impl Runner {
                 .iter_mut()
                 .filter(|entry| entry.case.phase() == phase)
             {
-                step(entry, global, frame);
+                step(spring, entry, global, frame);
             }
         }
         let finished = current_phase(&entries).is_none();
         self.state.borrow_mut().entries = entries;
         if finished {
-            self.finish();
+            self.finish(spring);
         }
     }
 
-    fn ready(&self, global: &Global, frame: i32) -> bool {
+    fn ready(
+        &self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> bool {
         let mut state = self.state.borrow_mut();
         if state.done {
             return false;
@@ -104,15 +114,15 @@ impl Runner {
             state.entries = cases();
             for entry in &mut state.entries {
                 entry.verdict = Some(false);
-                report(entry.case.name(), Step::Fail("no arena".into()));
+                report(spring, entry.case.name(), Step::Fail("no arena".into()));
             }
             drop(state);
-            self.finish();
+            self.finish(spring);
         }
         false
     }
 
-    fn finish(&self) {
+    fn finish(&self, spring: &spring::Spring<'_, spring::RulesSynced>) {
         {
             let mut state = self.state.borrow_mut();
             state.done = true;
@@ -122,11 +132,12 @@ impl Runner {
                 .filter(|entry| entry.verdict == Some(true))
                 .count();
             let failed = state.entries.len() - passed;
-            diagnostics::info(&alloc::format!(
-                "E2E summary passed={passed} failed={failed}"
-            ));
+            diagnostics::info(
+                spring,
+                &alloc::format!("E2E summary passed={passed} failed={failed}"),
+            );
         }
-        crate::tests::harness::send_to_ui(gravitas_shared::e2e::Request::Done);
+        crate::tests::harness::send_to_ui(spring, gravitas_shared::e2e::Request::Done);
     }
 }
 
@@ -142,7 +153,7 @@ pub fn use_real_level(global: &Global) {
     global.tests.real_level.set(true);
 }
 
-fn link_arena(global: &Global) {
+fn link_arena(spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) {
     if !global.tests.pending_link.replace(false) {
         return;
     }
@@ -151,7 +162,7 @@ fn link_arena(global: &Global) {
     };
     let mut plates = global.plates.access_mut();
     for (plate, gate) in arena.links() {
-        plates.simple_link(plate, gate);
+        plates.simple_link(spring, plate, gate);
     }
     plates.enable_link_checks();
 }
@@ -188,30 +199,41 @@ fn cases() -> Vec<Entry> {
         .collect()
 }
 
-fn step(entry: &mut Entry, global: &Global, frame: i32) {
+fn step(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    entry: &mut Entry,
+    global: &Global,
+    frame: i32,
+) {
     if entry.verdict.is_some() {
         return;
     }
     let started = *entry.started.get_or_insert(frame);
     let local = frame - started;
     let name = entry.case.name();
-    let outcome = match entry.case.step(global, local) {
+    let outcome = match entry.case.step(spring, global, local) {
         Step::Wait if local < CASE_TIMEOUT => return,
         Step::Wait => Step::Fail("timed out".into()),
         outcome => outcome,
     };
     let passed = matches!(outcome, Step::Pass);
     if passed {
-        global.tests.rests.borrow_mut().extend(entry.case.rest());
+        global
+            .tests
+            .rests
+            .borrow_mut()
+            .extend(entry.case.rest(spring));
     }
     entry.verdict = Some(passed);
-    report(name, outcome);
+    report(spring, name, outcome);
 }
 
-fn report(name: &str, outcome: Step) {
+fn report(spring: &spring::Spring<'_, spring::RulesSynced>, name: &str, outcome: Step) {
     match outcome {
-        Step::Pass => diagnostics::info(&alloc::format!("E2E case {name} PASS")),
-        Step::Fail(reason) => diagnostics::info(&alloc::format!("E2E case {name} FAIL {reason}")),
+        Step::Pass => diagnostics::info(spring, &alloc::format!("E2E case {name} PASS")),
+        Step::Fail(reason) => {
+            diagnostics::info(spring, &alloc::format!("E2E case {name} FAIL {reason}"))
+        }
         Step::Wait => {}
     }
 }

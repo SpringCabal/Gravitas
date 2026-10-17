@@ -22,13 +22,14 @@ impl Gadget<Global> for PlatesGadget {
         _team: i32,
         _builder: i32,
     ) {
+        let spring = ctx.spring();
         let is_plate = ctx
             .global()
             .plates
             .access_mut()
-            .created(unit_id, unit_def_id);
+            .created(spring, unit_id, unit_def_id);
         if is_plate {
-            plate::disable_collision(unit_id);
+            plate::disable_collision(spring, unit_id);
         }
     }
 
@@ -37,15 +38,16 @@ impl Gadget<Global> for PlatesGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
+        let spring = ctx.spring();
         let global = ctx.global();
-        let changes = global.plates.access_mut().pending(frame);
+        let changes = global.plates.access_mut().pending(spring, frame);
         for (unit_id, active) in changes {
             tests::note_toggled(global, unit_id, active);
-            plate::set_state(unit_id, active);
-            let Some(unit_def_id) = crate::units::def_of(unit_id) else {
+            plate::set_state(spring, unit_id, active);
+            let Some(unit_def_id) = crate::units::def_of(spring, unit_id) else {
                 continue;
             };
-            if crate::defs::get().gate != Some(unit_def_id) {
+            if crate::defs::get(spring).gate != Some(unit_def_id) {
                 continue;
             }
             let mut terrain = global.terrain.access_mut();

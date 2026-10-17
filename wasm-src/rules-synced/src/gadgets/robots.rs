@@ -22,23 +22,28 @@ impl Gadget<Global> for RobotsGadget {
         ctx: &AddonContext<'_, Global>,
         event: &UnitPreDamagedEvent,
     ) -> Option<spring::DamageResult> {
+        let spring = ctx.spring();
         let avoidance = self.robots.get(ctx.global()).flee(
+            spring,
             event.unit_id,
             event.unit_def_id,
             event.attacker_id,
             event.attacker_def_id,
-            spring::game::current_frame(),
+            spring.game().current_frame().unwrap_or(0),
         );
         if let Some(avoidance) = avoidance {
-            let (unit_id, frame) = (avoidance.unit_id, spring::game::current_frame());
+            let (unit_id, frame) = (
+                avoidance.unit_id,
+                spring.game().current_frame().unwrap_or(0),
+            );
             self.robots.get(ctx.global()).mark(unit_id, frame);
             let robots = Rc::clone(&self.robots);
-            behavior::move_away(avoidance).then(move |()| {
+            behavior::move_away(spring, avoidance).then(move |_spring, ()| {
                 crate::with_global(|global| robots.get(global).mark(unit_id, frame));
             });
         }
         let same_team = event.unit_team == event.attacker_team;
-        behavior::is_friendly_fire(event.unit_def_id, event.attacker_def_id, same_team)
+        behavior::is_friendly_fire(spring, event.unit_def_id, event.attacker_def_id, same_team)
             .then(|| spring::DamageResult::unchanged(0.0))
     }
 

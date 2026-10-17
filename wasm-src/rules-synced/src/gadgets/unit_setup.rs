@@ -19,11 +19,13 @@ impl Gadget<Global> for UnitSetupGadget {
     }
 
     fn init(&self, _ctx: &AddonContext<'_, Global>) {
-        unit_scripts::attach_existing();
+        let spring = _ctx.spring();
+        unit_scripts::attach_existing(spring);
     }
 
     fn game_frame(&self, _ctx: &AddonContext<'_, Global>, frame: i32) {
-        unit_scripts::game_frame(frame);
+        let spring = _ctx.spring();
+        unit_scripts::game_frame(spring, frame);
     }
 
     fn unit_created(
@@ -34,11 +36,12 @@ impl Gadget<Global> for UnitSetupGadget {
         _team: i32,
         _builder: i32,
     ) {
-        unit_scripts::attach(unit_id, unit_def_id);
-        effects::tag_on_create(unit_id, unit_def_id);
-        units::set_rules_params(unit_id, ctx.global().pending_rules.take());
-        walls::configure(unit_id, unit_def_id);
-        shapes::apply(unit_id, unit_def_id);
-        shapes::configure_effect(unit_id, unit_def_id);
+        let spring = ctx.spring();
+        unit_scripts::attach(spring, unit_id, unit_def_id);
+        effects::tag_on_create(spring, unit_id, unit_def_id);
+        units::set_rules_params(spring, unit_id, ctx.global().pending_rules.take());
+        walls::configure(spring, unit_id, unit_def_id);
+        shapes::apply(spring, unit_id, unit_def_id);
+        shapes::configure_effect(spring, unit_id, unit_def_id);
     }
 }

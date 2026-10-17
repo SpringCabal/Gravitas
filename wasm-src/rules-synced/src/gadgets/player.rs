@@ -51,14 +51,19 @@ impl Gadget<Global> for PlayerGadget {
         team: i32,
         _builder: i32,
     ) {
-        let adopted = self.player.borrow_mut().adopt(unit_id, unit_def_id, team);
+        let spring = ctx.spring();
+        let adopted = self
+            .player
+            .borrow_mut()
+            .adopt(spring, unit_id, unit_def_id, team);
         if adopted {
             ctx.global().player_unit.set(Some(unit_id));
-            behavior::disable_auto_fire(unit_id);
+            behavior::disable_auto_fire(spring, unit_id);
         }
     }
 
     fn unit_destroyed(&self, ctx: &AddonContext<'_, Global>, event: &UnitDestroyedEvent) {
+        let spring = ctx.spring();
         let global = ctx.global();
         let lost = {
             let mut player = self.player.borrow_mut();
@@ -68,26 +73,36 @@ impl Gadget<Global> for PlayerGadget {
             lost
         };
         if lost && !global.restart.wiping() {
-            mission::win(global, &[ENEMY_ALLY_TEAM]);
+            mission::win(spring, global, &[ENEMY_ALLY_TEAM]);
         }
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
+        let spring = ctx.spring();
         let global = ctx.global();
         let mut player = self.player.borrow_mut();
-        let orders = player.update(&global.player_input, frame);
+        let orders = player.update(spring, &global.player_input, frame);
         if let Some(unit_id) = player.unit_id() {
-            behavior::apply(unit_id, orders, frame);
+            behavior::apply(spring, unit_id, orders, frame);
         }
         if let Some((unit_id, x, y, z)) = player.take_jump_request() {
-            self.jump(global, &mut player, unit_id, x, y, z);
+            self.jump(spring, global, &mut player, unit_id, x, y, z);
         }
     }
 }
 
 impl PlayerGadget {
-    fn jump(&self, global: &Global, player: &mut Player, unit_id: i32, x: f32, y: f32, z: f32) {
-        let refusal = match jump::start(global, unit_id, x, y, z) {
+    fn jump(
+        &self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        player: &mut Player,
+        unit_id: i32,
+        x: f32,
+        y: f32,
+        z: f32,
+    ) {
+        let refusal = match jump::start(spring, global, unit_id, x, y, z) {
             jump::Outcome::Started => None,
             jump::Outcome::OutOfRange => {
                 player.retry_jump(x, y, z);
@@ -98,7 +113,7 @@ impl PlayerGadget {
         if self.last_refusal.replace(refusal) != refusal
             && let Some(reason) = refusal
         {
-            diagnostics::info(&format!("jump refused: {reason}"));
+            diagnostics::info(spring, &format!("jump refused: {reason}"));
         }
     }
 }

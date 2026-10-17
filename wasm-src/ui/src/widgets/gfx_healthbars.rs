@@ -22,11 +22,12 @@ impl Widget<Global> for GfxHealthbarsWidget {
         "GfxHealthbars"
     }
 
-    fn update(&self, _ctx: &AddonContext<'_, Global>, dt: f32) {
+    fn update(&self, _ctx: &AddonContext<'_, Global, spring::Ui>, dt: f32) {
         self.seconds.set(self.seconds.get() + dt.max(0.0));
     }
 
-    fn draw_world(&self, _ctx: &AddonContext<'_, Global>) {
-        healthbars::draw(self.seconds.get());
+    fn draw_world(&self, _ctx: &AddonContext<'_, Global, spring::Ui>) {
+        let spring = _ctx.spring();
+        healthbars::draw(spring, self.seconds.get());
     }
 }

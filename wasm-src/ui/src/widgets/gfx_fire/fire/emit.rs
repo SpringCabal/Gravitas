@@ -1,4 +1,4 @@
-use spring::types::Float3;
+use spring::Float3;
 
 use super::Fire;
 use super::effects;

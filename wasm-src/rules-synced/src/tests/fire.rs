@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::state::Global;
 use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
@@ -32,17 +32,22 @@ impl Case for Burning {
         "fire"
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         match frame {
-            0 => self.enter(global),
-            BURN_VERDICT_FRAME => self.check_burning(),
-            SETTLE_FRAME => self.settle(),
-            EXTINGUISH_VERDICT_FRAME => self.check_extinguished(),
+            0 => self.enter(spring, global),
+            BURN_VERDICT_FRAME => self.check_burning(spring),
+            SETTLE_FRAME => self.settle(spring),
+            EXTINGUISH_VERDICT_FRAME => self.check_extinguished(spring),
             _ => Step::Wait,
         }
     }
 
-    fn rest(&self) -> Vec<Rest> {
+    fn rest(&self, _spring: &spring::Spring<'_, spring::RulesSynced>) -> Vec<Rest> {
         alloc::vec![
             Rest::at(self.field, self.field_at, STILL, "the fire"),
             Rest::at(
@@ -60,15 +65,15 @@ const SETTLE_FRAME: i32 = 105;
 const EXTINGUISH_VERDICT_FRAME: i32 = 135;
 
 impl Burning {
-    fn enter(&mut self, global: &Global) -> Step {
+    fn enter(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Step {
         let Some((field, victim)) = harness::arena(global, |arena| (arena.fire, arena.burning))
         else {
             return fail("no arena");
         };
         let (Some(park), Some(centre), Some(health)) = (
-            harness::position(victim),
-            harness::position(field),
-            harness::health(victim),
+            harness::position(spring, victim),
+            harness::position(spring, field),
+            harness::health(spring, victim),
         ) else {
             return fail("no position or health reading");
         };
@@ -78,32 +83,32 @@ impl Burning {
         self.park = park;
         self.entry_health = health;
         harness::halt(victim);
-        harness::place(victim, centre);
+        harness::place(spring, victim, centre);
         Step::Wait
     }
 
-    fn check_burning(&mut self) -> Step {
-        let Some(health) = harness::health(self.victim) else {
+    fn check_burning(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Step {
+        let Some(health) = harness::health(spring, self.victim) else {
             return fail("lost the burning unit");
         };
         if health >= self.entry_health {
             return fail("standing in fire did no damage");
         }
-        harness::place(self.victim, self.park);
-        harness::heal(self.victim, self.entry_health);
+        harness::place(spring, self.victim, self.park);
+        harness::heal(spring, self.victim, self.entry_health);
         Step::Wait
     }
 
-    fn settle(&mut self) -> Step {
-        let Some(health) = harness::health(self.victim) else {
+    fn settle(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Step {
+        let Some(health) = harness::health(spring, self.victim) else {
             return fail("lost the burning unit");
         };
         self.settled_health = health;
         Step::Wait
     }
 
-    fn check_extinguished(&mut self) -> Step {
-        let Some(health) = harness::health(self.victim) else {
+    fn check_extinguished(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Step {
+        let Some(health) = harness::health(spring, self.victim) else {
             return fail("lost the burning unit");
         };
         if health < self.settled_health {

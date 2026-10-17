@@ -1,4 +1,4 @@
-use spring::UnitId;
+use spring::ResultExt;
 use spring::cus::{Angle, AngularSpeed, Axis, Piece, UnitCtx};
 
 pub(super) const SIG_ANIMATION: spring::cus::SignalMask = spring::cus::SignalMask::new(1);
@@ -35,24 +35,38 @@ pub(super) fn move_piece(ctx: &UnitCtx, piece: Piece, axis: Axis, target: f32, s
     }
 }
 
-pub(super) fn play_sound(name: &str, volume: f32) {
-    let none = spring::types::Float3::default();
-    let _ = spring::sound::play_sound_file(name, volume, none, none, 0);
+pub(super) fn play_sound(ctx: &UnitCtx, name: &str, volume: f32) {
+    ctx.with_spring(|spring| {
+        let none = spring::Float3::default();
+        spring
+            .sound()
+            .play_sound_file(name, volume, none, none, 0)
+            .log_err_once(spring, "playing a Gravitas unit-script sound");
+        Ok(())
+    })
+    .expect("unit-script engine scope");
 }
 
-pub(super) fn set_blocking(unit: UnitId, blocking: bool) {
-    let _ = spring::set_unit_blocking(
-        unit.0,
-        spring::rules_synced::unit_control::SetUnitBlockingOptions {
-            blocking,
-            solid_objects: blocking,
-            projectiles: blocking,
-            quad_map_rays: blocking,
-            crushable: false,
-            block_enemy_pushing: blocking,
-            block_height_changes: blocking,
-        },
-    );
+pub(super) fn set_blocking(ctx: &UnitCtx, blocking: bool) {
+    ctx.with_spring(|spring| {
+        spring
+            .unit_control()
+            .set_unit_blocking(
+                ctx.unit().0,
+                spring::unit_control::SetUnitBlockingOptions {
+                    blocking,
+                    solid_objects: blocking,
+                    projectiles: blocking,
+                    quad_map_rays: blocking,
+                    crushable: false,
+                    block_enemy_pushing: blocking,
+                    block_height_changes: blocking,
+                },
+            )
+            .log_err_once(spring, "setting Gravitas unit-script blocking");
+        Ok(())
+    })
+    .expect("unit-script engine scope");
 }
 
 pub(super) fn explode(ctx: &UnitCtx, piece: Piece, flags: spring::cus::SfxFlags) {

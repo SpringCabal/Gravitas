@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::state::Global;
 use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
@@ -32,16 +32,21 @@ impl Case for Falling {
         "falldamage"
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         match frame {
-            DROP_FRAME => self.drop(global, frame),
-            SLAM_FRAME => self.slam(),
-            VERDICT_FRAME => self.check(),
+            DROP_FRAME => self.drop(spring, global, frame),
+            SLAM_FRAME => self.slam(spring),
+            VERDICT_FRAME => self.check(spring),
             _ => Step::Wait,
         }
     }
 
-    fn rest(&self) -> Vec<Rest> {
+    fn rest(&self, _spring: &spring::Spring<'_, spring::RulesSynced>) -> Vec<Rest> {
         alloc::vec![
             Rest::at(self.dropped, self.dropped_at, STILL, "the dropped robot"),
             Rest::at(
@@ -60,20 +65,27 @@ const VERDICT_FRAME: i32 = 100;
 const IMMUNITY_FRAMES: i32 = 120;
 
 impl Falling {
-    fn drop(&mut self, global: &Global, frame: i32) -> Step {
+    fn drop(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         let Some((dropped, cushioned)) =
             harness::arena(global, |arena| (arena.dropped, arena.cushioned))
         else {
             return fail("no arena");
         };
-        let (Some(dropped_health), Some(cushioned_health)) =
-            (harness::health(dropped), harness::health(cushioned))
-        else {
+        let (Some(dropped_health), Some(cushioned_health)) = (
+            harness::health(spring, dropped),
+            harness::health(spring, cushioned),
+        ) else {
             return fail("no health readings");
         };
-        let (Some(dropped_at), Some(cushioned_at)) =
-            (harness::position(dropped), harness::position(cushioned))
-        else {
+        let (Some(dropped_at), Some(cushioned_at)) = (
+            harness::position(spring, dropped),
+            harness::position(spring, cushioned),
+        ) else {
             return fail("no positions");
         };
         self.dropped_at = dropped_at;
@@ -86,21 +98,21 @@ impl Falling {
             .fall_immunity
             .access_mut()
             .set_immunity(cushioned, frame + IMMUNITY_FRAMES);
-        lift(dropped);
-        lift(cushioned);
+        lift(spring, dropped);
+        lift(spring, cushioned);
         Step::Wait
     }
 
-    fn slam(&mut self) -> Step {
-        slam(self.dropped);
-        slam(self.cushioned);
+    fn slam(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Step {
+        slam(spring, self.dropped);
+        slam(spring, self.cushioned);
         Step::Wait
     }
 
-    fn check(&mut self) -> Step {
+    fn check(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Step {
         let (Some(dropped_health), Some(cushioned_health)) = (
-            harness::health(self.dropped),
-            harness::health(self.cushioned),
+            harness::health(spring, self.dropped),
+            harness::health(spring, self.cushioned),
         ) else {
             return fail("a dropped unit did not survive the fall");
         };
@@ -117,8 +129,8 @@ impl Falling {
     }
 }
 
-fn lift(unit_id: i32) {
-    let _ = spring::add_unit_impulse(
+fn lift(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) {
+    let _ = spring.unit_control().add_unit_impulse(
         unit_id,
         Float3 {
             x: 0.0,
@@ -129,8 +141,8 @@ fn lift(unit_id: i32) {
     );
 }
 
-fn slam(unit_id: i32) {
-    let _ = spring::set_unit_velocity(
+fn slam(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) {
+    let _ = spring.unit_control().set_unit_velocity(
         unit_id,
         Float3 {
             x: 0.0,

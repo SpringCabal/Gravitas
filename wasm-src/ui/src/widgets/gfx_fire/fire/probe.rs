@@ -18,10 +18,10 @@ impl Default for Probe {
 }
 
 impl Probe {
-    pub fn update(&self, global: &Global) {
-        let _ = spring::unsynced_ctrl::warp_mouse(1100, 500);
-        crate::widgets::gui_camera::camera::look_at(4288.0, 600.0, Some(650.0));
-        let frame = spring::game::current_frame();
+    pub fn update(&self, spring: &spring::Spring<'_, spring::Ui>, global: &Global) {
+        let _ = spring.unsynced_ctrl().warp_mouse(1100, 500);
+        crate::widgets::gui_camera::camera::look_at(spring, 4288.0, 600.0, Some(650.0));
+        let frame = spring.game().current_frame().unwrap_or(0);
         if frame < 30 {
             return;
         }
@@ -34,7 +34,7 @@ impl Probe {
                 fire.advance(1.0);
                 emit::raw_burn(
                     &mut fire,
-                    spring::types::Float3 {
+                    spring::Float3 {
                         x: 4400.0,
                         y: 144.25,
                         z: 531.0,
@@ -47,7 +47,7 @@ impl Probe {
                 if n % 15 == 0 {
                     emit::raw_flame(
                         &mut fire,
-                        spring::types::Float3 {
+                        spring::Float3 {
                             x: 4288.0,
                             y: 144.25,
                             z: 531.0,
@@ -64,10 +64,10 @@ impl Probe {
             elapsed: 0,
         });
         if frame >= 45 + 30 * stage && self.shot.replace(stage) != stage {
-            let _ = spring::send_commands("screenshot png", "");
+            let _ = spring.messages().send_commands("screenshot png", "");
         }
         if frame >= 190 {
-            let _ = spring::send_commands("quitforce", "");
+            let _ = spring.messages().send_commands("quitforce", "");
         }
     }
 }

@@ -1,8 +1,7 @@
 use alloc::rc::Rc;
 use core::cell::Cell;
 
-use spring::commands;
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::units;
 
@@ -41,8 +40,12 @@ pub struct Arena {
     pub terrain_toggler: i32,
 }
 
-pub fn build(generation: u32, built: impl FnOnce(Option<Arena>) + 'static) {
-    let centre = flat_centre();
+pub fn build(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    generation: u32,
+    built: impl FnOnce(&spring::Spring<'_, spring::RulesSynced>, Option<Arena>) + 'static,
+) {
+    let centre = flat_centre(spring);
     let arena = Rc::new(Cell::new(Arena {
         centre,
         generation,
@@ -98,33 +101,38 @@ pub fn build(generation: u32, built: impl FnOnce(Option<Arena>) + 'static) {
         (|a| &mut a.jumper, GRAVIT, Rig::Input, 0.0, 0.0),
     ];
     for (field, name, rig, offset_x, offset_z) in layout {
-        spawn(&arena, field, name, centre, rig, offset_x, offset_z);
+        spawn(spring, &arena, field, name, centre, rig, offset_x, offset_z);
     }
-    commands::run(move || {
-        let arena = arena.get();
-        if arena.missing() {
-            built(None);
-            return;
-        }
-        size_field(
-            arena.fire,
-            crate::gadgets::fire::behavior::SIZE_PARAM,
-            FIRE_SIZE,
-        );
-        size_field(
-            arena.scare,
-            crate::gadgets::fire::behavior::SIZE_PARAM,
-            SCARE_SIZE,
-        );
-        size_field(
-            arena.electrafi,
-            crate::gadgets::electrafi::behavior::SIZE_PARAM,
-            ELECTRAFI_SIZE,
-        );
-        size_field(arena.revivable, RESPAWNABLE_PARAM, 1.0);
-        protect(arena.protected);
-        protect(arena.pusher);
-        built(Some(arena));
+    crate::with_addon_context(|ctx| {
+        ctx.commands().run(move |spring| {
+            let arena = arena.get();
+            if arena.missing() {
+                built(spring, None);
+                return;
+            }
+            size_field(
+                spring,
+                arena.fire,
+                crate::gadgets::fire::behavior::SIZE_PARAM,
+                FIRE_SIZE,
+            );
+            size_field(
+                spring,
+                arena.scare,
+                crate::gadgets::fire::behavior::SIZE_PARAM,
+                SCARE_SIZE,
+            );
+            size_field(
+                spring,
+                arena.electrafi,
+                crate::gadgets::electrafi::behavior::SIZE_PARAM,
+                ELECTRAFI_SIZE,
+            );
+            size_field(spring, arena.revivable, RESPAWNABLE_PARAM, 1.0);
+            protect(spring, arena.protected);
+            protect(spring, arena.pusher);
+            built(spring, Some(arena));
+        })
     });
 }
 
@@ -231,6 +239,7 @@ impl Arena {
 type Field = fn(&mut Arena) -> &mut i32;
 
 fn spawn(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
     arena: &Rc<Cell<Arena>>,
     field: Field,
     name: &str,
@@ -239,7 +248,7 @@ fn spawn(
     offset_x: f32,
     offset_z: f32,
 ) {
-    let position = rig_position(centre, rig, offset_x, offset_z);
+    let position = rig_position(spring, centre, rig, offset_x, offset_z);
     let team = if name == GRAVIT {
         PLAYER_TEAM
     } else {
@@ -251,34 +260,44 @@ fn spawn(
         *field(&mut built) = unit_id;
         arena.set(built);
     };
-    let Some(def_id) = crate::defs::get().id(name) else {
-        commands::run(move || store(-1));
+    let Some(def_id) = crate::defs::get(spring).id(name) else {
+        crate::with_addon_context(|ctx| ctx.commands().run(move |_spring| store(-1)));
         return;
     };
-    units::create(def_id, position, team).then(move |unit_id| {
+    units::create(spring, def_id, position, team).then(move |_spring, unit_id| {
         let Some(unit_id) = unit_id else {
             store(-1);
             return;
         };
-        let _ = commands::give_order_to_unit(
-            unit_id,
-            spring::cmd::FIRE_STATE,
-            &[FIRE_STATE_HOLD],
-            0,
-            0,
-        );
-        let _ = commands::give_order_to_unit(
-            unit_id,
-            spring::cmd::MOVE_STATE,
-            &[MOVE_STATE_HOLD],
-            0,
-            0,
-        );
+        let _ = crate::with_addon_context(|ctx| {
+            ctx.commands().give_order_to_unit(
+                unit_id,
+                spring::cmd::FIRE_STATE,
+                &[FIRE_STATE_HOLD],
+                0,
+                0,
+            )
+        });
+        let _ = crate::with_addon_context(|ctx| {
+            ctx.commands().give_order_to_unit(
+                unit_id,
+                spring::cmd::MOVE_STATE,
+                &[MOVE_STATE_HOLD],
+                0,
+                0,
+            )
+        });
         store(unit_id);
     });
 }
 
-fn rig_position(centre: Float3, rig: Rig, offset_x: f32, offset_z: f32) -> Float3 {
+fn rig_position(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    centre: Float3,
+    rig: Rig,
+    offset_x: f32,
+    offset_z: f32,
+) -> Float3 {
     let index = rig as usize;
     let column = (index % RIG_COLUMNS) as f32 - (RIG_COLUMNS - 1) as f32 * 0.5;
     let row = (index / RIG_COLUMNS) as f32 - (RIG_ROWS - 1) as f32 * 0.5;
@@ -286,7 +305,7 @@ fn rig_position(centre: Float3, rig: Rig, offset_x: f32, offset_z: f32) -> Float
     let z = centre.z + row * RIG_SPACING + offset_z;
     Float3 {
         x,
-        y: units::ground_height(x, z),
+        y: units::ground_height(spring, x, z),
         z,
     }
 }
@@ -298,8 +317,8 @@ fn half_extents() -> (f32, f32) {
     )
 }
 
-fn flat_centre() -> Float3 {
-    let Ok(map) = spring::game::get_game_map_info(0) else {
+fn flat_centre(spring: &spring::Spring<'_, spring::RulesSynced>) -> Float3 {
+    let Ok(map) = spring.game().get_game_map_info() else {
         return Float3::default();
     };
     let width = map.map_size_x as f32;
@@ -315,12 +334,12 @@ fn flat_centre() -> Float3 {
     while z <= depth - half_z {
         let mut x = half_x;
         while x <= width - half_x {
-            let spread = spread_at(x, z);
+            let spread = spread_at(spring, x, z);
             if spread < best_spread {
                 best_spread = spread;
                 best = Float3 {
                     x,
-                    y: units::ground_height(x, z),
+                    y: units::ground_height(spring, x, z),
                     z,
                 };
             }
@@ -331,7 +350,7 @@ fn flat_centre() -> Float3 {
     best
 }
 
-fn spread_at(x: f32, z: f32) -> f32 {
+fn spread_at(spring: &spring::Spring<'_, spring::RulesSynced>, x: f32, z: f32) -> f32 {
     let mut lowest = f32::MAX;
     let mut highest = f32::MIN;
     let (half_x, half_z) = half_extents();
@@ -339,7 +358,7 @@ fn spread_at(x: f32, z: f32) -> f32 {
     while sample_z <= z + half_z {
         let mut sample_x = x - half_x;
         while sample_x <= x + half_x {
-            let height = units::ground_height(sample_x, sample_z);
+            let height = units::ground_height(spring, sample_x, sample_z);
             lowest = lowest.min(height);
             highest = highest.max(height);
             sample_x += SAMPLE_STEP;
@@ -349,11 +368,25 @@ fn spread_at(x: f32, z: f32) -> f32 {
     highest - lowest
 }
 
-fn size_field(unit_id: i32, name: &str, value: f32) {
-    let _ = spring::set_unit_rules_param_f32(unit_id, name, value, units::RULES_PARAM_PRIVATE);
+fn size_field(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    name: &str,
+    value: f32,
+) {
+    let _ = spring.rules_params().set_unit_rules_param_f32(
+        unit_id,
+        name,
+        value,
+        units::RULES_PARAM_PRIVATE,
+    );
 }
 
-fn protect(unit_id: i32) {
-    let _ =
-        spring::set_unit_rules_param_f32(unit_id, "invulnerable", 1.0, units::RULES_PARAM_PRIVATE);
+fn protect(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) {
+    let _ = spring.rules_params().set_unit_rules_param_f32(
+        unit_id,
+        "invulnerable",
+        1.0,
+        units::RULES_PARAM_PRIVATE,
+    );
 }

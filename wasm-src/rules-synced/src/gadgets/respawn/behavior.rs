@@ -1,8 +1,7 @@
 use alloc::vec::Vec;
 use spring::ResultExt;
-use spring::commands;
 
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::effects;
 use crate::units;
@@ -30,25 +29,32 @@ pub struct Rebirth {
 }
 
 impl Respawns {
-    pub fn scan(&mut self, frame: i32) {
-        let Ok(units) = spring::get_all_units() else {
+    pub fn scan(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, frame: i32) {
+        let Ok(units) = spring.units().get_all_units() else {
             return;
         };
         for unit_id in units {
-            if !effects::is_respawnable(unit_id) {
+            if !effects::is_respawnable(spring, unit_id) {
                 continue;
             }
             let (Some(unit_def_id), Ok(team_id)) = (
-                units::def_of(unit_id),
-                spring::units_info::get_unit_team(unit_id),
+                units::def_of(spring, unit_id),
+                spring.units_info().get_unit_team(unit_id),
             ) else {
                 continue;
             };
-            self.adopt(unit_id, unit_def_id, team_id, frame);
+            self.adopt(spring, unit_id, unit_def_id, team_id, frame);
         }
     }
 
-    pub fn adopt(&mut self, unit_id: i32, unit_def_id: i32, team_id: i32, frame: i32) {
+    pub fn adopt(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        unit_id: i32,
+        unit_def_id: i32,
+        team_id: i32,
+        frame: i32,
+    ) {
         if self
             .watched
             .iter()
@@ -56,7 +62,7 @@ impl Respawns {
         {
             return;
         }
-        let Some(origin) = units::position(unit_id) else {
+        let Some(origin) = units::position(spring, unit_id) else {
             return;
         };
         self.watched.push(Watched {
@@ -91,14 +97,18 @@ impl Respawns {
         })
     }
 
-    pub fn update(&mut self, frame: i32) -> Vec<Rebirth> {
+    pub fn update(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        frame: i32,
+    ) -> Vec<Rebirth> {
         let mut due = core::mem::take(&mut self.dead);
         if frame % CHECK_INTERVAL != 0 {
             return due;
         }
         let mut stuck = Vec::new();
         for watched in &mut self.watched {
-            let Some(position) = units::position(watched.unit_id) else {
+            let Some(position) = units::position(spring, watched.unit_id) else {
                 stuck.push(watched.unit_id);
                 continue;
             };
@@ -126,26 +136,35 @@ impl Respawns {
     }
 }
 
-pub fn rebirth(rebirth: &Rebirth, reborn: impl FnOnce(i32) + 'static) {
+pub fn rebirth(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    rebirth: &Rebirth,
+    reborn: impl FnOnce(&spring::Spring<'_, spring::RulesSynced>, i32) + 'static,
+) {
     let old = rebirth.unit_id;
-    commands::run(move || {
-        if units::valid(old) {
-            spring::destroy_unit(
-                old,
-                spring::generated::owned::unit_control::DestroyUnitOptions {
-                    selfd: false,
-                    reclaimed: false,
-                    attacker_id: -1,
-                    recycle_id: false,
-                },
-            )
-            .log_err_once("respawn: removing the old unit");
-        }
+    crate::with_addon_context(|ctx| {
+        ctx.commands().run(move |spring| {
+            if units::valid(spring, old) {
+                spring
+                    .unit_control()
+                    .destroy_unit(
+                        old,
+                        spring::unit_control::DestroyUnitOptions {
+                            selfd: false,
+                            reclaimed: false,
+                            attacker_id: -1,
+                            recycle_id: false,
+                        },
+                    )
+                    .log_err_once(spring, "respawn: removing the old unit");
+            }
+        })
     });
     let (unit_def_id, origin) = (rebirth.unit_def_id, rebirth.origin);
-    units::create(unit_def_id, origin, rebirth.team_id).then(move |unit_id| {
+    units::create(spring, unit_def_id, origin, rebirth.team_id).then(move |spring, unit_id| {
         let Some(unit_id) = unit_id else {
             spring::log_warning!(
+                spring,
                 crate::diagnostics::LOG_SECTION,
                 "respawn failed: unit def {} at {} {}",
                 unit_def_id,
@@ -154,8 +173,8 @@ pub fn rebirth(rebirth: &Rebirth, reborn: impl FnOnce(i32) + 'static) {
             );
             return;
         };
-        effects::mark_respawnable(unit_id);
-        reborn(unit_id);
+        effects::mark_respawnable(spring, unit_id);
+        reborn(spring, unit_id);
     });
 }
 

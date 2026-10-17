@@ -12,8 +12,9 @@ impl Gadget<Global> for JumpGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
+        let spring = ctx.spring();
         let global = ctx.global();
-        let landed = behavior::fly(global);
+        let landed = behavior::fly(spring, global);
         let mut immunity = global.fall_immunity.access_mut();
         for unit_id in landed {
             immunity.set_immunity(unit_id, frame + behavior::LANDING_IMMUNITY_FRAMES);

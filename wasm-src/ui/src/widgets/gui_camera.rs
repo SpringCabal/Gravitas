@@ -16,21 +16,24 @@ impl Widget<Global> for GuiCameraWidget {
         "GuiCamera"
     }
 
-    fn init(&self, ctx: &AddonContext<'_, Global>) {
-        self.camera.follow(ctx.global(), 0.0);
+    fn init(&self, ctx: &AddonContext<'_, Global, spring::Ui>) {
+        let spring = ctx.spring();
+        self.camera.follow(spring, ctx.global(), 0.0);
     }
 
-    fn update(&self, ctx: &AddonContext<'_, Global>, dt: f32) {
-        self.camera.follow(ctx.global(), dt);
+    fn update(&self, ctx: &AddonContext<'_, Global, spring::Ui>, dt: f32) {
+        let spring = ctx.spring();
+        self.camera.follow(spring, ctx.global(), dt);
     }
 
-    fn recv_from_synced(&self, ctx: &AddonContext<'_, Global>, message: &[u8]) {
+    fn recv_from_synced(&self, ctx: &AddonContext<'_, Global, spring::Ui>, message: &[u8]) {
+        let spring = ctx.spring();
         if core::str::from_utf8(message)
             .ok()
             .and_then(gravitas_shared::Status::parse)
             .is_some()
         {
-            self.camera.follow(ctx.global(), 0.0);
+            self.camera.follow(spring, ctx.global(), 0.0);
         }
         #[cfg(feature = "headless-integration")]
         self.camera.handle_request(message);

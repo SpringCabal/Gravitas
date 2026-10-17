@@ -23,10 +23,11 @@ impl Widget<Global> for GfxFireWidget {
         "GfxFire"
     }
 
-    fn update(&self, ctx: &AddonContext<'_, Global>, _dt: f32) {
+    fn update(&self, ctx: &AddonContext<'_, Global, spring::Ui>, _dt: f32) {
+        let _spring = ctx.spring();
         let global = ctx.global();
         #[cfg(feature = "fire-probe")]
-        self.probe.update(global);
+        self.probe.update(_spring, global);
         #[cfg(not(feature = "fire-probe"))]
         {
             let frames = global.clock.get().elapsed;
@@ -36,9 +37,10 @@ impl Widget<Global> for GfxFireWidget {
         }
     }
 
-    fn draw_world(&self, ctx: &AddonContext<'_, Global>) {
+    fn draw_world(&self, ctx: &AddonContext<'_, Global, spring::Ui>) {
+        let spring = ctx.spring();
         let global = ctx.global();
         let time = global.clock.get().frame as f32;
-        fire::draw(&global.fire.access(), &self.distortion, time);
+        fire::draw(spring, &global.fire.access(), &self.distortion, time);
     }
 }

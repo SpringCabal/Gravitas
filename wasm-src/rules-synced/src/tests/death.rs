@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::state::Global;
 use crate::tests::harness::{self, Case, Rest, Step, fail};
@@ -27,16 +27,21 @@ impl Case for Dying {
         "death"
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         match frame {
-            KILL_FRAME => self.kill(global),
-            ANIMATING_FRAME => self.check_animating(),
-            GONE_FRAME => self.check_gone(),
+            KILL_FRAME => self.kill(spring, global),
+            ANIMATING_FRAME => self.check_animating(spring),
+            GONE_FRAME => self.check_gone(spring),
             _ => Step::Wait,
         }
     }
 
-    fn rest(&self) -> Vec<Rest> {
+    fn rest(&self, _spring: &spring::Spring<'_, spring::RulesSynced>) -> Vec<Rest> {
         alloc::vec![
             Rest::Gone {
                 unit: self.unit_id,
@@ -57,13 +62,13 @@ const HEAD: &str = "head";
 const MOVED: f32 = 0.5;
 
 impl Dying {
-    fn kill(&mut self, global: &Global) -> Step {
+    fn kill(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Step {
         let Some((unit_id, robot)) =
             harness::arena(global, |arena| (arena.dying_gravit, arena.dying_robot))
         else {
             return fail("no arena");
         };
-        let Some(head) = harness::piece_position(unit_id, HEAD) else {
+        let Some(head) = harness::piece_position(spring, unit_id, HEAD) else {
             return fail("no head piece");
         };
         self.unit_id = unit_id;
@@ -74,25 +79,25 @@ impl Dying {
         Step::Wait
     }
 
-    fn check_animating(&mut self) -> Step {
-        if !units::valid(self.unit_id) {
+    fn check_animating(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Step {
+        if !units::valid(spring, self.unit_id) {
             return fail("the Gravit was removed without its death animation");
         }
-        let head = harness::piece_position(self.unit_id, HEAD);
+        let head = harness::piece_position(spring, self.unit_id, HEAD);
         if !harness::moved(Some(self.head), head, MOVED) {
             return fail("the dying Gravit's head did not move");
         }
-        if !units::valid(self.robot) {
+        if !units::valid(spring, self.robot) {
             return fail("the robot was removed before its last death stage");
         }
         Step::Wait
     }
 
-    fn check_gone(&mut self) -> Step {
-        if units::valid(self.unit_id) {
+    fn check_gone(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Step {
+        if units::valid(spring, self.unit_id) {
             return fail("the Gravit was still there after its death animation");
         }
-        if units::valid(self.robot) {
+        if units::valid(spring, self.robot) {
             return fail("the robot was still there after its death stages");
         }
         Step::Pass

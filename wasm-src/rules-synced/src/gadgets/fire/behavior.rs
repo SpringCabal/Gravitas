@@ -32,9 +32,14 @@ impl Default for Fires {
 }
 
 impl Fires {
-    pub fn created(&mut self, unit_id: i32, unit_def_id: i32) {
-        if crate::defs::get().fire == Some(unit_def_id) {
-            self.fields.add(unit_id);
+    pub fn created(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        unit_id: i32,
+        unit_def_id: i32,
+    ) {
+        if crate::defs::get(spring).fire == Some(unit_def_id) {
+            self.fields.add(spring, unit_id);
         }
     }
 
@@ -43,8 +48,12 @@ impl Fires {
         self.exposures.remove(unit_id);
     }
 
-    pub fn update(&mut self, frame: i32) -> Vec<Burn> {
-        self.gather(frame);
+    pub fn update(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        frame: i32,
+    ) -> Vec<Burn> {
+        self.gather(spring, frame);
         self.exposures
             .resolve(frame)
             .into_iter()
@@ -57,21 +66,25 @@ impl Fires {
             .collect()
     }
 
-    pub fn flames(&mut self, frame: i32) -> Vec<Visual> {
-        self.fields.refresh(frame, DEFAULT_RADIUS)
+    pub fn flames(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        frame: i32,
+    ) -> Vec<Visual> {
+        self.fields.refresh(spring, frame, DEFAULT_RADIUS)
     }
 
-    fn gather(&mut self, frame: i32) {
+    fn gather(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, frame: i32) {
         for field in self.fields.iter() {
-            let Some(centre) = units::position(field.unit_id) else {
+            let Some(centre) = units::position(spring, field.unit_id) else {
                 continue;
             };
             let reach = field.radius * FIRE_SPEED * REACH_FACTOR;
-            for unit_id in units::units_in_cylinder(centre.x, centre.z, reach) {
-                if crate::effects::is_invulnerable(unit_id) {
+            for unit_id in units::units_in_cylinder(spring, centre.x, centre.z, reach) {
+                if crate::effects::is_invulnerable(spring, unit_id) {
                     continue;
                 }
-                let proximity = proximity_inside(unit_id, centre);
+                let proximity = proximity_inside(spring, unit_id, centre);
                 self.exposures
                     .record(unit_id, false, proximity, field.unit_id, frame);
             }
@@ -79,8 +92,12 @@ impl Fires {
     }
 }
 
-fn proximity_inside(unit_id: i32, centre: spring::types::Float3) -> f32 {
-    let Some(position) = units::position(unit_id) else {
+fn proximity_inside(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    centre: spring::Float3,
+) -> f32 {
+    let Some(position) = units::position(spring, unit_id) else {
         return 0.0;
     };
     if position.y < centre.y {

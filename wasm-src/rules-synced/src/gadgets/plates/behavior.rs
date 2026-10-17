@@ -27,8 +27,13 @@ struct Gate {
 }
 
 impl Plates {
-    pub fn created(&mut self, unit_id: i32, unit_def_id: i32) -> bool {
-        if crate::defs::get().plate == Some(unit_def_id) {
+    pub fn created(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        unit_id: i32,
+        unit_def_id: i32,
+    ) -> bool {
+        if crate::defs::get(spring).plate == Some(unit_def_id) {
             self.plates.push(Plate {
                 unit_id,
                 gate_id: None,
@@ -36,7 +41,7 @@ impl Plates {
             });
             return true;
         }
-        if is_gate(unit_id) {
+        if is_gate(spring, unit_id) {
             self.gates.push(Gate {
                 unit_id,
                 state: false,
@@ -51,8 +56,13 @@ impl Plates {
         self.gates.retain(|gate| gate.unit_id != unit_id);
     }
 
-    pub fn simple_link(&mut self, plate_id: i32, gate_id: i32) -> bool {
-        if !is_gate(gate_id) {
+    pub fn simple_link(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        plate_id: i32,
+        gate_id: i32,
+    ) -> bool {
+        if !is_gate(spring, gate_id) {
             return false;
         }
         let Some(plate) = self
@@ -66,8 +76,13 @@ impl Plates {
         true
     }
 
-    pub fn bitmask_link(&mut self, mask: Vec<(i32, bool)>, gate_id: i32) -> bool {
-        if !is_gate(gate_id) {
+    pub fn bitmask_link(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        mask: Vec<(i32, bool)>,
+        gate_id: i32,
+    ) -> bool {
+        if !is_gate(spring, gate_id) {
             return false;
         }
         if mask
@@ -84,14 +99,18 @@ impl Plates {
         self.checks_enabled = true;
     }
 
-    pub fn pending(&mut self, frame: i32) -> Vec<(i32, bool)> {
+    pub fn pending(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        frame: i32,
+    ) -> Vec<(i32, bool)> {
         if !self.checks_enabled || frame % UPDATE_RATE != 0 {
             return Vec::new();
         }
         let mut changes = Vec::new();
         for index in 0..self.plates.len() {
             let unit_id = self.plates[index].unit_id;
-            let pressed = plate_pressed(unit_id);
+            let pressed = plate_pressed(spring, unit_id);
             self.set_plate_state(index, pressed, &mut changes);
         }
         for index in 0..self.plates.len() {
@@ -113,8 +132,8 @@ impl Plates {
     }
 }
 
-pub fn set_state(unit_id: i32, active: bool) {
-    units::order(unit_id, spring::cmd::ONOFF, &[f32::from(active)]);
+pub fn set_state(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32, active: bool) {
+    units::order(spring, unit_id, spring::cmd::ONOFF, &[f32::from(active)]);
 }
 
 const UPDATE_RATE: i32 = 5;
@@ -149,22 +168,22 @@ impl Plates {
     }
 }
 
-fn is_gate(unit_id: i32) -> bool {
-    units::def_of(unit_id).is_some_and(|def_id| crate::defs::get().unit(def_id).gate)
+fn is_gate(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) -> bool {
+    units::def_of(spring, unit_id).is_some_and(|def_id| crate::defs::get(spring).unit(def_id).gate)
 }
 
-pub fn disable_collision(unit_id: i32) {
-    let _ = spring::set_unit_collision_volume_data(
+pub fn disable_collision(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) {
+    let _ = spring.unit_control().set_unit_collision_volume_data(
         unit_id,
-        spring::types::Float3::default(),
-        spring::types::Float3::default(),
+        spring::Float3::default(),
+        spring::Float3::default(),
         0,
         0,
         0,
     );
-    let _ = spring::set_unit_blocking(
+    let _ = spring.unit_control().set_unit_blocking(
         unit_id,
-        spring::generated::owned::unit_control::SetUnitBlockingOptions {
+        spring::unit_control::SetUnitBlockingOptions {
             blocking: false,
             solid_objects: false,
             projectiles: false,
@@ -176,18 +195,18 @@ pub fn disable_collision(unit_id: i32) {
     );
 }
 
-fn plate_pressed(plate_id: i32) -> bool {
-    let Some(position) = units::position(plate_id) else {
+fn plate_pressed(spring: &spring::Spring<'_, spring::RulesSynced>, plate_id: i32) -> bool {
+    let Some(position) = units::position(spring, plate_id) else {
         return false;
     };
-    units::units_in_cylinder(position.x, position.z, PLATE_ACTIVATION_RANGE)
+    units::units_in_cylinder(spring, position.x, position.z, PLATE_ACTIVATION_RANGE)
         .into_iter()
-        .any(is_toggler)
+        .any(|id| is_toggler(spring, id))
 }
 
-fn is_toggler(unit_id: i32) -> bool {
-    let Some(def_id) = units::def_of(unit_id) else {
+fn is_toggler(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) -> bool {
+    let Some(def_id) = units::def_of(spring, unit_id) else {
         return false;
     };
-    crate::defs::get().unit(def_id).plate_toggler
+    crate::defs::get(spring).unit(def_id).plate_toggler
 }

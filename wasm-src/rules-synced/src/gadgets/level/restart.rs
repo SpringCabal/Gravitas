@@ -1,29 +1,32 @@
 use spring::ResultExt;
-use spring::commands;
 
 use crate::state::Global;
 
-pub fn perform(global: &Global) {
+pub fn perform(spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) {
     global.restart.begin_wipe();
     reset(global);
-    for unit_id in spring::get_all_units().unwrap_or_default() {
-        commands::destroy_unit(
-            unit_id,
-            spring::generated::owned::unit_control::DestroyUnitOptions {
-                selfd: false,
-                reclaimed: true,
-                attacker_id: -1,
-                recycle_id: false,
-            },
-        )
-        .then(|removed| {
-            removed.log_err_once("restart: removing a unit");
+    for unit_id in spring.units().get_all_units().unwrap_or_default() {
+        crate::with_addon_context(|ctx| {
+            ctx.commands().destroy_unit(
+                unit_id,
+                spring::unit_control::DestroyUnitOptions {
+                    selfd: false,
+                    reclaimed: true,
+                    attacker_id: -1,
+                    recycle_id: false,
+                },
+            )
+        })
+        .then(|spring, removed| {
+            removed.log_err_once(spring, "restart: removing a unit");
         });
     }
-    commands::run(|| {
-        crate::with_global(|global| {
-            global.restart.finish_wipe();
-            reset(global);
+    crate::with_addon_context(|ctx| {
+        ctx.commands().run(|_spring| {
+            crate::with_global(|global| {
+                global.restart.finish_wipe();
+                reset(global);
+            })
         })
     });
 }

@@ -3,7 +3,6 @@ use alloc::vec::Vec;
 use core::cell::RefCell;
 
 use spring::cus::{Axis, Duration, Piece, UnitCtx};
-use spring::random::synced as random;
 
 use super::super::common::{move_piece, turn};
 use super::gait::{turn_degrees, wait_for_turn};
@@ -12,7 +11,7 @@ use super::{DEGREES, RobotAnimationState, RobotKind, RobotPieces};
 pub(super) async fn detect(state: Rc<RefCell<RobotAnimationState>>, ctx: UnitCtx) {
     loop {
         ctx.sleep(Duration::from_millis(50)).await;
-        while paralyzed(ctx.unit()) {
+        while paralyzed(&ctx) {
             state.borrow_mut().stunned = true;
             ctx.sleep(Duration::from_millis(500)).await;
         }
@@ -20,8 +19,8 @@ pub(super) async fn detect(state: Rc<RefCell<RobotAnimationState>>, ctx: UnitCtx
     }
 }
 
-fn paralyzed(unit: spring::UnitId) -> bool {
-    spring::units_info::get_unit_health(unit.0)
+fn paralyzed(ctx: &UnitCtx) -> bool {
+    ctx.with_spring(|spring| spring.units_info().get_unit_health(ctx.unit().0))
         .is_ok_and(|health| health.health < health.paralyze_damage)
 }
 
@@ -57,10 +56,14 @@ async fn spasm(
             snap(ctx, piece, [X_AXIS_INDEX, angle, 5.0]);
         }
         decrease = -decrease;
-        if random::int(0, 1) == 1 {
+        if ctx
+            .with_spring(|spring| spring.synced_random().next_int(0, 1))
+            .expect("synced random int")
+            == 1
+        {
             for _ in 0..5 {
                 for piece in [p.fr_blade_01, p.fr_blade_02, p.r_blade_01, p.r_blade_02] {
-                    turn_all(ctx, piece, jitter(-10, 10) + decrease, SPASM_SPEED);
+                    turn_all(ctx, piece, jitter(ctx, -10, 10) + decrease, SPASM_SPEED);
                 }
             }
         }
@@ -69,28 +72,40 @@ async fn spasm(
             ctx,
             p.blade_up_01,
             p.arm_up_01,
-            random::int(spread, -spread) as f32,
+            ctx.with_spring(|spring| spring.synced_random().next_int(spread, -spread))
+                .expect("synced random int") as f32,
         );
         opposite(
             ctx,
             p.blade_up_02,
             p.arm_up_02,
-            random::int(spread, -spread) as f32,
+            ctx.with_spring(|spring| spring.synced_random().next_int(spread, -spread))
+                .expect("synced random int") as f32,
         );
         opposite(
             ctx,
             p.fr_blade_02,
             p.leg_front_02,
-            jitter(-10, 0) + decrease,
+            jitter(ctx, -10, 0) + decrease,
         );
         opposite(
             ctx,
             p.fr_blade_01,
             p.leg_front_01,
-            jitter(-10, 0) + decrease,
+            jitter(ctx, -10, 0) + decrease,
         );
-        opposite(ctx, p.leg_rear_01, p.r_blade_01, jitter(-10, 0) + decrease);
-        opposite(ctx, p.leg_rear_02, p.r_blade_02, jitter(-10, 0) + decrease);
+        opposite(
+            ctx,
+            p.leg_rear_01,
+            p.r_blade_01,
+            jitter(ctx, -10, 0) + decrease,
+        );
+        opposite(
+            ctx,
+            p.leg_rear_02,
+            p.r_blade_02,
+            jitter(ctx, -10, 0) + decrease,
+        );
         ctx.sleep(Duration::from_millis(500)).await;
         twitch_legs(ctx, p).await;
         decrease = -decrease / 2.0;
@@ -98,7 +113,10 @@ async fn spasm(
     }
     let body = body_pieces(p, kind);
     while state.borrow().stunned {
-        let offset = random::int(11, 11) as f32 * WAVE_PHASE;
+        let offset = ctx
+            .with_spring(|spring| spring.synced_random().next_int(11, 11))
+            .expect("synced random int") as f32
+            * WAVE_PHASE;
         let step = core::f32::consts::TAU / body.len() as f32;
         for (index, piece) in body.iter().enumerate() {
             let angle = WAVE_AMPLITUDE * (offset + (index + 1) as f32 * step).sin();
@@ -119,13 +137,14 @@ const WAVE_SPEED: f32 = 0.14;
 const RESET_SPEED: f32 = 15.0;
 const X_AXIS_INDEX: f32 = 1.0;
 
-fn jitter(low: i32, high: i32) -> f32 {
-    random::int(low, high) as f32
+fn jitter(ctx: &UnitCtx, low: i32, high: i32) -> f32 {
+    ctx.with_spring(|spring| spring.synced_random().next_int(low, high))
+        .expect("synced random int") as f32
 }
 
 async fn twitch_legs(ctx: &UnitCtx, p: RobotPieces) {
     for piece in [p.leg_front_02, p.leg_front_01, p.leg_rear_01, p.leg_rear_02] {
-        turn_all(ctx, piece, jitter(-10, 10), SPASM_SPEED);
+        turn_all(ctx, piece, jitter(ctx, -10, 10), SPASM_SPEED);
     }
     wait_for_turn(ctx, p.leg_rear_02).await;
 }

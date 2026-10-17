@@ -14,8 +14,13 @@ pub struct Record {
     unhurt_sparks: Vec<i32>,
 }
 
-pub fn note_created(global: &Global, unit_id: i32, unit_def_id: i32) {
-    let defs = crate::defs::get();
+pub fn note_created(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    global: &Global,
+    unit_id: i32,
+    unit_def_id: i32,
+) {
+    let defs = crate::defs::get(spring);
     let param = if defs.fire == Some(unit_def_id) {
         crate::gadgets::fire::behavior::SIZE_PARAM
     } else if defs.electrafi == Some(unit_def_id) {
@@ -23,7 +28,10 @@ pub fn note_created(global: &Global, unit_id: i32, unit_def_id: i32) {
     } else {
         return;
     };
-    let size = spring::get_unit_rules_param_f32(unit_id, param).ok();
+    let size = spring
+        .rules_params()
+        .get_unit_rules_param_f32(unit_id, param)
+        .ok();
     global
         .tests
         .record
@@ -69,12 +77,17 @@ pub fn shot_taken(global: &Global, name: &str) -> bool {
         .any(|shot| shot == name)
 }
 
-pub fn note_destroyed(global: &Global, unit_id: i32, unit_def_id: i32) {
+pub fn note_destroyed(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    global: &Global,
+    unit_id: i32,
+    unit_def_id: i32,
+) {
     let mut record = global.tests.record.borrow_mut();
     record.deaths += 1;
     record.destroyed.push(unit_id);
     if record.first_death.is_none() {
-        record.first_death = Some(describe(unit_id, unit_def_id));
+        record.first_death = Some(describe(spring, unit_id, unit_def_id));
     }
 }
 
@@ -142,9 +155,13 @@ pub fn toggled_to(global: &Global, unit_id: i32, active: bool) -> bool {
 
 const TOGGLE_CAPACITY: usize = 64;
 
-fn describe(unit_id: i32, unit_def_id: i32) -> String {
+fn describe(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    unit_def_id: i32,
+) -> String {
     alloc::format!(
         "{} (unit {unit_id})",
-        crate::defs::get().unit(unit_def_id).name
+        crate::defs::get(spring).unit(unit_def_id).name
     )
 }

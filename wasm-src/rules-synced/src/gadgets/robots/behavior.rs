@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 
-use spring::commands::{self, Pending};
-use spring::types::Float3;
+use spring::Float3;
+use spring::commands::Pending;
 
 use crate::units;
 
@@ -19,28 +19,35 @@ pub struct Avoidance {
 impl Robots {
     pub fn flee(
         &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
         unit_id: i32,
         unit_def_id: i32,
         attacker_id: i32,
         attacker_def_id: i32,
         frame: i32,
     ) -> Option<Avoidance> {
-        if !is_robot(unit_def_id) || !is_inanimate(attacker_def_id) {
+        if !is_robot(spring, unit_def_id) || !is_inanimate(spring, attacker_def_id) {
             return None;
         }
-        if is_paralyzed(unit_id) || self.is_busy(unit_id, frame) {
+        if is_paralyzed(spring, unit_id) || self.is_busy(unit_id, frame) {
             return None;
         }
-        let (position, attacker) = (units::position(unit_id)?, units::position(attacker_id)?);
-        let attack_radius = inanimate_radius(attacker_id, attacker_def_id);
+        let (position, attacker) = (
+            units::position(spring, unit_id)?,
+            units::position(spring, attacker_id)?,
+        );
+        let attack_radius = inanimate_radius(spring, attacker_id, attacker_def_id);
         let dx = position.x - attacker.x;
         let dy = position.y - attacker.y;
         let dz = position.z - attacker.z;
         let distance = (dx * dx + dy * dy + dz * dz).sqrt();
         let search_radius = attack_radius.max(distance) * SEARCH_SCALE;
-        let hazards = hazards_near(position, search_radius);
-        let velocity = spring::units_info::get_unit_velocity(unit_id).unwrap_or_default();
-        let goal = safest_location(position, &hazards, velocity)?;
+        let hazards = hazards_near(spring, position, search_radius);
+        let velocity = spring
+            .units_info()
+            .get_unit_velocity(unit_id)
+            .unwrap_or_default();
+        let goal = safest_location(spring, position, &hazards, velocity)?;
         let replace_order = self.is_tracked(unit_id);
         Some(Avoidance {
             unit_id,
@@ -62,34 +69,53 @@ impl Robots {
     }
 }
 
-pub fn is_friendly_fire(unit_def_id: i32, attacker_def_id: i32, same_team: bool) -> bool {
-    same_team && is_robot(unit_def_id) && is_robot(attacker_def_id)
+pub fn is_friendly_fire(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_def_id: i32,
+    attacker_def_id: i32,
+    same_team: bool,
+) -> bool {
+    same_team && is_robot(spring, unit_def_id) && is_robot(spring, attacker_def_id)
 }
 
-pub fn move_away(avoidance: Avoidance) -> Pending<()> {
-    commands::queue(move || {
-        let unit_id = avoidance.unit_id;
-        if avoidance.replace_order
-            && let Some(previous) = spring::get_unit_commands(unit_id, 1)
-                .ok()
-                .and_then(|queue| queue.into_iter().next())
-        {
-            units::order_now(unit_id, spring::cmd::REMOVE, &[previous.tag as f32], 0);
-        }
-        let goal = avoidance.goal;
-        units::order_now(
-            unit_id,
-            spring::cmd::INSERT,
-            &[
-                FRONT_OF_QUEUE,
-                spring::cmd::MOVE as f32,
-                NO_OPTIONS,
-                goal.x,
-                goal.y,
-                goal.z,
-            ],
-            spring::cmd::options::ALT_KEY,
-        );
+pub fn move_away(
+    _spring: &spring::Spring<'_, spring::RulesSynced>,
+    avoidance: Avoidance,
+) -> Pending<spring::RulesSynced, ()> {
+    crate::with_addon_context(|ctx| {
+        ctx.commands().queue(move |spring| {
+            let unit_id = avoidance.unit_id;
+            if avoidance.replace_order
+                && let Some(previous) = spring
+                    .units_commands()
+                    .get_unit_commands(unit_id, 1)
+                    .ok()
+                    .and_then(|queue| queue.into_iter().next())
+            {
+                units::order_now(
+                    spring,
+                    unit_id,
+                    spring::cmd::REMOVE,
+                    &[previous.tag as f32],
+                    0,
+                );
+            }
+            let goal = avoidance.goal;
+            units::order_now(
+                spring,
+                unit_id,
+                spring::cmd::INSERT,
+                &[
+                    FRONT_OF_QUEUE,
+                    spring::cmd::MOVE as f32,
+                    NO_OPTIONS,
+                    goal.x,
+                    goal.y,
+                    goal.z,
+                ],
+                spring::cmd::options::ALT_KEY,
+            );
+        })
     })
 }
 
@@ -125,22 +151,28 @@ impl Robots {
     }
 }
 
-fn is_robot(unit_def_id: i32) -> bool {
-    crate::defs::get().unit(unit_def_id).robot
+fn is_robot(spring: &spring::Spring<'_, spring::RulesSynced>, unit_def_id: i32) -> bool {
+    crate::defs::get(spring).unit(unit_def_id).robot
 }
 
-fn is_inanimate(unit_def_id: i32) -> bool {
-    crate::defs::get().unit(unit_def_id).effect
+fn is_inanimate(spring: &spring::Spring<'_, spring::RulesSynced>, unit_def_id: i32) -> bool {
+    crate::defs::get(spring).unit(unit_def_id).effect
 }
 
-fn is_paralyzed(unit_id: i32) -> bool {
-    spring::units_info::get_unit_health(unit_id)
+fn is_paralyzed(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) -> bool {
+    spring
+        .units_info()
+        .get_unit_health(unit_id)
         .map(|health| health.paralyze_damage >= health.max_health)
         .unwrap_or(false)
 }
 
-fn inanimate_radius(unit_id: i32, unit_def_id: i32) -> f32 {
-    let defs = crate::defs::get();
+fn inanimate_radius(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    unit_def_id: i32,
+) -> f32 {
+    let defs = crate::defs::get(spring);
     let key = if defs.fire == Some(unit_def_id) {
         crate::gadgets::fire::behavior::SIZE_PARAM
     } else if defs.electrafi == Some(unit_def_id) {
@@ -148,26 +180,38 @@ fn inanimate_radius(unit_id: i32, unit_def_id: i32) -> f32 {
     } else {
         return DEFAULT_ATTACK_RADIUS;
     };
-    spring::get_unit_rules_param_f32(unit_id, key).unwrap_or(DEFAULT_ATTACK_RADIUS)
+    spring
+        .rules_params()
+        .get_unit_rules_param_f32(unit_id, key)
+        .unwrap_or(DEFAULT_ATTACK_RADIUS)
 }
 
-fn hazards_near(position: Float3, radius: f32) -> Vec<Hazard> {
-    units::units_in_sphere(position, radius)
+fn hazards_near(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    position: Float3,
+    radius: f32,
+) -> Vec<Hazard> {
+    units::units_in_sphere(spring, position, radius)
         .into_iter()
         .filter_map(|unit_id| {
-            let def_id = units::def_of(unit_id)?;
-            if !is_inanimate(def_id) {
+            let def_id = units::def_of(spring, unit_id)?;
+            if !is_inanimate(spring, def_id) {
                 return None;
             }
             Some(Hazard {
-                position: units::position(unit_id)?,
-                radius: inanimate_radius(unit_id, def_id),
+                position: units::position(spring, unit_id)?,
+                radius: inanimate_radius(spring, unit_id, def_id),
             })
         })
         .collect()
 }
 
-fn safest_location(position: Float3, hazards: &[Hazard], velocity: Float3) -> Option<Float3> {
+fn safest_location(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    position: Float3,
+    hazards: &[Hazard],
+    velocity: Float3,
+) -> Option<Float3> {
     if hazards.is_empty() {
         return None;
     }
@@ -178,12 +222,12 @@ fn safest_location(position: Float3, hazards: &[Hazard], velocity: Float3) -> Op
         let direction_z = theta.sin();
         let end_x = position.x + MOVE_DISTANCE * direction_x;
         let end_z = position.z + MOVE_DISTANCE * direction_z;
-        let end_y = units::ground_height(end_x, end_z);
+        let end_y = units::ground_height(spring, end_x, end_z);
         let mut score = 0.0;
         if (position.y - end_y).abs() > MAX_DELTA_HEIGHT {
             score += REJECT_SCORE;
         }
-        if !in_map(end_x, end_z) {
+        if !in_map(spring, end_x, end_z) {
             score += REJECT_SCORE;
         }
         for step in 1..=LINE_DIVISIONS {
@@ -253,8 +297,8 @@ fn location_score(x: f32, z: f32, hazards: &[Hazard]) -> f64 {
         .sum()
 }
 
-fn in_map(x: f32, z: f32) -> bool {
-    let Ok(map) = spring::game::get_game_map_info(0) else {
+fn in_map(spring: &spring::Spring<'_, spring::RulesSynced>, x: f32, z: f32) -> bool {
+    let Ok(map) = spring.game().get_game_map_info() else {
         return false;
     };
     x >= 0.0 && x <= map.map_size_x as f32 && z >= 0.0 && z <= map.map_size_z as f32

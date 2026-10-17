@@ -50,20 +50,30 @@ impl ImmobileScript {
             ScriptKind::Crate => explode(ctx, p.cube, SfxFlags::EXPLODE),
             ScriptKind::Wall2 => {
                 for piece in p.fragments {
-                    if let Some(fragment) =
-                        spring::units_pieces::get_unit_piece_pos_dir(ctx.unit().0, piece.0 + 1)
-                            .log_err_once("locating a wall fragment's explosion")
-                    {
-                        spring::spawn_ceg(
-                            "flashnuke",
-                            fragment.position,
-                            spring::Float3::default(),
-                            0.0,
-                            0.0,
-                            0.0,
-                        )
-                        .log_err_once("spawning a wall fragment's explosion");
-                    }
+                    ctx.with_spring(|spring| {
+                        if let Some(fragment) = spring
+                            .units_pieces()
+                            .get_unit_piece_pos_dir(ctx.unit().0, piece.0 + 1)
+                            .log_err_once(spring, "locating a wall fragment's explosion")
+                        {
+                            spring
+                                .effects_control()
+                                .spawn_ceg(
+                                    &spring::effects_control::DefRef {
+                                        name: "flashnuke".into(),
+                                        id: -1,
+                                    },
+                                    fragment.position,
+                                    spring::Float3::default(),
+                                    0.0,
+                                    0.0,
+                                    0.0,
+                                )
+                                .log_err_once(spring, "spawning a wall fragment's explosion");
+                        }
+                        Ok(())
+                    })
+                    .expect("unit-script engine scope");
                     explode(ctx, piece, SfxFlags(SfxFlags::FALL.0 | SfxFlags::EXPLODE.0));
                 }
             }
@@ -105,25 +115,25 @@ impl ImmobileScript {
 async fn gate_open(pieces: Rc<RefCell<Pieces>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_ANIMATION);
     ctx.sleep(Duration::from_millis(500)).await;
-    play_sound("sounds/gate.ogg", 0.7);
+    play_sound(&ctx, "sounds/gate.ogg", 0.7);
     let gate = pieces.borrow().gate;
     move_piece(&ctx, gate, Axis::Z, -168.0, 180.0);
     ctx.wait_for_move(gate, Axis::Z).await;
-    set_blocking(ctx.unit(), false);
+    set_blocking(&ctx, false);
 }
 
 async fn gate_close(pieces: Rc<RefCell<Pieces>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_ANIMATION);
-    play_sound("sounds/gate.ogg", 0.7);
+    play_sound(&ctx, "sounds/gate.ogg", 0.7);
     let gate = pieces.borrow().gate;
     move_piece(&ctx, gate, Axis::Z, 0.0, 190.0);
     ctx.wait_for_move(gate, Axis::Z).await;
-    set_blocking(ctx.unit(), true);
+    set_blocking(&ctx, true);
 }
 
 async fn plate_on(pieces: Rc<RefCell<Pieces>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_ANIMATION);
-    play_sound("sounds/click.ogg", 1.0);
+    play_sound(&ctx, "sounds/click.ogg", 1.0);
     let Pieces { button, middle, .. } = *pieces.borrow();
     move_piece(&ctx, button, Axis::Z, -15.0, 150.0);
     ctx.wait_for_move(button, Axis::Z).await;
@@ -132,7 +142,7 @@ async fn plate_on(pieces: Rc<RefCell<Pieces>>, ctx: UnitCtx) {
 
 async fn plate_off(pieces: Rc<RefCell<Pieces>>, ctx: UnitCtx) {
     ctx.set_signal_mask(SIG_ANIMATION);
-    play_sound("sounds/click.ogg", 1.0);
+    play_sound(&ctx, "sounds/click.ogg", 1.0);
     let Pieces { button, middle, .. } = *pieces.borrow();
     move_piece(&ctx, button, Axis::Z, 0.0, 150.0);
     ctx.wait_for_move(button, Axis::Z).await;

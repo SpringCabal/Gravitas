@@ -34,35 +34,46 @@ impl FallImmunity {
     }
 }
 
-pub fn ground_collision(unit_id: i32, unit_def_id: i32) -> f32 {
-    let attributes = attributes(unit_def_id);
-    let velocity = spring::units_info::get_unit_velocity(unit_id).unwrap_or_default();
-    let Some(position) = units::position(unit_id) else {
+pub fn ground_collision(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    unit_def_id: i32,
+) -> f32 {
+    let attributes = attributes(spring, unit_def_id);
+    let velocity = spring
+        .units_info()
+        .get_unit_velocity(unit_id)
+        .unwrap_or_default();
+    let Some(position) = units::position(spring, unit_id) else {
         return 0.0;
     };
-    let normal = ground_normal(position.x, position.z);
-    let normal_component = spring::types::Float3 {
+    let normal = ground_normal(spring, position.x, position.z);
+    let normal_component = spring::Float3 {
         x: velocity.x * normal.x,
         y: velocity.y * normal.y,
         z: velocity.z * normal.z,
     };
-    let tangent = spring::types::Float3 {
+    let tangent = spring::Float3 {
         x: velocity.x - normal_component.x,
         y: velocity.y - normal_component.y,
         z: velocity.z - normal_component.z,
     };
-    let bounced = spring::types::Float3 {
+    let bounced = spring::Float3 {
         x: tangent.x * attributes.friction + normal_component.x * attributes.elasticity,
         y: tangent.y * attributes.friction + normal_component.y * attributes.elasticity,
         z: tangent.z * attributes.friction + normal_component.z * attributes.elasticity,
     };
-    let _ = spring::set_unit_velocity(unit_id, spring::types::Float3::default());
-    let _ = spring::add_unit_impulse(unit_id, bounced, 0.0);
+    let _ = spring
+        .unit_control()
+        .set_unit_velocity(unit_id, spring::Float3::default());
+    let _ = spring
+        .unit_control()
+        .add_unit_impulse(unit_id, bounced, 0.0);
     let damage_x = normal_component.x + tangent.x * TANGENT_DAMAGE;
     let damage_y = normal_component.y + tangent.y * TANGENT_DAMAGE;
     let damage_z = normal_component.z + tangent.z * TANGENT_DAMAGE;
     let speed = (damage_x * damage_x + damage_y * damage_y + damage_z * damage_z).sqrt();
-    speed_to_damage(&attributes, speed) + outside_map_damage(unit_id, &attributes)
+    speed_to_damage(&attributes, speed) + outside_map_damage(spring, unit_id, &attributes)
 }
 
 pub const GROUND_COLLISION: i32 = -2;
@@ -78,8 +89,11 @@ const IMMOBILE_MASS_MULTIPLIER: f32 = 10.0;
 const DEFAULT_ELASTICITY: f32 = 0.3;
 const DEFAULT_FRICTION: f32 = 0.8;
 
-pub fn attributes(unit_def_id: i32) -> Attributes {
-    let def = crate::defs::get().unit(unit_def_id);
+pub fn attributes(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_def_id: i32,
+) -> Attributes {
+    let def = crate::defs::get(spring).unit(unit_def_id);
     let mut velocity_damage_scale = def.mass * VELOCITY_DAMAGE_MASS_FACTOR;
     if def.speed == 0.0 {
         velocity_damage_scale *= IMMOBILE_MASS_MULTIPLIER;
@@ -99,11 +113,15 @@ pub fn speed_to_damage(attributes: &Attributes, speed: f32) -> f32 {
     (speed - VELOCITY_DAMAGE_THRESHOLD) * attributes.velocity_damage_scale
 }
 
-fn outside_map_damage(unit_id: i32, attributes: &Attributes) -> f32 {
-    let Some(position) = units::position(unit_id) else {
+fn outside_map_damage(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    unit_id: i32,
+    attributes: &Attributes,
+) -> f32 {
+    let Some(position) = units::position(spring, unit_id) else {
         return 0.0;
     };
-    let Ok(map) = spring::game::get_game_map_info(0) else {
+    let Ok(map) = spring.game().get_game_map_info() else {
         return 0.0;
     };
     let width = map.map_size_x as f32;
@@ -118,44 +136,54 @@ fn outside_map_damage(unit_id: i32, attributes: &Attributes) -> f32 {
     outside * attributes.out_of_map_damage_per_elmo
 }
 
-fn ground_normal(x: f32, z: f32) -> spring::types::Float3 {
-    let normal = spring::get_ground_normal(x, z, false)
+fn ground_normal(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    x: f32,
+    z: f32,
+) -> spring::Float3 {
+    let normal = spring
+        .terrain()
+        .get_ground_normal(x, z, false)
         .map(|value| value.normal)
-        .unwrap_or(spring::types::Float3 {
+        .unwrap_or(spring::Float3 {
             x: 0.0,
             y: 1.0,
             z: 0.0,
         });
     let magnitude = (normal.x * normal.x + normal.y * normal.y + normal.z * normal.z).sqrt();
     if magnitude <= 0.0 {
-        return spring::types::Float3 {
+        return spring::Float3 {
             x: 0.0,
             y: 1.0,
             z: 0.0,
         };
     }
-    spring::types::Float3 {
+    spring::Float3 {
         x: normal.x / magnitude,
         y: normal.y / magnitude,
         z: normal.z / magnitude,
     }
 }
 
-pub fn play_bounce(unit_id: i32, damage: f32) {
+pub fn play_bounce(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32, damage: f32) {
     if damage <= BOUNCE_DAMAGE_THRESHOLD {
         return;
     }
-    let Some(position) = units::position(unit_id) else {
+    let Some(position) = units::position(spring, unit_id) else {
         return;
     };
-    if spring::units_info::get_unit_health(unit_id).is_ok_and(|health| health.health <= 0.0) {
+    if spring
+        .units_info()
+        .get_unit_health(unit_id)
+        .is_ok_and(|health| health.health <= 0.0)
+    {
         return;
     }
-    let _ = spring::sound::play_sound_file(
+    let _ = spring.sound().play_sound_file(
         BOUNCE_SOUND,
         BOUNCE_VOLUME,
         position,
-        spring::types::Float3::default(),
+        spring::Float3::default(),
         0,
     );
 }

@@ -1,6 +1,6 @@
 use alloc::vec::Vec;
 
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::state::Global;
 use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
@@ -46,16 +46,21 @@ impl Case for Terrain {
         "terrain"
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         match self.stage {
-            Stage::Closed if frame >= CLOSED_FRAME => self.check_closed(global),
-            Stage::Opening => self.wait_open(frame),
-            Stage::Shutting => self.wait_shut(frame),
+            Stage::Closed if frame >= CLOSED_FRAME => self.check_closed(spring, global),
+            Stage::Opening => self.wait_open(spring, frame),
+            Stage::Shutting => self.wait_shut(spring, frame),
             _ => Step::Wait,
         }
     }
 
-    fn rest(&self) -> Vec<Rest> {
+    fn rest(&self, _spring: &spring::Spring<'_, spring::RulesSynced>) -> Vec<Rest> {
         alloc::vec![
             Rest::at(self.plate, self.plate_at, STILL, "the terrain case's plate"),
             Rest::at(self.gate, self.gate_at, STILL, "the terrain case's gate"),
@@ -69,7 +74,11 @@ const TOGGLE_FRAMES: i32 = 60;
 const LEVEL_MARGIN: f32 = 5.0;
 
 impl Terrain {
-    fn check_closed(&mut self, global: &Global) -> Step {
+    fn check_closed(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+    ) -> Step {
         let Some((plate, gate, toggler)) = harness::arena(global, |arena| {
             (
                 arena.terrain_plate,
@@ -80,9 +89,9 @@ impl Terrain {
             return fail("no arena");
         };
         let (Some(plate_at), Some(gate_at), Some(park)) = (
-            harness::position(plate),
-            harness::position(gate),
-            harness::position(toggler),
+            harness::position(spring, plate),
+            harness::position(spring, gate),
+            harness::position(spring, toggler),
         ) else {
             return fail("no position for plate, gate or crate");
         };
@@ -93,7 +102,7 @@ impl Terrain {
         self.gate_at = gate_at;
         self.park = park;
         self.base = gate_at.y;
-        self.raised = units::ground_height(gate_at.x, gate_at.z);
+        self.raised = units::ground_height(spring, gate_at.x, gate_at.z);
         if self.raised <= self.base + LEVEL_MARGIN {
             return Step::Fail(alloc::format!(
                 "a closed gate did not raise the ground: base {} ground {}",
@@ -101,15 +110,15 @@ impl Terrain {
                 self.raised
             ));
         }
-        harness::place(toggler, plate_at);
+        harness::place(spring, toggler, plate_at);
         self.stage = Stage::Opening;
         Step::Wait
     }
 
-    fn wait_open(&mut self, frame: i32) -> Step {
-        let ground = self.ground();
+    fn wait_open(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, frame: i32) -> Step {
+        let ground = self.ground(spring);
         if ground < self.raised - LEVEL_MARGIN {
-            harness::place(self.toggler, self.park);
+            harness::place(spring, self.toggler, self.park);
             self.stage = Stage::Shutting;
             return Step::Wait;
         }
@@ -122,8 +131,8 @@ impl Terrain {
         Step::Wait
     }
 
-    fn wait_shut(&mut self, frame: i32) -> Step {
-        let ground = self.ground();
+    fn wait_shut(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, frame: i32) -> Step {
+        let ground = self.ground(spring);
         if ground > self.base + LEVEL_MARGIN {
             return Step::Pass;
         }
@@ -136,7 +145,7 @@ impl Terrain {
         Step::Wait
     }
 
-    fn ground(&self) -> f32 {
-        units::ground_height(self.gate_at.x, self.gate_at.z)
+    fn ground(&self, spring: &spring::Spring<'_, spring::RulesSynced>) -> f32 {
+        units::ground_height(spring, self.gate_at.x, self.gate_at.z)
     }
 }

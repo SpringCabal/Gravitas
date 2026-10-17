@@ -1,7 +1,6 @@
 use alloc::vec::Vec;
 
-use spring::commands;
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::state::Global;
 use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
@@ -33,15 +32,20 @@ impl Case for Invulnerable {
         "invulnerable"
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         match frame {
-            STRIKE_FRAME => self.strike(global),
-            VERDICT_FRAME => self.check(),
+            STRIKE_FRAME => self.strike(spring, global),
+            VERDICT_FRAME => self.check(spring),
             _ => Step::Wait,
         }
     }
 
-    fn rest(&self) -> Vec<Rest> {
+    fn rest(&self, _spring: &spring::Spring<'_, spring::RulesSynced>) -> Vec<Rest> {
         alloc::vec![
             Rest::at(
                 self.protected,
@@ -60,20 +64,26 @@ const DAMAGE: f32 = 10.0;
 const NO_WEAPON: i32 = -1;
 
 impl Invulnerable {
-    fn strike(&mut self, global: &Global) -> Step {
+    fn strike(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+    ) -> Step {
         let Some((protected, exposed)) =
             harness::arena(global, |arena| (arena.protected, arena.exposed))
         else {
             return fail("no arena");
         };
-        let (Some(protected_health), Some(exposed_health)) =
-            (harness::health(protected), harness::health(exposed))
-        else {
+        let (Some(protected_health), Some(exposed_health)) = (
+            harness::health(spring, protected),
+            harness::health(spring, exposed),
+        ) else {
             return fail("no health readings");
         };
-        let (Some(protected_at), Some(exposed_at)) =
-            (harness::position(protected), harness::position(exposed))
-        else {
+        let (Some(protected_at), Some(exposed_at)) = (
+            harness::position(spring, protected),
+            harness::position(spring, exposed),
+        ) else {
             return fail("no positions");
         };
         self.protected_at = protected_at;
@@ -87,10 +97,10 @@ impl Invulnerable {
         Step::Wait
     }
 
-    fn check(&mut self) -> Step {
+    fn check(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>) -> Step {
         let (Some(protected_health), Some(exposed_health)) = (
-            harness::health(self.protected),
-            harness::health(self.exposed),
+            harness::health(spring, self.protected),
+            harness::health(spring, self.exposed),
         ) else {
             return fail("no health readings");
         };
@@ -108,12 +118,14 @@ impl Invulnerable {
 }
 
 fn damage(unit_id: i32, attacker_id: i32) {
-    let _ = commands::add_unit_damage(
-        unit_id,
-        DAMAGE,
-        0.0,
-        NO_WEAPON,
-        attacker_id,
-        spring::types::Float3::default(),
-    );
+    let _ = crate::with_addon_context(|ctx| {
+        ctx.commands().add_unit_damage(
+            unit_id,
+            DAMAGE,
+            0.0,
+            NO_WEAPON,
+            attacker_id,
+            spring::Float3::default(),
+        )
+    });
 }

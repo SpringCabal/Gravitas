@@ -6,7 +6,7 @@ use crate::tests::harness::{self, Case, Rest, STILL, Step, fail};
 pub struct Barrel {
     barrel: i32,
     bystander: i32,
-    bystander_at: spring::types::Float3,
+    bystander_at: spring::Float3,
     bystander_health: f32,
     bystander_killed: bool,
 }
@@ -16,7 +16,7 @@ impl Barrel {
         Self {
             barrel: -1,
             bystander: -1,
-            bystander_at: spring::types::Float3::default(),
+            bystander_at: spring::Float3::default(),
             bystander_health: 0.0,
             bystander_killed: false,
         }
@@ -28,15 +28,20 @@ impl Case for Barrel {
         "barrel"
     }
 
-    fn step(&mut self, global: &Global, frame: i32) -> Step {
+    fn step(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        global: &Global,
+        frame: i32,
+    ) -> Step {
         match frame {
-            BLAST_FRAME => self.blast(global),
-            VERDICT_FRAME => self.check(global),
+            BLAST_FRAME => self.blast(spring, global),
+            VERDICT_FRAME => self.check(spring, global),
             _ => Step::Wait,
         }
     }
 
-    fn rest(&self) -> Vec<Rest> {
+    fn rest(&self, _spring: &spring::Spring<'_, spring::RulesSynced>) -> Vec<Rest> {
         let barrel = Rest::Gone {
             unit: self.barrel,
             what: "the exploded barrel",
@@ -62,15 +67,16 @@ const BLAST_FRAME: i32 = 40;
 const VERDICT_FRAME: i32 = 50;
 
 impl Barrel {
-    fn blast(&mut self, global: &Global) -> Step {
+    fn blast(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Step {
         let Some((barrel, bystander)) =
             harness::arena(global, |arena| (arena.barrel, arena.bystander))
         else {
             return fail("no arena");
         };
-        let (Some(health), Some(bystander_at)) =
-            (harness::health(bystander), harness::position(bystander))
-        else {
+        let (Some(health), Some(bystander_at)) = (
+            harness::health(spring, bystander),
+            harness::position(spring, bystander),
+        ) else {
             return fail("no health or position reading");
         };
         self.barrel = barrel;
@@ -81,9 +87,9 @@ impl Barrel {
         Step::Wait
     }
 
-    fn check(&mut self, global: &Global) -> Step {
+    fn check(&mut self, spring: &spring::Spring<'_, spring::RulesSynced>, global: &Global) -> Step {
         self.bystander_killed = crate::tests::record::destroyed(global, self.bystander);
-        let Some(health) = harness::health(self.bystander) else {
+        let Some(health) = harness::health(spring, self.bystander) else {
             return Step::Pass;
         };
         if health >= self.bystander_health {

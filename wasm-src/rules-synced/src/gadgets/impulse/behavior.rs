@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 use spring::ResultExt;
 
-use spring::types::Float3;
+use spring::Float3;
 
 use crate::units;
 
@@ -20,21 +20,22 @@ pub struct Pending {
 impl Impulses {
     pub fn damaged(
         &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
         unit_id: i32,
         unit_def_id: i32,
         weapon_def_id: i32,
         attacker_id: i32,
     ) {
-        let magnitude = weapon_impulse(weapon_def_id);
+        let magnitude = weapon_impulse(spring, weapon_def_id);
         let Some(magnitude) = magnitude else {
             return;
         };
-        if !units::valid(attacker_id) {
+        if !units::valid(spring, attacker_id) {
             return;
         }
         let (Some(target), Some(attacker)) = (
-            units::mid_position(unit_id),
-            units::mid_position(attacker_id),
+            units::mid_position(spring, unit_id),
+            units::mid_position(spring, attacker_id),
         ) else {
             return;
         };
@@ -46,7 +47,7 @@ impl Impulses {
             y = 0.0;
             magnitude = 0.0;
         }
-        self.add(unit_id, unit_def_id, x, y, z, magnitude);
+        self.add(spring, unit_id, unit_def_id, x, y, z, magnitude);
     }
 
     pub fn take(&mut self) -> Vec<Pending> {
@@ -58,7 +59,7 @@ impl Impulses {
     }
 }
 
-pub fn apply(pending: Vec<Pending>) {
+pub fn apply(spring: &spring::Spring<'_, spring::RulesSynced>, pending: Vec<Pending>) {
     for pending in pending {
         for impulse in [
             Float3 {
@@ -77,8 +78,10 @@ pub fn apply(pending: Vec<Pending>) {
                 z: 0.0,
             },
         ] {
-            spring::add_unit_impulse(pending.unit_id, impulse, 0.0)
-                .log_err_once("gravity gun impulse");
+            spring
+                .unit_control()
+                .add_unit_impulse(pending.unit_id, impulse, 0.0)
+                .log_err_once(spring, "gravity gun impulse");
         }
     }
 }
@@ -90,20 +93,29 @@ const MINIMUM_PULL_DISTANCE: f32 = 75.0;
 const LIFT_DIVISOR: f32 = 20.0;
 
 impl Impulses {
-    fn add(&mut self, unit_id: i32, unit_def_id: i32, x: f32, y: f32, z: f32, magnitude: f32) {
-        if in_build(unit_id) {
+    fn add(
+        &mut self,
+        spring: &spring::Spring<'_, spring::RulesSynced>,
+        unit_id: i32,
+        unit_def_id: i32,
+        x: f32,
+        y: f32,
+        z: f32,
+        magnitude: f32,
+    ) {
+        if in_build(spring, unit_id) {
             return;
         }
         let distance = (x * x + y * y + z * z).sqrt();
         if distance <= 0.0 {
             return;
         }
-        let mass = unit_mass(unit_def_id);
+        let mass = unit_mass(spring, unit_def_id);
         if mass <= 0.0 {
             return;
         }
         let mut scale = magnitude * GRAVITY_BASELINE / distance * IMPULSE_SCALE / mass;
-        let radius = spring::units_info::get_unit_radius(unit_id).unwrap_or(0.0);
+        let radius = spring.units_info().get_unit_radius(unit_id).unwrap_or(0.0);
         if distance < MINIMUM_PULL_DISTANCE.max(radius) && scale < 0.0 {
             scale = 0.0;
         }
@@ -123,14 +135,20 @@ impl Impulses {
     }
 }
 
-fn weapon_impulse(weapon_def_id: i32) -> Option<f32> {
-    crate::defs::get().weapon_impulse(weapon_def_id)
+fn weapon_impulse(
+    spring: &spring::Spring<'_, spring::RulesSynced>,
+    weapon_def_id: i32,
+) -> Option<f32> {
+    crate::defs::get(spring).weapon_impulse(weapon_def_id)
 }
 
-fn unit_mass(unit_def_id: i32) -> f32 {
-    crate::defs::get().unit(unit_def_id).mass
+fn unit_mass(spring: &spring::Spring<'_, spring::RulesSynced>, unit_def_id: i32) -> f32 {
+    crate::defs::get(spring).unit(unit_def_id).mass
 }
 
-fn in_build(unit_id: i32) -> bool {
-    spring::units_info::get_unit_is_being_built(unit_id).unwrap_or(false)
+fn in_build(spring: &spring::Spring<'_, spring::RulesSynced>, unit_id: i32) -> bool {
+    spring
+        .units_info()
+        .get_unit_is_being_built(unit_id)
+        .unwrap_or(false)
 }

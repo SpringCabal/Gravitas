@@ -13,33 +13,37 @@ impl Widget<Global> for GuiHudWidget {
         "GuiHud"
     }
 
-    fn shutdown(&self, ctx: &AddonContext<'_, Global>) {
-        hud::shutdown(&mut ctx.global().hud.access_mut());
+    fn shutdown(&self, ctx: &AddonContext<'_, Global, spring::Ui>) {
+        let spring = ctx.spring();
+        hud::shutdown(spring, &mut ctx.global().hud.access_mut());
     }
 
-    fn update(&self, ctx: &AddonContext<'_, Global>, _dt: f32) {
+    fn update(&self, ctx: &AddonContext<'_, Global, spring::Ui>, _dt: f32) {
+        let spring = ctx.spring();
         let mut hud = ctx.global().hud.access_mut();
-        hud::initialize(&mut hud);
-        if let Ok(geometry) = spring::display::get_view_geometry(0) {
-            hud::render(&hud, geometry.view_size_x, geometry.view_size_y);
+        hud::initialize(spring, &mut hud);
+        if let Ok(geometry) = spring.display().get_view_geometry() {
+            hud::render(spring, &hud, geometry.view_size_x, geometry.view_size_y);
         }
-        hud::update_pause(&mut hud);
+        hud::update_pause(spring, &mut hud);
     }
 
-    fn recv_from_synced(&self, ctx: &AddonContext<'_, Global>, message: &[u8]) {
+    fn recv_from_synced(&self, ctx: &AddonContext<'_, Global, spring::Ui>, message: &[u8]) {
+        let spring = ctx.spring();
         let Ok(text) = core::str::from_utf8(message) else {
             return;
         };
         let global = ctx.global();
         if let Some(victory) = gravitas_shared::parse_game_over(text) {
-            hud::game_over(&mut global.hud.access_mut(), victory);
+            hud::game_over(spring, &mut global.hud.access_mut(), victory);
         } else if let Some(status) = Status::parse(text) {
-            hud::update(&mut global.hud.access_mut(), status);
+            hud::update(spring, &mut global.hud.access_mut(), status);
             global.player_unit.set(status.player_unit);
         }
     }
 
-    fn game_over(&self, ctx: &AddonContext<'_, Global>, _winning_ally_teams: &[u8]) {
-        hud::game_over(&mut ctx.global().hud.access_mut(), false);
+    fn game_over(&self, ctx: &AddonContext<'_, Global, spring::Ui>, _winning_ally_teams: &[u8]) {
+        let spring = ctx.spring();
+        hud::game_over(spring, &mut ctx.global().hud.access_mut(), false);
     }
 }

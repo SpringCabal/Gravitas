@@ -14,8 +14,9 @@ impl Gadget<Global> for TerrainGadget {
     }
 
     fn game_frame(&self, ctx: &AddonContext<'_, Global>, frame: i32) {
-        let due = ctx.global().terrain.access_mut().take_due(frame);
-        terrain::level(due);
+        let spring = ctx.spring();
+        let due = ctx.global().terrain.access_mut().take_due(spring, frame);
+        terrain::level(spring, due);
     }
 
     fn unit_created(

@@ -17,8 +17,9 @@ impl Widget<Global> for GameClockWidget {
         "GameClock"
     }
 
-    fn update(&self, ctx: &AddonContext<'_, Global>, _dt: f32) {
-        let frame = spring::game::current_frame();
+    fn update(&self, ctx: &AddonContext<'_, Global, spring::Ui>, _dt: f32) {
+        let spring = ctx.spring();
+        let frame = spring.game().current_frame().unwrap_or(0);
         let elapsed = (frame - self.last_frame.replace(frame)).clamp(0, MAX_CATCH_UP_FRAMES);
         ctx.global().clock.set(Clock { frame, elapsed });
     }
