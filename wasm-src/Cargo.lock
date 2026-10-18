@@ -229,13 +229,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 
 [[package]]
-name = "spring"
-version = "0.1.0"
-dependencies = [
- "libm",
-]
-
-[[package]]
 name = "spring-addons"
 version = "0.1.0"
 dependencies = [
@@ -254,8 +247,15 @@ dependencies = [
 name = "spring-sdk"
 version = "0.1.0"
 dependencies = [
- "spring",
  "spring-native-sys",
+ "spring-sdk-internal",
+]
+
+[[package]]
+name = "spring-sdk-internal"
+version = "0.1.0"
+dependencies = [
+ "libm",
 ]
 
 [[package]]
