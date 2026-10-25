@@ -2,7 +2,8 @@ mod worker;
 use super::geometry::axes;
 use super::particles::{Field, Particle, Sample, Texture, sample_with_colors};
 use alloc::vec::Vec;
-use springcabal::jobs::{self, Reader, put_f32, put_u32};
+use springcabal::jobs::{self, Reader, put_u32};
+use worker::put_floats;
 pub(crate) use worker::worker;
 
 pub(super) fn vertices(
@@ -45,45 +46,42 @@ pub(super) fn vertices(
     let mut inputs = Vec::new();
     let mut limits = Vec::new();
     for (chunk, colors) in particles.chunks(chunk_size).zip(indices.chunks(chunk_size)) {
-        let mut bytes = Vec::new();
-        for v in [up.x, up.y, up.z, right.x, right.y, right.z] {
-            put_f32(&mut bytes, v);
-        }
+        let mut bytes = Vec::with_capacity(header_bytes + chunk.len() * 80);
+        put_floats(&mut bytes, [up.x, up.y, up.z, right.x, right.y, right.z]);
         put_u32(&mut bytes, palettes.len() as u32);
         for colors in &palettes {
             put_u32(&mut bytes, colors.len() as u32);
             for color in *colors {
-                for value in color {
-                    put_f32(&mut bytes, *value);
-                }
+                put_floats(&mut bytes, *color);
             }
         }
         put_u32(&mut bytes, chunk.len() as u32);
         for (p, color) in chunk.iter().zip(colors) {
             put_u32(&mut bytes, *color as u32);
-            for v in [
-                p.x,
-                p.y,
-                p.z,
-                p.direction_x,
-                p.direction_y,
-                p.direction_z,
-                p.force_x,
-                p.force_y,
-                p.force_z,
-                p.age,
-                p.delay,
-                p.life,
-                p.size,
-                p.size_end,
-                p.rotation,
-                p.rotation_end,
-                p.speed_exp,
-                p.size_exp,
-                p.rotation_exp,
-            ] {
-                put_f32(&mut bytes, v);
-            }
+            put_floats(
+                &mut bytes,
+                [
+                    p.x,
+                    p.y,
+                    p.z,
+                    p.direction_x,
+                    p.direction_y,
+                    p.direction_z,
+                    p.force_x,
+                    p.force_y,
+                    p.force_z,
+                    p.age,
+                    p.delay,
+                    p.life,
+                    p.size,
+                    p.size_end,
+                    p.rotation,
+                    p.rotation_end,
+                    p.speed_exp,
+                    p.size_exp,
+                    p.rotation_exp,
+                ],
+            );
         }
         limits.push(chunk.len() * 13 * 4);
         inputs.push(bytes);

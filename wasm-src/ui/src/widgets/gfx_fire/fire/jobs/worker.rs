@@ -1,6 +1,10 @@
 use super::{Particle, Texture, axes, sample_with_colors};
 use alloc::vec::Vec;
-use springcabal::jobs::{Reader, put_f32};
+use springcabal::jobs::Reader;
+
+pub(super) fn put_floats<const N: usize>(bytes: &mut Vec<u8>, values: [f32; N]) {
+    bytes.extend_from_slice(values.map(f32::to_le_bytes).as_flattened());
+}
 pub(crate) fn worker(bytes: &[u8]) -> Vec<u8> {
     let mut reader = Reader::new(bytes);
     let up = spring::Float3::new(reader.f32(), reader.f32(), reader.f32());
@@ -50,23 +54,24 @@ pub(crate) fn worker(bytes: &[u8]) -> Vec<u8> {
         let sample = sample_with_colors(&particle, &palettes[palette]);
         if sample.color[3] > 0.0 {
             let (across, along) = axes(&sample, up, right);
-            for value in [
-                sample.x,
-                sample.y,
-                sample.z,
-                sample.color[0],
-                sample.color[1],
-                sample.color[2],
-                sample.color[3],
-                across.x,
-                across.y,
-                across.z,
-                along.x,
-                along.y,
-                along.z,
-            ] {
-                put_f32(&mut output, value);
-            }
+            put_floats(
+                &mut output,
+                [
+                    sample.x,
+                    sample.y,
+                    sample.z,
+                    sample.color[0],
+                    sample.color[1],
+                    sample.color[2],
+                    sample.color[3],
+                    across.x,
+                    across.y,
+                    across.z,
+                    along.x,
+                    along.y,
+                    along.z,
+                ],
+            );
         }
     }
     reader.finish();
