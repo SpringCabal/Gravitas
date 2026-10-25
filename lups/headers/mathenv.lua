@@ -17,7 +17,12 @@
 local MathG = {math = math, rand = math.random, random = math.random, sin = math.sin, cos = math.cos, pi = math.pi, 
                deg = math.deg, loadstring = loadstring, assert = assert, echo = Spring.Echo};
 
---local cachedParsedFunctions = {}
+-- Cache compiled factories; each parse still returns a fresh function whose
+-- environment ProcessParamCode can set independently. Bound editor-generated
+-- expressions so an effect editor cannot grow this cache indefinitely.
+local cachedFactories = {}
+local cachedCount = 0
+local MAX_CACHED_EXPRESSIONS = 128
 
 local function Split(str, delim, maxNb)
     --// Eliminate bad cases...
@@ -49,9 +54,10 @@ local char = string.char
 local type = type
 
 function ParseParamString(strfunc)
-  --if (cachedParsedFunctions[strfunc]) then
-  --  return cachedParsedFunctions[strfunc]
-  --end
+  local key = strfunc or ""
+  if cachedFactories[key] then
+    return cachedFactories[key]()
+  end
 
   local luaCode = "return function() "
   local vec_defs,math_defs  = {},{}
@@ -80,14 +86,19 @@ function ParseParamString(strfunc)
   end
   luaCode = luaCode .. "nil end"
 
-  local status, luaFunc = pcall(loadstring(luaCode))
+  local factory = loadstring(luaCode)
+  local status, luaFunc = pcall(factory)
 
   if (not status) then
     print(PRIO_MAJOR,'LUPS: Failed to parse custom param code: ' .. luaFunc);
     return function() return 1,2,3,4 end
   end;
 
-  --cachedParsedFunctions[strfunc] = luaFunc
+  if cachedCount >= MAX_CACHED_EXPRESSIONS then
+    cachedFactories, cachedCount = {}, 0
+  end
+  cachedFactories[key] = factory
+  cachedCount = cachedCount + 1
 
   return luaFunc
 end
