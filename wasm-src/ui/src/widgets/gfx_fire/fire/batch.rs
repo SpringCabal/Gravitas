@@ -22,6 +22,7 @@ void main() {
 #[derive(Default)]
 pub struct Batch {
     pub vertices: RefCell<Vec<f32>>,
+    pub jobs: RefCell<springcabal::jobs::Options>,
     resources: RefCell<Option<Resources>>,
     failed: Cell<bool>,
 }

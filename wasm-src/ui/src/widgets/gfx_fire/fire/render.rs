@@ -1,8 +1,8 @@
-use alloc::vec::Vec;
 use spring::gl;
 
 use super::effects::SMOKE_TEXTURE;
-use super::particles::{Field, Sample, Texture};
+use super::geometry::quad;
+use super::particles::{Field, Texture};
 use super::{Batch, Distortion, Fire};
 
 pub fn draw(
@@ -55,11 +55,21 @@ fn draw_texture(
     let (up, right) = (vectors.up, vectors.right);
     let mut vertices = batch.vertices.borrow_mut();
     vertices.clear();
-    for particle in field.visible(texture) {
-        if particle.color[3] <= 0.0 {
-            continue;
+    if !super::jobs::vertices(
+        &mut batch.jobs.borrow_mut(),
+        spring,
+        field,
+        texture,
+        up,
+        right,
+        &mut vertices,
+    ) {
+        for particle in field.visible(texture) {
+            if particle.color[3] <= 0.0 {
+                continue;
+            }
+            quad(&mut vertices, &particle, up, right);
         }
-        quad(&mut vertices, &particle, up, right);
     }
     if vertices.is_empty() {
         return;
@@ -70,54 +80,3 @@ fn draw_texture(
 }
 
 const ALPHA_FLOOR: f32 = 0.0;
-
-fn quad(vertices: &mut Vec<f32>, particle: &Sample, up: spring::Float3, right: spring::Float3) {
-    let radians = -particle.rotation * core::f32::consts::PI / 180.0;
-    let (sine, cosine) = (radians.sin(), radians.cos());
-    let half = particle.size * 0.5;
-    let across = axis(right, cosine, up, sine, half);
-    let along = axis(right, -sine, up, cosine, half);
-    for (u, v, a, b) in [
-        (0.0, 0.0, -1.0, -1.0),
-        (1.0, 0.0, 1.0, -1.0),
-        (1.0, 1.0, 1.0, 1.0),
-        (0.0, 0.0, -1.0, -1.0),
-        (1.0, 1.0, 1.0, 1.0),
-        (0.0, 1.0, -1.0, 1.0),
-    ] {
-        corner(vertices, particle, u, v, a, b, across, along);
-    }
-}
-
-fn axis(
-    right: spring::Float3,
-    right_scale: f32,
-    up: spring::Float3,
-    up_scale: f32,
-    half: f32,
-) -> spring::Float3 {
-    spring::Float3 {
-        x: (right.x * right_scale + up.x * up_scale) * half,
-        y: (right.y * right_scale + up.y * up_scale) * half,
-        z: (right.z * right_scale + up.z * up_scale) * half,
-    }
-}
-
-fn corner(
-    vertices: &mut Vec<f32>,
-    particle: &Sample,
-    u: f32,
-    v: f32,
-    across_sign: f32,
-    along_sign: f32,
-    across: spring::Float3,
-    along: spring::Float3,
-) {
-    vertices.extend_from_slice(&[
-        particle.x + across.x * across_sign + along.x * along_sign,
-        particle.y + across.y * across_sign + along.y * along_sign,
-        particle.z + across.z * across_sign + along.z * along_sign,
-    ]);
-    vertices.extend_from_slice(&particle.color);
-    vertices.extend_from_slice(&[u, v]);
-}

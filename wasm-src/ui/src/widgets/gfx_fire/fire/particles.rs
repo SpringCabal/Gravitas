@@ -111,15 +111,13 @@ impl Field {
             .retain(|particle| particle.age < particle.delay + particle.life);
     }
 
+    pub(super) fn drawable(&self, texture: Texture) -> impl Iterator<Item = &Particle> {
+        self.particles.iter().filter(move |particle| {
+            particle.texture == texture && !particle.distortion && particle.age >= particle.delay
+        })
+    }
     pub fn visible(&self, texture: Texture) -> impl Iterator<Item = Sample> {
-        self.particles
-            .iter()
-            .filter(move |particle| {
-                particle.texture == texture
-                    && !particle.distortion
-                    && particle.age >= particle.delay
-            })
-            .map(sample)
+        self.drawable(texture).map(sample)
     }
 
     pub fn visible_distortion(&self) -> impl Iterator<Item = Sample> + '_ {
@@ -172,6 +170,10 @@ pub fn color_at(colormap: &[[f32; 4]], fraction: f32) -> [f32; 4] {
 const MAX_PARTICLES: usize = 32768;
 
 fn sample(particle: &Particle) -> Sample {
+    sample_with_colors(particle, particle.colormap)
+}
+
+pub(super) fn sample_with_colors(particle: &Particle, colormap: &[[f32; 4]]) -> Sample {
     let fraction = ((particle.age - particle.delay) / particle.life).clamp(0.0, 1.0);
     let travel = attribute(fraction, particle.speed_exp);
     let growth = attribute(fraction, particle.size_exp);
@@ -184,7 +186,7 @@ fn sample(particle: &Particle) -> Sample {
         rotation: particle.rotation + particle.rotation_end * spin,
         animation_x: particle.animation_x,
         animation_y: particle.animation_y,
-        color: color_at(particle.colormap, fraction),
+        color: color_at(colormap, fraction),
         distortion_strength: particle.distortion_strength * (1.0 - fraction),
         distortion_scale: particle.distortion_scale,
         distortion_heat: particle.distortion_heat,

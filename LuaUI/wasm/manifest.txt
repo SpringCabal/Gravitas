@@ -1,1 +1,2 @@
 module(gravitas-ui, LuaUI/wasm/gravitas-ui.wasm, ui, 0, 1.0.0)
+module(gravitas-jobs, LuaUI/wasm/gravitas-jobs.wasm, ui, 0, 1.0.0)

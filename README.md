@@ -47,3 +47,15 @@ fire parity probe checks the full fire/heat footprint against Lua.
 
 Release builds use whole-program LTO and one code generation unit. The
 workspace profile applies to both installed modules and verification builds.
+
+## Optional Rust jobs
+
+The default `rust_jobs=off` keeps the serial path. Set the game modoption
+`rust_jobs=on` to calculate particle sampling and billboard axes in same-tick jobs.
+`rust_jobs=check` also compares worker output with inline computation; it is
+for verification, not timing. RNG, engine calls and result application keep
+their original order. A dedicated worker module has an 8 MiB fixed memory.
+
+For measurements, use the springcabal-dev performance runner with
+`--rust-jobs off|on|check --worker-threads 1|4`; compare jobs at the same
+engine pool width.

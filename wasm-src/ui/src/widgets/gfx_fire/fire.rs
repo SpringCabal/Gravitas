@@ -2,6 +2,8 @@ mod batch;
 mod distortion;
 mod effects;
 mod emit;
+mod geometry;
+pub(crate) mod jobs;
 mod particles;
 #[cfg(feature = "fire-probe")]
 pub mod probe;

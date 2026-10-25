@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["rules-synced", "shared", "ui"]
+members = ["jobs-worker", "rules-synced", "shared", "ui"]
 
 [workspace.lints.rust]
 warnings = "deny"
