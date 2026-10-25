@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 use core::cell::Cell;
 
-use spring::Float3;
+use spring::{Float3, ResultExt};
 use springcabal_control::goal::{Bounds, MoveGoal};
 
 use crate::units::{self, WEAPON_PULL, WEAPON_PUSH};
@@ -306,12 +306,15 @@ fn hold_weapon(
         return;
     };
     if frame as f32 >= state.reload_frame {
-        let _ = spring.unit_control().set_unit_weapon_state(
-            unit_id,
-            weapon - 1,
-            "reloadFrame",
-            (frame + RELOAD_HOLD_FRAMES) as f32,
-        );
+        spring
+            .unit_control()
+            .set_unit_weapon_state(
+                unit_id,
+                weapon,
+                "reloadFrame",
+                (frame + RELOAD_HOLD_FRAMES) as f32,
+            )
+            .log_err(spring, "holding the player's weapon reload");
     }
 }
 
