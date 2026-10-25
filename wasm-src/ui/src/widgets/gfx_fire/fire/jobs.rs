@@ -33,10 +33,15 @@ pub(super) fn vertices(
             });
         indices.push(index);
     }
-    let chunk_size = particles
-        .len()
-        .div_ceil(jobs::CHUNKS)
-        .min(spring::jobs::MAX_BYTES / (13 * 4));
+    // Input carries a palette index and 19 floats per particle, in addition
+    // to the camera/palettes header. It is larger than the compact output.
+    let header_bytes = 32 + palettes.iter().map(|p| 4 + p.len() * 16).sum::<usize>();
+    let max_input_particles = spring::jobs::MAX_BYTES.saturating_sub(header_bytes) / 80;
+    let max_particles = max_input_particles.min(spring::jobs::MAX_BYTES / (13 * 4));
+    if max_particles == 0 {
+        return false;
+    }
+    let chunk_size = particles.len().div_ceil(jobs::CHUNKS).min(max_particles);
     let mut inputs = Vec::new();
     let mut limits = Vec::new();
     for (chunk, colors) in particles.chunks(chunk_size).zip(indices.chunks(chunk_size)) {
