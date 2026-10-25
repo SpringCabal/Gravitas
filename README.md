@@ -34,3 +34,16 @@ Verification in the dedicated port worktree:
 
 The Wine control run passes with software OpenGL. The Zink run crashed before
 gameplay; that driver path is still unresolved. Native Windows remains untested.
+
+## Fire rendering
+
+Flame and smoke quads use a reusable packed vertex stream and a compatibility
+vertex shader. Texture order, premultiplied blending, depth testing, fog and
+the separate heat-distortion pass are retained. Native buffers are defined
+once and replaced when capacity grows; the widget releases them on shutdown.
+The immediate path remains available if stream creation or drawing fails,
+with the API error logged. The development repository's existing five-frame
+fire parity probe checks the full fire/heat footprint against Lua.
+
+Release builds use whole-program LTO and one code generation unit. The
+workspace profile applies to both installed modules and verification builds.

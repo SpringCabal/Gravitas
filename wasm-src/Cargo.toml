@@ -14,3 +14,7 @@ spring = { package = "spring-sdk", git = "https://github.com/gajop/spring-rust",
 spring-addons = { package = "spring-addons", git = "https://github.com/gajop/spring-rust", branch = "rust-wip" }
 springcabal = { path = "../../../../springcabal-rs/crates/springcabal" }
 springcabal-control = { path = "../../../../springcabal-rs/crates/springcabal-control" }
+
+[profile.release]
+lto = "fat"
+codegen-units = 1

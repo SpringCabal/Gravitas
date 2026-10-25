@@ -1,3 +1,4 @@
+mod batch;
 mod distortion;
 mod effects;
 mod emit;
@@ -6,6 +7,7 @@ mod particles;
 pub mod probe;
 mod render;
 
+pub use batch::Batch;
 pub use distortion::Distortion;
 pub use emit::{burn, electric_field, electric_spark, flame};
 pub use render::draw;

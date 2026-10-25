@@ -8,6 +8,7 @@ use crate::state::Global;
 #[derive(Default)]
 pub struct GfxFireWidget {
     distortion: Distortion,
+    batch: fire::Batch,
     #[cfg(feature = "fire-probe")]
     probe: fire::probe::Probe,
 }
@@ -41,6 +42,15 @@ impl Widget<Global> for GfxFireWidget {
         let spring = ctx.spring();
         let global = ctx.global();
         let time = global.clock.get().frame as f32;
-        fire::draw(spring, &global.fire.access(), &self.distortion, time);
+        fire::draw(
+            spring,
+            &global.fire.access(),
+            &self.distortion,
+            &self.batch,
+            time,
+        );
+    }
+    fn shutdown(&self, ctx: &AddonContext<'_, Global, spring::Ui>) {
+        self.batch.shutdown(ctx.spring());
     }
 }

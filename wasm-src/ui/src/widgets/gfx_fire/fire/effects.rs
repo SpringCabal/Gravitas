@@ -1,4 +1,4 @@
-use super::particles::Effect;
+use super::particles::{Effect, Texture};
 
 pub const UNITS_ON_FIRE: Effect = Effect {
     count: 5,
@@ -275,9 +275,9 @@ pub const ELECTRIC_SPARK: Effect = Effect {
 pub const FIRE_SPEED: f32 = 0.5;
 pub const ELECTRIC_EMIT: f32 = 0.1;
 
-pub const FLAME_TEXTURE: &str = "bitmaps/GPL/flame.png";
-pub const ELECTRIC_TEXTURE: &str = "bitmaps/GPL/electricity.png";
-pub const SMOKE_TEXTURE: &str = "bitmaps/GPL/smoke_orange.png";
+pub const FLAME_TEXTURE: Texture = Texture::Flame;
+pub const ELECTRIC_TEXTURE: Texture = Texture::Electric;
+pub const SMOKE_TEXTURE: Texture = Texture::Smoke;
 
 pub const TRAP_FLAME_LIFE_DIVISOR: f32 = 12.0;
 pub const TRAP_SPARK_LIFE_DIVISOR: f32 = 48.0;

@@ -1,5 +1,22 @@
 use alloc::vec::Vec;
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum Texture {
+    Flame,
+    Electric,
+    Smoke,
+}
+
+impl Texture {
+    pub fn path(self) -> &'static str {
+        match self {
+            Self::Flame => "bitmaps/GPL/flame.png",
+            Self::Electric => "bitmaps/GPL/electricity.png",
+            Self::Smoke => "bitmaps/GPL/smoke_orange.png",
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct Effect {
     pub count: i32,
@@ -26,7 +43,7 @@ pub struct Effect {
     pub emit_vector: [f32; 3],
     pub start_radius: f32,
     pub colormap: &'static [[f32; 4]],
-    pub texture: &'static str,
+    pub texture: Texture,
 }
 
 pub struct Particle {
@@ -56,7 +73,7 @@ pub struct Particle {
     pub distortion_scale: f32,
     pub distortion_heat: f32,
     pub colormap: &'static [[f32; 4]],
-    pub texture: &'static str,
+    pub texture: Texture,
 }
 
 pub struct Sample {
@@ -94,7 +111,7 @@ impl Field {
             .retain(|particle| particle.age < particle.delay + particle.life);
     }
 
-    pub fn visible(&self, texture: &'static str) -> impl Iterator<Item = Sample> {
+    pub fn visible(&self, texture: Texture) -> impl Iterator<Item = Sample> {
         self.particles
             .iter()
             .filter(move |particle| {
@@ -118,7 +135,7 @@ impl Field {
             .any(|particle| particle.distortion && particle.age >= particle.delay)
     }
 
-    pub fn textures(&self) -> Vec<&'static str> {
+    pub fn textures(&self) -> Vec<Texture> {
         let mut textures = Vec::new();
         for particle in &self.particles {
             if !textures.contains(&particle.texture) {
@@ -175,5 +192,13 @@ fn sample(particle: &Particle) -> Sample {
 }
 
 fn attribute(fraction: f32, exponent: f32) -> f32 {
-    1.0 - (1.0 - fraction).powf(exponent.abs())
+    let remaining = 1.0 - fraction;
+    let exponent = exponent.abs();
+    // Preserve the two original roundings for the linear curve. Returning
+    // fraction directly would change small values, despite algebraic equality.
+    1.0 - if exponent == 1.0 {
+        remaining
+    } else {
+        remaining.powf(exponent)
+    }
 }
