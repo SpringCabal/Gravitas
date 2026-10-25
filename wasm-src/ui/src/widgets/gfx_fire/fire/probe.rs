@@ -6,6 +6,7 @@ use crate::state::{Clock, Global};
 pub struct Probe {
     stage: Cell<i32>,
     shot: Cell<i32>,
+    perf_emitters: Cell<i32>,
 }
 
 impl Default for Probe {
@@ -13,6 +14,7 @@ impl Default for Probe {
         Self {
             stage: Cell::new(-1),
             shot: Cell::new(-1),
+            perf_emitters: Cell::new(-1),
         }
     }
 }
@@ -22,6 +24,66 @@ impl Probe {
         let _ = spring.unsynced_ctrl().warp_mouse(1100, 500);
         crate::widgets::gui_camera::camera::look_at(spring, 4288.0, 600.0, Some(650.0));
         let frame = spring.game().current_frame().unwrap_or(0);
+        if self.perf_emitters.get() == -1 {
+            let enabled = spring
+                .game()
+                .get_mod_option("fire_perf")
+                .is_ok_and(|option| option.value == "1");
+            let count = if enabled {
+                spring
+                    .game()
+                    .get_mod_option("fire_perf_emitters")
+                    .ok()
+                    .and_then(|option| option.value.parse::<i32>().ok())
+                    .unwrap_or(1)
+                    .max(0)
+            } else {
+                -2
+            };
+            self.perf_emitters.set(count);
+            if enabled {
+                spring::log_notice!(spring, "FirePerf", "Rust emitters={count}");
+            }
+        }
+        if self.perf_emitters.get() >= 0 {
+            let previous = self.shot.replace(frame).max(0);
+            let mut fire = global.fire.access_mut();
+            for n in previous + 1..=frame {
+                fire.advance(1.0);
+                if n < 30 {
+                    continue;
+                }
+                for _ in 0..self.perf_emitters.get() {
+                    emit::raw_burn(
+                        &mut fire,
+                        spring::Float3 {
+                            x: 4400.0,
+                            y: 144.25,
+                            z: 531.0,
+                        },
+                        25.0,
+                        1.0,
+                        [0.5, -0.25],
+                        (n * 20) as u64,
+                    );
+                    if n % 15 == 0 {
+                        emit::raw_flame(
+                            &mut fire,
+                            spring::Float3 {
+                                x: 4288.0,
+                                y: 144.25,
+                                z: 531.0,
+                            },
+                            500.0,
+                            0.5,
+                            (n * 10) as u64,
+                        );
+                    }
+                }
+            }
+            global.clock.set(Clock { frame, elapsed: 0 });
+            return;
+        }
         if frame < 30 {
             return;
         }
