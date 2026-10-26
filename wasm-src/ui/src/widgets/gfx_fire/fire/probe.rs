@@ -7,6 +7,7 @@ pub struct Probe {
     stage: Cell<i32>,
     shot: Cell<i32>,
     perf_emitters: Cell<i32>,
+    count_particles: Cell<bool>,
 }
 
 impl Default for Probe {
@@ -15,6 +16,7 @@ impl Default for Probe {
             stage: Cell::new(-1),
             shot: Cell::new(-1),
             perf_emitters: Cell::new(-1),
+            count_particles: Cell::new(false),
         }
     }
 }
@@ -41,6 +43,12 @@ impl Probe {
                 -2
             };
             self.perf_emitters.set(count);
+            self.count_particles.set(
+                spring
+                    .game()
+                    .get_mod_option("fire_diagnostic_counts")
+                    .is_ok_and(|v| v.value == "1"),
+            );
             if enabled {
                 spring::log_notice!(spring, "FirePerf", "Rust emitters={count}");
             }
@@ -80,6 +88,26 @@ impl Probe {
                         );
                     }
                 }
+            }
+            if self.count_particles.get() && previous != frame && matches!(frame, 300 | 600 | 899) {
+                use super::particles::Texture;
+                let live = |texture| {
+                    fire.field
+                        .gpu_particles(texture)
+                        .iter()
+                        .filter(|p| p.age > p.delay && p.age <= p.delay + p.life)
+                        .count()
+                };
+                let normal: usize = [Texture::Flame, Texture::Electric, Texture::Smoke]
+                    .into_iter()
+                    .map(|texture| live(Some(texture)))
+                    .sum();
+                let distortion = live(None);
+                spring::log_notice!(
+                    spring,
+                    "FireCounts",
+                    "frame={frame} normal={normal} distortion={distortion}"
+                );
             }
             global.clock.set(Clock { frame, elapsed: 0 });
             return;
