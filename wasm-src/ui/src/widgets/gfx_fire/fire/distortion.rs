@@ -3,6 +3,7 @@ use core::cell::RefCell;
 
 use spring::gl;
 
+use super::Batch;
 use super::particles::{Field, Sample};
 
 const NOISE_TEXTURE: &str = "bitmaps/GPL/Lups/mynoise.png";
@@ -62,6 +63,7 @@ impl Distortion {
         &self,
         spring: &spring::Spring<'_, spring::Ui>,
         field: &Field,
+        batch: &Batch,
         time: f32,
         width: i32,
         height: i32,
@@ -146,7 +148,13 @@ impl Distortion {
         let _ = spring
             .gfx()
             .render_to_texture(&distortion_texture, |spring| {
-                self.render_distortion(spring, field, time)
+                self.render_distortion(
+                    spring,
+                    field,
+                    batch,
+                    time,
+                    [1.0 / width as f32, 1.0 / height as f32],
+                )
             });
         let _ = spring.gfx().bind_texture(&depth_texture, 1, false);
         let _ = spring.gfx().bind_texture(NOISE_TEXTURE, 0, false);
@@ -304,7 +312,14 @@ impl Distortion {
         }
     }
 
-    fn render_distortion(&self, spring: &spring::Spring<'_, spring::Ui>, field: &Field, time: f32) {
+    fn render_distortion(
+        &self,
+        spring: &spring::Spring<'_, spring::Ui>,
+        field: &Field,
+        batch: &Batch,
+        time: f32,
+        inverse_view: [f32; 2],
+    ) {
         let (projection, modelview, time_location) = {
             let state = self.0.borrow();
             (
@@ -323,9 +338,12 @@ impl Distortion {
         let _ = spring.gfx().load_matrix(&projection);
         let _ = spring.gfx().matrix_mode(gl::MODELVIEW);
         let _ = spring.gfx().load_matrix(&modelview);
-        let _ = spring
-            .gfx()
-            .begin_end(gl::QUADS, |spring| emit_distortion_vertices(spring, field));
+        if !batch.gpu.draw(spring, field, None, time, inverse_view) {
+            let _ = spring.gfx().use_shader(self.0.borrow().distortion_shader);
+            let _ = spring
+                .gfx()
+                .begin_end(gl::QUADS, |spring| emit_distortion_vertices(spring, field));
+        }
     }
 }
 

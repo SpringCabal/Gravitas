@@ -3,6 +3,7 @@ mod distortion;
 mod effects;
 mod emit;
 mod geometry;
+mod gpu;
 pub(crate) mod jobs;
 mod particles;
 #[cfg(feature = "fire-probe")]

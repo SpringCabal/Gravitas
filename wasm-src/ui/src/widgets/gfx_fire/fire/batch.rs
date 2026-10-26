@@ -21,6 +21,7 @@ void main() {
 /// A reusable packed stream, retaining the fixed-function fragment pipeline.
 #[derive(Default)]
 pub struct Batch {
+    pub gpu: super::gpu::Gpu,
     pub vertices: RefCell<Vec<f32>>,
     pub jobs: RefCell<springcabal::jobs::Options>,
     resources: RefCell<Option<Resources>>,
@@ -168,6 +169,7 @@ impl Batch {
     }
 
     pub fn shutdown(&self, spring: &spring::Spring<'_, spring::Ui>) {
+        self.gpu.shutdown(spring);
         if let Some(resources) = self.resources.borrow_mut().take() {
             resources.shutdown(spring);
         }

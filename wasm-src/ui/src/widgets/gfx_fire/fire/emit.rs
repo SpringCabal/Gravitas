@@ -168,6 +168,8 @@ fn particle(effect: &Effect, position: Float3, force: [f32; 3], random: &mut Ran
         distortion_scale: effect.distortion_scale,
         distortion_heat: effect.distortion_heat,
         colormap: effect.colormap,
+        palette: 0,
+        serial: 0,
         texture: effect.texture,
     }
 }

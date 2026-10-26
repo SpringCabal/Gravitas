@@ -37,25 +37,24 @@ gameplay; that driver path is still unresolved. Native Windows remains untested.
 
 ## Fire rendering
 
-Flame and smoke quads use a reusable packed vertex stream and a compatibility
-vertex shader. Texture order, premultiplied blending, depth testing, fog and
-the separate heat-distortion pass are retained. Native buffers are defined
-once and replaced when capacity grows; the widget releases them on shutdown.
-The immediate path remains available if stream creation or drawing fails,
-with the API error logged. The development repository's existing five-frame
-fire parity probe checks the full fire/heat footprint against Lua.
+The default renderer evaluates curves and billboards on the GPU, matching
+Lua's particle equations. Persistent instance buffers store particle birth
+times; only newly emitted records are uploaded. Four texture groups retain
+live particles in one pass. Buffer compaction reuses capacity and preserves
+render order. Flame, smoke and heat distortion use the same uncapped budget
+as the Lua verification fixture. The five-frame image probe compares the
+complete fire and heat footprint against Lua.
 
-Release builds use whole-program LTO and one code generation unit. The
-workspace profile applies to both installed modules and verification builds.
+`fire_renderer=cpu` keeps the CPU reference renderer and its immediate fallback.
+Both paths release buffers and shaders at shutdown. Errors are logged.
 
 ## Optional Rust jobs
 
-The default `rust_jobs=off` keeps the serial path. Set the game modoption
-`rust_jobs=on` to calculate particle sampling and billboard axes in same-tick jobs.
-`rust_jobs=check` also compares worker output with inline computation; it is
-for verification, not timing. RNG, engine calls and result application keep
-their original order. A dedicated worker module has an 8 MiB fixed memory.
+`rust_jobs=off` is the default. With `fire_renderer=cpu`, `rust_jobs=on`
+calculates particle curves and billboard axes in same-tick jobs;
+`rust_jobs=check` also compares worker output with inline computation.
+The default GPU renderer has no CPU curve work to dispatch, so enabling jobs
+there reports no active game jobs. Compare CPU jobs off/on at identical
+`--worker-threads 1|4`; compare Lua and Rust using their GPU defaults.
 
-For measurements, use the springcabal-dev performance runner with
-`--rust-jobs off|on|check --worker-threads 1|4`; compare jobs at the same
-engine pool width.
+Release builds use whole-program LTO and one code generation unit.

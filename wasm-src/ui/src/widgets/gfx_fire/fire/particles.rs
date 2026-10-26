@@ -8,6 +8,9 @@ pub enum Texture {
 }
 
 impl Texture {
+    const fn index(self) -> usize {
+        self as usize
+    }
     pub fn path(self) -> &'static str {
         match self {
             Self::Flame => "bitmaps/GPL/flame.png",
@@ -73,6 +76,8 @@ pub struct Particle {
     pub distortion_scale: f32,
     pub distortion_heat: f32,
     pub colormap: &'static [[f32; 4]],
+    pub palette: usize,
+    pub serial: u64,
     pub texture: Texture,
 }
 
@@ -90,56 +95,104 @@ pub struct Sample {
     pub distortion_heat: f32,
 }
 
-#[derive(Default)]
 pub struct Field {
-    particles: Vec<Particle>,
+    particles: [Vec<Particle>; 4],
+    first_texture: [u64; 3],
+    palettes: Vec<&'static [[f32; 4]]>,
+    pub(super) colors: Vec<f32>,
+    pub(super) epoch: u32,
+    pub(super) serial: u64,
+    pub(super) elapsed: f32,
+}
+
+impl Default for Field {
+    fn default() -> Self {
+        use core::sync::atomic::{AtomicU32, Ordering};
+        static NEXT: AtomicU32 = AtomicU32::new(1);
+        Self {
+            particles: Default::default(),
+            first_texture: [u64::MAX; 3],
+            palettes: Vec::new(),
+            colors: Vec::new(),
+            epoch: NEXT.fetch_add(1, Ordering::Relaxed),
+            serial: 0,
+            elapsed: 0.0,
+        }
+    }
 }
 
 impl Field {
-    pub fn spawn(&mut self, particle: Particle) {
-        if self.particles.len() >= MAX_PARTICLES {
-            return;
+    pub fn spawn(&mut self, mut particle: Particle) {
+        self.serial += 1;
+        particle.serial = self.serial;
+        let texture = particle.texture.index();
+        self.first_texture[texture] = self.first_texture[texture].min(particle.serial);
+        let group = if particle.distortion { 3 } else { texture };
+        let mut offset = 0;
+        for colors in &self.palettes {
+            if core::ptr::eq(*colors, particle.colormap) {
+                particle.palette = offset;
+                self.particles[group].push(particle);
+                return;
+            }
+            offset += colors.len();
         }
-        self.particles.push(particle);
+        self.palettes.push(particle.colormap);
+        self.colors
+            .extend_from_slice(particle.colormap.as_flattened());
+        particle.palette = offset;
+        self.particles[group].push(particle);
     }
 
     pub fn advance(&mut self, frames: f32) {
-        for particle in &mut self.particles {
-            particle.age += frames;
+        self.elapsed += frames;
+        let mut first = [u64::MAX; 3];
+        for group in &mut self.particles {
+            group.retain_mut(|particle| {
+                particle.age += frames;
+                let keep = particle.age <= particle.delay + particle.life;
+                if keep {
+                    let index = particle.texture.index();
+                    first[index] = first[index].min(particle.serial);
+                }
+                keep
+            });
         }
-        self.particles
-            .retain(|particle| particle.age < particle.delay + particle.life);
+        self.first_texture = first;
     }
 
     pub(super) fn drawable(&self, texture: Texture) -> impl Iterator<Item = &Particle> {
-        self.particles.iter().filter(move |particle| {
-            particle.texture == texture && !particle.distortion && particle.age >= particle.delay
-        })
+        self.particles[texture.index()]
+            .iter()
+            .filter(|particle| particle.age > particle.delay)
     }
     pub fn visible(&self, texture: Texture) -> impl Iterator<Item = Sample> {
         self.drawable(texture).map(sample)
     }
 
+    pub(super) fn gpu_particles(&self, texture: Option<Texture>) -> &[Particle] {
+        &self.particles[texture.map_or(3, Texture::index)]
+    }
+
     pub fn visible_distortion(&self) -> impl Iterator<Item = Sample> + '_ {
-        self.particles
+        self.particles[3]
             .iter()
-            .filter(|particle| particle.distortion && particle.age >= particle.delay)
+            .filter(|particle| particle.age > particle.delay)
             .map(sample)
     }
 
     pub fn has_visible_distortion(&self) -> bool {
-        self.particles
+        self.particles[3]
             .iter()
-            .any(|particle| particle.distortion && particle.age >= particle.delay)
+            .any(|particle| particle.age > particle.delay)
     }
 
     pub fn textures(&self) -> Vec<Texture> {
-        let mut textures = Vec::new();
-        for particle in &self.particles {
-            if !textures.contains(&particle.texture) {
-                textures.push(particle.texture);
-            }
-        }
+        let mut textures: Vec<_> = [Texture::Flame, Texture::Electric, Texture::Smoke]
+            .into_iter()
+            .filter(|t| self.first_texture[t.index()] != u64::MAX)
+            .collect();
+        textures.sort_unstable_by_key(|t| self.first_texture[t.index()]);
         textures
     }
 }
@@ -167,8 +220,6 @@ pub fn color_at(colormap: &[[f32; 4]], fraction: f32) -> [f32; 4] {
     ]
 }
 
-const MAX_PARTICLES: usize = 32768;
-
 fn sample(particle: &Particle) -> Sample {
     sample_with_colors(particle, particle.colormap)
 }
@@ -176,8 +227,8 @@ fn sample(particle: &Particle) -> Sample {
 pub(super) fn sample_with_colors(particle: &Particle, colormap: &[[f32; 4]]) -> Sample {
     let fraction = ((particle.age - particle.delay) / particle.life).clamp(0.0, 1.0);
     let travel = attribute(fraction, particle.speed_exp);
-    let growth = attribute(fraction, particle.size_exp);
-    let spin = attribute(fraction, particle.rotation_exp);
+    let growth = signed_attribute(fraction, particle.size_exp);
+    let spin = signed_attribute(fraction, particle.rotation_exp);
     Sample {
         x: particle.x + particle.direction_x * travel + particle.force_x * fraction,
         y: particle.y + particle.direction_y * travel + particle.force_y * fraction,
@@ -203,4 +254,9 @@ fn attribute(fraction: f32, exponent: f32) -> f32 {
     } else {
         remaining.powf(exponent)
     }
+}
+
+fn signed_attribute(fraction: f32, exponent: f32) -> f32 {
+    let value = attribute(fraction, exponent);
+    if exponent < 0.0 { 1.0 - value } else { value }
 }

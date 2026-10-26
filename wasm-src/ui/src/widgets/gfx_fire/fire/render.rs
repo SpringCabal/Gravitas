@@ -35,7 +35,14 @@ pub fn draw(
         draw_texture(spring, field, *texture, batch);
     }
     if let Ok(view) = spring.display().get_view_geometry() {
-        distortion.draw_screen_effects(spring, field, time, view.view_size_x, view.view_size_y);
+        distortion.draw_screen_effects(
+            spring,
+            field,
+            batch,
+            time,
+            view.view_size_x,
+            view.view_size_y,
+        );
     }
     if textures.contains(&SMOKE_TEXTURE) {
         draw_texture(spring, field, SMOKE_TEXTURE, batch);
@@ -49,6 +56,11 @@ fn draw_texture(
     texture: Texture,
     batch: &Batch,
 ) {
+    let _ = spring.gfx().bind_texture(texture.path(), 0, true);
+    if batch.gpu.draw(spring, field, Some(texture), 0.0, [0.0; 2]) {
+        let _ = spring.gfx().bind_texture(texture.path(), 0, false);
+        return;
+    }
     let Ok(vectors) = spring.unit_rendering().get_camera_vectors() else {
         return;
     };

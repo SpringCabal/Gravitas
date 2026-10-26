@@ -49,6 +49,8 @@ pub(crate) fn worker(bytes: &[u8]) -> Vec<u8> {
             distortion_scale: 0.0,
             distortion_heat: 0.0,
             colormap: &[],
+            palette: 0,
+            serial: 0,
             texture: Texture::Flame,
         };
         let sample = sample_with_colors(&particle, &palettes[palette]);
