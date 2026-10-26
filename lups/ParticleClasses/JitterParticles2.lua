@@ -5,6 +5,8 @@
 local JitterParticles2 = {}
 JitterParticles2.__index = JitterParticles2
 
+local ParticleBatch = VFS.Include("lups/headers/particle_batch.lua")
+local batch
 local billShader
 local colormapUniform = {}
 
@@ -171,11 +173,18 @@ end
 local time
 
 function JitterParticles2.BeginDrawDistortion()
+  if batch then batch:begin(thisGameFrame) end
   glUseShader(billShader)
   time = Spring.GetGameFrame()*0.01
+  if batch then batch.noiseFrame = time * 100 end
+end
+
+function JitterParticles2.FlushDrawDistortion()
+  if batch then batch:flush(billShader); lastTexture = "" end
 end
 
 function JitterParticles2.EndDrawDistortion()
+  JitterParticles2.FlushDrawDistortion()
   glTexture(0,false)
   glUseShader(0)
 
@@ -183,6 +192,7 @@ function JitterParticles2.EndDrawDistortion()
 end
 
 function JitterParticles2:DrawDistortion()
+  if batch and batch:queue(self, billShader) then return end
   if (lastTexture~=self.texture) then
     glTexture(0,self.texture)
     lastTexture=self.texture
@@ -193,9 +203,7 @@ function JitterParticles2:DrawDistortion()
 end
 
 
-local function DrawParticleForDList(life,delay, x,y,z, dx,dy,dz, sizeStart,sizeEnd)
-  local animDirX = floor((rand() - 0.5) * 2)
-  local animDirY = floor((rand() - 0.5) * 2)
+local function DrawParticleForDList(life,delay, x,y,z, dx,dy,dz, sizeStart,sizeEnd, animDirX,animDirY)
 
   glMultiTexCoord(0, x,y,z, life/200)
   glMultiTexCoord(1, dx,dy,dz, delay/200)
@@ -205,6 +213,7 @@ local function DrawParticleForDList(life,delay, x,y,z, dx,dy,dz, sizeStart,sizeE
   glVertex(1,0)
   glVertex(1,1)
   glVertex(0,1)
+  return animDirX, animDirY
 end
 
 -----------------------------------------------------------------------------------------------------------------
@@ -302,9 +311,11 @@ function JitterParticles2:Initialize()
     print(PRIO_MAJOR,"LUPS->JitterParticles2: Critical Shader Error: " ..gl.GetShaderLog())
     return false
   end
+  batch = ParticleBatch.new(true)
 end
 
 function JitterParticles2:Finalize()
+  if batch then batch:delete(); batch = nil end
   gl.DeleteShader(billShader)
 end
 
@@ -317,6 +328,7 @@ end
 
 -- used if repeatEffect=true;
 function JitterParticles2:ReInitialize()
+  self.gpuReset = true
   self.frame = 0
   self.dieGameFrame = self.dieGameFrame + self.life + self.lifeSpread + self.delaySpread
 end
@@ -338,28 +350,36 @@ local function InitializeParticles(self)
   local emitMatrix = CreateEmitMatrix3x3(ev[1],ev[2],ev[3])
 
   --// global data
-  glMultiTexCoord(3, self.speedExp, self.sizeExp)
-  glMultiTexCoord(4, self.force[1], self.force[2], self.force[3], self.forceExp)
-  glMultiTexCoord(6, self.strength * 0.01, self.scale, self.heat/self.strength)
+  if not self.gpuOnly then
+    glMultiTexCoord(3, self.speedExp, self.sizeExp)
+    glMultiTexCoord(4, self.force[1], self.force[2], self.force[3], self.forceExp)
+    glMultiTexCoord(6, self.strength * 0.01, self.scale, self.heat/self.strength)
+  end
 
+  ParticleBatch.prepare(self)
   self.maxSpawnRadius = 0
   for i=1,self.count do
     local life,delay, x,y,z, dx,dy,dz, sizeStart,sizeEnd = self:CreateParticleAttributes(up,right,forward, partposCode, i-1)
     dx,dy,dz = MultMatrix3x3(emitMatrix,dx,dy,dz)
-    DrawParticleForDList(life, delay,
+    local animX = floor((rand() - 0.5) * 2)
+    local animY = floor((rand() - 0.5) * 2)
+    if not self.gpuOnly then DrawParticleForDList(life, delay,
                          x,y,z,    -- relative start pos
                          dx,dy,dz, -- speed vector
-                         sizeStart,sizeEnd)
+                         sizeStart,sizeEnd, animX,animY) end
+    ParticleBatch.pack(self, life,delay, x+self.pos[1],y+self.pos[2],z+self.pos[3], dx,dy,dz, sizeStart,sizeEnd, 0,0,animX,animY)
     local spawnDist = x*x + y*y + z*z
     if (spawnDist>self.maxSpawnRadius) then self.maxSpawnRadius=spawnDist end
   end
   self.maxSpawnRadius = sqrt(self.maxSpawnRadius)
 
-  glMultiTexCoord(2, 0,0,0,1)
-  glMultiTexCoord(3, 0,0,0,1)
-  glMultiTexCoord(4, 0,0,0,1)
-  glMultiTexCoord(5, 0,0,0,1)
-  glMultiTexCoord(6, 0,0,0,1)
+  if not self.gpuOnly then
+    glMultiTexCoord(2, 0,0,0,1)
+    glMultiTexCoord(3, 0,0,0,1)
+    glMultiTexCoord(4, 0,0,0,1)
+    glMultiTexCoord(5, 0,0,0,1)
+    glMultiTexCoord(6, 0,0,0,1)
+  end
 end
 
 local function CreateDList(self)
@@ -370,7 +390,9 @@ local function CreateDList(self)
 end
 
 function JitterParticles2:CreateParticle()
-  self.dlist = glCreateList(CreateDList,self)
+  self.gpuOnly = batch and ParticleBatch.worldspace(self)
+  if self.gpuOnly then InitializeParticles(self)
+  else self.dlist = glCreateList(CreateDList,self) end
 
   self.frame = 0
   self.firstGameFrame = thisGameFrame
@@ -384,7 +406,8 @@ function JitterParticles2:CreateParticle()
 end
 
 function JitterParticles2:Destroy()
-  gl.DeleteList(self.dlist)
+  ParticleBatch.release(self)
+  if self.dlist then gl.DeleteList(self.dlist) end
   --gl.DeleteTexture(self.texture)
 end
 

@@ -5,6 +5,8 @@
 local SimpleParticles2 = {}
 SimpleParticles2.__index = SimpleParticles2
 
+local ParticleBatch = VFS.Include("lups/headers/particle_batch.lua")
+local batch
 local billShader
 local colormapUniform = {}
 
@@ -161,11 +163,17 @@ end
 -----------------------------------------------------------------------------------------------------------------
 
 function SimpleParticles2.BeginDraw()
+  if batch then batch:begin(thisGameFrame) end
   glUseShader(billShader)
   glBlending(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
 end
 
+function SimpleParticles2.FlushDraw()
+  if batch then batch:flush(billShader); lastTexture = "" end
+end
+
 function SimpleParticles2.EndDraw()
+  SimpleParticles2.FlushDraw()
   glTexture(0,false)
   glBlending(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
   glUseShader(0)
@@ -174,6 +182,7 @@ function SimpleParticles2.EndDraw()
 end
 
 function SimpleParticles2:Draw()
+  if batch and batch:queue(self, billShader) then return end
   if (lastTexture~=self.texture) then
     glTexture(0,self.texture)
     lastTexture=self.texture
@@ -286,12 +295,15 @@ function SimpleParticles2:Initialize()
     return false
   end
 
+  batch = ParticleBatch.new(false)
+
   for i=1,16 do
     colormapUniform[i] = gl.GetUniformLocation(billShader,"colormap["..(i-1).."]")
   end
 end
 
 function SimpleParticles2:Finalize()
+  if batch then batch:delete(); batch = nil end
   gl.DeleteShader(billShader)
 end
 
@@ -304,6 +316,7 @@ end
 
 -- used if repeatEffect=true;
 function SimpleParticles2:ReInitialize()
+  self.gpuReset = true
   self.frame = 0
   self.dieGameFrame = self.dieGameFrame + self.life + self.lifeSpread + self.delaySpread
 end
@@ -322,31 +335,37 @@ local function InitializeParticles(self)
   self.force = Vmul(self.force,self.life + self.lifeSpread)
 
   --// global data
-  glMultiTexCoord(3, self.speedExp, self.sizeExp, self.rotExp, self.ncolors)
-  glMultiTexCoord(4, self.force[1], self.force[2], self.force[3], self.forceExp)
+  if not self.gpuOnly then
+    glMultiTexCoord(3, self.speedExp, self.sizeExp, self.rotExp, self.ncolors)
+    glMultiTexCoord(4, self.force[1], self.force[2], self.force[3], self.forceExp)
+  end
 
   local posX,posY,posZ = self.pos[1],self.pos[2],self.pos[3]
 
   local ev         = self.emitVector
   local emitMatrix = CreateEmitMatrix3x3(ev[1],ev[2],ev[3])
 
+  ParticleBatch.prepare(self)
   self.maxSpawnRadius = 0
   for i=1,self.count do
     local life,delay, x,y,z, dx,dy,dz, sizeStart,sizeEnd, rotStart,rotEnd = self:CreateParticleAttributes(up,right,forward, partposCode, i-1)
     dx,dy,dz = MultMatrix3x3(emitMatrix,dx,dy,dz)
-    DrawParticleForDList(life, delay,
+    if not self.gpuOnly then DrawParticleForDList(life, delay,
                          x+posX,y+posY,z+posZ,    -- relative start pos
                          dx,dy,dz, -- speed vector
                          sizeStart,sizeEnd,
-                         rotStart,rotEnd)
+                         rotStart,rotEnd) end
+    ParticleBatch.pack(self, life,delay, x+posX,y+posY,z+posZ, dx,dy,dz, sizeStart,sizeEnd, rotStart,rotEnd)
     local spawnDist = x*x + y*y + z*z
     if (spawnDist>self.maxSpawnRadius) then self.maxSpawnRadius=spawnDist end
   end
   self.maxSpawnRadius = sqrt(self.maxSpawnRadius)
 
-  glMultiTexCoord(2, 0,0,0,1)
-  glMultiTexCoord(3, 0,0,0,1)
-  glMultiTexCoord(4, 0,0,0,1)
+  if not self.gpuOnly then
+    glMultiTexCoord(2, 0,0,0,1)
+    glMultiTexCoord(3, 0,0,0,1)
+    glMultiTexCoord(4, 0,0,0,1)
+  end
 end
 
 local function CreateDList(self)
@@ -362,7 +381,9 @@ end
 function SimpleParticles2:CreateParticle()
   self.ncolors = #self.colormap-1
 
-  self.dlist = glCreateList(CreateDList,self)
+  self.gpuOnly = batch and ParticleBatch.worldspace(self)
+  if self.gpuOnly then InitializeParticles(self)
+  else self.dlist = glCreateList(CreateDList,self) end
 
   self.frame = 0
   self.firstGameFrame = thisGameFrame
@@ -376,7 +397,8 @@ function SimpleParticles2:CreateParticle()
 end
 
 function SimpleParticles2:Destroy()
-  gl.DeleteList(self.dlist)
+  ParticleBatch.release(self)
+  if self.dlist then gl.DeleteList(self.dlist) end
   --gl.DeleteTexture(self.texture)
 end
 

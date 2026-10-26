@@ -502,6 +502,7 @@ local function Draw(extension,layer)
 
       beginDraw()
       local drawfunc = partClass[DrawPass]
+      local flush = partClass["FlushDraw"..extension]
 
       if (not next(Units)) then
         FxLayer[partClass]=nil
@@ -516,6 +517,7 @@ local function Draw(extension,layer)
               ------------------------------------------------------------------------------------
               -- render in unit/piece space ------------------------------------------------------
               ------------------------------------------------------------------------------------
+              if flush then flush() end
               glPushMatrix()
               glUnitMultMatrix(unitID)
 
@@ -548,6 +550,7 @@ local function Draw(extension,layer)
               for i=1,#UnitEffects do
                 local fx = UnitEffects[i]
                 if (fx.alwaysVisible or fx.visible) then
+                  if fx.projectile and not fx.worldspace and flush then flush() end
                   glPushMatrix()
                   if fx.projectile and not fx.worldspace then
                     local x,y,z = spGetProjectilePosition(fx.projectile)
