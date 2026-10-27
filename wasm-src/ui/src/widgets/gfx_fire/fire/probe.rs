@@ -23,7 +23,7 @@ impl Default for Probe {
 
 impl Probe {
     pub fn update(&self, spring: &spring::Spring<'_, spring::Ui>, global: &Global) {
-        let _ = spring.unsynced_ctrl().warp_mouse(1100, 500);
+        let _ = spring.unsynced_ctrl().warp_mouse(200, 500);
         crate::widgets::gui_camera::camera::look_at(spring, 4288.0, 600.0, Some(650.0));
         let frame = spring.game().current_frame().unwrap_or(0);
         if self.perf_emitters.get() == -1 {
