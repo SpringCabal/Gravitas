@@ -103,10 +103,10 @@ fn emit_effect(fire: &mut Fire, effect: &Effect, position: Float3, seed: u64) {
         effect.force[2] * (effect.life + effect.life_spread),
     ];
     let mut random = Random(seed as u32 ^ (seed >> 32) as u32);
-    for _ in 0..effect.count {
-        fire.field
-            .spawn(particle(effect, position, force, &mut random));
-    }
+    fire.field.emit(
+        (0..effect.count).map(|_| particle(effect, position, force, &mut random)),
+        effect.life + effect.life_spread + effect.delay_spread,
+    );
 }
 
 fn particle(effect: &Effect, position: Float3, force: [f32; 3], random: &mut Random) -> Particle {
@@ -144,6 +144,9 @@ fn particle(effect: &Effect, position: Float3, force: [f32; 3], random: &mut Ran
         force_y: force[1],
         force_z: force[2],
         age: 0.0,
+        birth: 0.0,
+        death: 0.0,
+        effect: 0,
         delay,
         life: life.max(MINIMUM_LIFE),
         size,

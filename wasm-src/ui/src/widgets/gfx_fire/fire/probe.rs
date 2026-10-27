@@ -95,7 +95,10 @@ impl Probe {
                     fire.field
                         .gpu_particles(texture)
                         .iter()
-                        .filter(|p| p.age > p.delay && p.age <= p.delay + p.life)
+                        .filter(|p| {
+                            let age = fire.field.elapsed - p.birth;
+                            age > p.delay && age <= p.delay + p.life
+                        })
                         .count()
                 };
                 let normal: usize = [Texture::Flame, Texture::Electric, Texture::Smoke]

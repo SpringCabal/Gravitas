@@ -300,3 +300,8 @@ mod tests {
         assert_eq!(Input::parse("gravitas|inf|0|1|2|3|-1|0|0|0"), None);
     }
 }
+
+#[cfg(test)]
+#[allow(dead_code)]
+#[path = "../../ui/src/widgets/gfx_fire/fire/particles.rs"]
+mod fire_particles;

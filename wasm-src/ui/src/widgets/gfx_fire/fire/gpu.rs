@@ -82,6 +82,7 @@ struct Packet {
     start: usize,
     count: usize,
     death: f32,
+    effect: u64,
 }
 
 #[derive(Default)]
@@ -148,12 +149,15 @@ impl Stream {
             self.packets.pop_front();
         }
         data.clear();
-        let mut death = field.elapsed;
+        let mut packets = Vec::new();
         let particles = field.gpu_particles(texture);
         let first = particles.partition_point(|p| p.serial <= self.last_serial);
-        for p in &particles[first..] {
-            pack(data, p, field.elapsed);
-            death = death.max(field.elapsed - p.age + p.delay + p.life);
+        for p in particles
+            .iter()
+            .skip(first)
+            .filter(|p| p.death >= field.elapsed)
+        {
+            append(data, &mut packets, p);
         }
         self.last_serial = field.serial;
         let mut count = data.len() / STRIDE;
@@ -184,9 +188,13 @@ impl Stream {
             // Growth is infrequent. Repack the live field once; regular draws
             // upload only newly emitted particles into the circular stream.
             data.clear();
-            for p in field.gpu_particles(texture) {
-                pack(data, p, field.elapsed);
-                death = death.max(field.elapsed - p.age + p.delay + p.life);
+            packets.clear();
+            for p in field
+                .gpu_particles(texture)
+                .iter()
+                .filter(|p| p.death >= field.elapsed)
+            {
+                append(data, &mut packets, p);
             }
             count = data.len() / STRIDE;
             self.configure(
@@ -200,19 +208,18 @@ impl Stream {
         spring
             .gfx()
             .upload_vbo(self.vbo, data, -1, start as i32, 1, 0)?;
-        self.packets.push_back(Packet {
-            start,
-            count,
-            death,
-        });
+        for mut packet in packets {
+            packet.start += start;
+            self.packets.push_back(packet);
+        }
         self.head = start + count;
         Ok(())
     }
 
-    fn draw(&self, spring: &spring::Spring<'_, spring::Ui>) -> spring::Result<()> {
+    fn draw(&self, spring: &spring::Spring<'_, spring::Ui>, elapsed: f32) -> spring::Result<()> {
         let mut start = None;
         let mut finish = 0;
-        for packet in &self.packets {
+        for packet in self.packets.iter().filter(|p| p.death >= elapsed) {
             if let Some(at) = start
                 && packet.start < finish
             {
@@ -353,7 +360,7 @@ impl Resources {
                 .gfx()
                 .uniform(shader.inverse_view, &inverse_view, 2)?;
         }
-        let result = stream.draw(spring);
+        let result = stream.draw(spring, field.elapsed);
         spring.gfx().use_shader(0)?;
         result
     }
@@ -444,12 +451,29 @@ impl Gpu {
     }
 }
 
-fn pack(data: &mut Vec<f32>, p: &Particle, frame: f32) {
+fn append(data: &mut Vec<f32>, packets: &mut Vec<Packet>, p: &Particle) {
+    let start = data.len() / STRIDE;
+    pack(data, p);
+    if let Some(packet) = packets.last_mut()
+        && packet.effect == p.effect
+    {
+        packet.count += 1;
+    } else {
+        packets.push(Packet {
+            start,
+            count: 1,
+            death: p.death,
+            effect: p.effect,
+        });
+    }
+}
+
+fn pack(data: &mut Vec<f32>, p: &Particle) {
     data.extend_from_slice(&[
         p.x,
         p.y,
         p.z,
-        frame - p.age,
+        p.birth,
         p.direction_x,
         p.direction_y,
         p.direction_z,
