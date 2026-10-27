@@ -484,8 +484,8 @@ fn pack(data: &mut Vec<f32>, p: &Particle) {
         p.delay,
         p.size,
         p.size_end,
-        p.rotation,
-        p.rotation_end,
+        p.rotation * (core::f32::consts::PI / 180.0),
+        p.rotation_end * (core::f32::consts::PI / 180.0),
         p.speed_exp,
         p.size_exp,
         p.rotation_exp,
@@ -496,7 +496,7 @@ fn pack(data: &mut Vec<f32>, p: &Particle) {
         p.distortion_heat,
         p.distortion_scale,
         p.colormap.len().saturating_sub(1) as f32,
-        0.,
-        0.,
+        1., // LUPS force exponent
+        1., // LUPS distortion animation speed
     ]);
 }
