@@ -156,25 +156,27 @@ function Batch:flush(legacyShader)
     if self.distortion then gl.Uniform(self.time, self.noiseFrame)
     else for i=1,#self.paletteData do gl.Uniform(self.colors[i], unpack(self.paletteData[i])) end end
     for _,group in ipairs(self.queued) do
-        for i=group.first,#group.entries do
-            local entry = group.entries[i]
-            setVisible(group, entry, not entry[DEAD] and entry[SEEN] == self.serial)
-        end
-        gl.Texture(0,group.texture)
-        -- Split at the ring wrap to preserve allocation/blending order.
+        local ranges = {}
         local start,finish
         for i=group.first,#group.entries do
             local entry = group.entries[i]
+            setVisible(group, entry, not entry[DEAD] and entry[SEEN] == self.serial)
             if not entry[DEAD] then
                 if finish and entry[START] < finish then
-                    group.vao:DrawArrays(GL.TRIANGLES,6,0,finish-start,start)
+                    ranges[#ranges+1],ranges[#ranges+2] = start,finish
                     start = nil
                 end
                 start = start or entry[START]
                 finish = entry[START] + entry[COUNT]
             end
         end
-        if start then group.vao:DrawArrays(GL.TRIANGLES,6,0,finish-start,start) end
+        if start then ranges[#ranges+1],ranges[#ranges+2] = start,finish end
+        -- Finish visibility uploads before drawing. Reuse their scan to find
+        -- the ring wraps, preserving allocation and blending order.
+        gl.Texture(0,group.texture)
+        for i=1,#ranges,2 do
+            group.vao:DrawArrays(GL.TRIANGLES,6,0,ranges[i+1]-ranges[i],ranges[i])
+        end
         group.queued = false
     end
     self.queued = {}
