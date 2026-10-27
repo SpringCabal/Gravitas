@@ -17,15 +17,41 @@ void main() {
     gl_FragColor = vec4(noiseVec, length(noiseVec) * heat, gl_FragCoord.z);
 }
 ]]
-local palettes = setmetatable({}, {__mode='v'})
+-- Colormaps are float32 values. Compare cached values directly instead of
+-- formatting every channel into a string for each newly created effect.
+local palettes = {}
+local function sameChannel(a,b)
+    if a==b then return a~=0 or 1/a==1/b end
+    if type(a)~='number' or type(b)~='number' or (a~=a and b~=b) then
+        return string.format('%.9g',a)==string.format('%.9g',b)
+    end
+    return false
+end
 local function palette(colors)
     if not colors then return end
-    local key = {}
-    for i=1,#colors do for j=1,4 do key[#key+1] = string.format('%.9g', colors[i][j]) end end
-    key = table.concat(key, ',')
-    if not palettes[key] then palettes[key] = colors end
-    return palettes[key]
+    local count = #colors
+    local bucket = palettes[count]
+    if bucket then
+        for cached in pairs(bucket) do
+            local same = #cached==count
+            if same then
+                for i=1,count do
+                    for j=1,4 do
+                        if not sameChannel(colors[i][j],cached[i][j]) then same=false;break end
+                    end
+                    if not same then break end
+                end
+            end
+            if same then return cached end
+        end
+    else
+        bucket = setmetatable({}, {__mode='k'})
+        palettes[count] = bucket
+    end
+    bucket[colors] = true
+    return colors
 end
+
 local FX,START,COUNT,DEAD,VISIBLE,SEEN,PALETTE = 1,2,3,4,5,6,7
 local Batch = {}
 Batch.__index = Batch
@@ -154,7 +180,10 @@ function Batch:flush(legacyShader)
     gl.UseShader(self.shader)
     gl.Uniform(self.ageFrame, self.frame)
     if self.distortion then gl.Uniform(self.time, self.noiseFrame)
-    else for i=1,#self.paletteData do gl.Uniform(self.colors[i], unpack(self.paletteData[i])) end end
+    elseif self.colorCount ~= #self.paletteData then
+        for i=1,#self.paletteData do gl.Uniform(self.colors[i], unpack(self.paletteData[i])) end
+        self.colorCount = #self.paletteData
+    end
     for _,group in ipairs(self.queued) do
         local ranges = {}
         local start,finish
