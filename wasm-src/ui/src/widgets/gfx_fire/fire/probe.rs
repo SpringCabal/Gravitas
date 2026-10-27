@@ -96,7 +96,7 @@ impl Probe {
                         .gpu_particles(texture)
                         .iter()
                         .filter(|p| {
-                            let age = fire.field.elapsed - p.birth;
+                            let age = fire.field.elapsed() - p.birth;
                             age > p.delay && age <= p.delay + p.life
                         })
                         .count()
