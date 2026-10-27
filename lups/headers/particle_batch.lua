@@ -208,7 +208,14 @@ end
 function Batch.release(fx)
     if not fx.gpuEntry then return end
     fx.gpuEntry[DEAD] = true
-    setVisible(fx.gpuGroup,fx.gpuEntry,false)
+    if thisGameFrame and fx.dieGameFrame and thisGameFrame > fx.dieGameFrame then
+        -- Every particle has already expired. The age test clips interior
+        -- holes; changing their palette would upload invisible data again.
+        fx.gpuEntry[VISIBLE] = false
+    else
+        -- Explicit early removal still needs to hide retained ring slots.
+        setVisible(fx.gpuGroup,fx.gpuEntry,false)
+    end
     fx.gpuEntry,fx.gpuGroup = nil,nil
 end
 
