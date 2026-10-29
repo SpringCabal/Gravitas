@@ -74,7 +74,7 @@ local function copyOptions(options, defaults)
     return result
 end
 
-local FX,START,COUNT,DEAD,VISIBLE,SEEN,PALETTE,BIRTH = 1,2,3,4,5,6,7,8
+local FX,START,COUNT,DEAD,VISIBLE,SEEN,PALETTE,BIRTH,GROUP = 1,2,3,4,5,6,7,8,9
 local Batch = {}
 Batch.__index = Batch
 
@@ -184,7 +184,7 @@ local function register(self, fx)
     local data = fx.gpuParticles
     local birth = self.frame - fx.frame
     for i=1,#data,28 do data[i+3],data[i+19] = birth,offset end
-    local entry = {fx,start,count,false,true,self.serial,offset,birth}
+    local entry = {fx,start,count,false,true,self.serial,offset,birth,group}
     fx.gpuEntry,fx.gpuGroup = entry,group
     group.entries[#group.entries+1] = entry
     group.head = start + count
@@ -242,14 +242,16 @@ end
 
 function Batch:queue(fx, legacyShader)
     if not fx.gpuOnly then return false end
-    local entry,group = fx.gpuEntry,fx.gpuGroup
+    local entry = fx.gpuEntry
+    local group = entry and entry[GROUP]
     if not entry then entry,group = register(self,fx) end
-    if fx.gpuReset then
+    local reset = fx.gpuReset
+    if reset then
         for i=4,#fx.gpuParticles,28 do fx.gpuParticles[i] = self.frame-fx.frame end
         entry[BIRTH] = self.frame-fx.frame
         upload(group,entry)
     end
-    fx.gpuReset = false
+    if reset ~= false then fx.gpuReset = false end
     entry[SEEN] = self.serial
     if not group.queued then
         self.queued[#self.queued+1],group.queued = group,true
