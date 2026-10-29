@@ -446,7 +446,7 @@ local MergeTable   = MergeTable
 local setmetatable = setmetatable
 
 function JitterParticles2.Create(Options)
-  local newObject = MergeTable(Options, JitterParticles2.Default)
+  local newObject = ParticleBatch.options(Options, JitterParticles2.Default)
   setmetatable(newObject,JitterParticles2)  --// make handle lookup
   newObject:CreateParticle()
   return newObject

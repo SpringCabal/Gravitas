@@ -52,7 +52,29 @@ local function palette(colors)
     return colors
 end
 
-local FX,START,COUNT,DEAD,VISIBLE,SEEN,PALETTE = 1,2,3,4,5,6,7
+-- Callers may explicitly share a palette that they never mutate. Other
+-- options retain MergeTable's recursive copy and overlay behavior.
+local immutablePalettes = setmetatable({}, {__mode='kv'})
+local function copyFields(result, source)
+    for key,value in pairs(source) do
+        if key ~= 'colormap' then
+            if type(value)=='table' then
+                if type(result[key])~='table' then result[key]={} end
+                CopyTable(result[key],value)
+            else result[key]=value end
+        end
+    end
+end
+local function copyOptions(options, defaults)
+    if not options.immutableColormap then return MergeTable(options, defaults) end
+    local result = {}
+    copyFields(result,defaults)
+    copyFields(result,options)
+    result.colormap = options.colormap or defaults.colormap
+    return result
+end
+
+local FX,START,COUNT,DEAD,VISIBLE,SEEN,PALETTE,BIRTH = 1,2,3,4,5,6,7,8
 local Batch = {}
 Batch.__index = Batch
 
@@ -162,7 +184,7 @@ local function register(self, fx)
     local data = fx.gpuParticles
     local birth = self.frame - fx.frame
     for i=1,#data,28 do data[i+3],data[i+19] = birth,offset end
-    local entry = {fx,start,count,false,true,self.serial,offset}
+    local entry = {fx,start,count,false,true,self.serial,offset,birth}
     fx.gpuEntry,fx.gpuGroup = entry,group
     group.entries[#group.entries+1] = entry
     group.head = start + count
@@ -224,6 +246,7 @@ function Batch:queue(fx, legacyShader)
     if not entry then entry,group = register(self,fx) end
     if fx.gpuReset then
         for i=4,#fx.gpuParticles,28 do fx.gpuParticles[i] = self.frame-fx.frame end
+        entry[BIRTH] = self.frame-fx.frame
         upload(group,entry)
     end
     fx.gpuReset = false
@@ -237,7 +260,9 @@ end
 function Batch.release(fx)
     if not fx.gpuEntry then return end
     fx.gpuEntry[DEAD] = true
-    if thisGameFrame and fx.dieGameFrame and thisGameFrame > fx.dieGameFrame then
+    local allClipped = thisGameFrame and fx.gpuLastParticle and
+        thisGameFrame - fx.gpuEntry[BIRTH] > fx.gpuLastParticle
+    if allClipped or (thisGameFrame and fx.dieGameFrame and thisGameFrame > fx.dieGameFrame) then
         -- Every particle has already expired. The age test clips interior
         -- holes; changing their palette would upload invisible data again.
         fx.gpuEntry[VISIBLE] = false
@@ -255,17 +280,28 @@ function Batch:delete()
 end
 
 -- Called while the original attribute generator runs, consuming no new RNG.
+Batch.options = copyOptions
+
 function Batch.prepare(self)
     self.gpuParticles = {}
+    self.gpuLastParticle = 0
     self.gpuReset = false
     self.gpuEntry = false
     self.gpuGroup = false
-    self.gpuPalette = palette(self.colormap)
+    if self.immutableColormap then
+        self.gpuPalette = immutablePalettes[self.colormap]
+        if not self.gpuPalette then
+            self.gpuPalette = palette(self.colormap)
+            immutablePalettes[self.colormap] = self.gpuPalette
+        end
+    else self.gpuPalette = palette(self.colormap) end
 end
 
 function Batch.pack(self, life, delay, x,y,z, dx,dy,dz, sizeStart,sizeEnd,
         rotStart,rotEnd, animX,animY)
     local data = self.gpuParticles
+    local last = life + delay
+    if last > self.gpuLastParticle then self.gpuLastParticle = last end
     local at = #data
     data[at+1],data[at+2],data[at+3],data[at+4] = x,y,z,0
     data[at+5],data[at+6],data[at+7],data[at+8] = dx,dy,dz,life

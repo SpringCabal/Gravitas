@@ -73,6 +73,8 @@ MergeTable(smokeFX, flameFX)
 
 local Lups  -- Lua Particle System
 local AddParticles
+flameFX.immutableColormap, smokeFX.immutableColormap = true, true
+
 local particleIDs = {}
 
 local random,pi = math.random,math.pi

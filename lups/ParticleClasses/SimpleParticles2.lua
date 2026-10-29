@@ -437,7 +437,7 @@ local MergeTable   = MergeTable
 local setmetatable = setmetatable
 
 function SimpleParticles2.Create(Options)
-  local newObject = MergeTable(Options, SimpleParticles2.Default)
+  local newObject = ParticleBatch.options(Options, SimpleParticles2.Default)
   setmetatable(newObject,SimpleParticles2)  --// make handle lookup
   newObject:CreateParticle()
   return newObject

@@ -551,13 +551,18 @@ local function Draw(extension,layer)
                 local fx = UnitEffects[i]
                 if (fx.alwaysVisible or fx.visible) then
                   if fx.projectile and not fx.worldspace and flush then flush() end
-                  glPushMatrix()
-                  if fx.projectile and not fx.worldspace then
-                    local x,y,z = spGetProjectilePosition(fx.projectile)
-                    glTranslate(x,y,z)
+                  if fx.gpuOnly then
+                    -- World-space batches do not change the model matrix.
+                    drawfunc(fx)
+                  else
+                    glPushMatrix()
+                    if fx.projectile and not fx.worldspace then
+                      local x,y,z = spGetProjectilePosition(fx.projectile)
+                      glTranslate(x,y,z)
+                    end
+                    drawfunc(fx)
+                    glPopMatrix()
                   end
-                  drawfunc(fx)
-                  glPopMatrix()
                 end
               end -- for
             end -- if
