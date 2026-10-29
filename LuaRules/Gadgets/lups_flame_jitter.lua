@@ -105,7 +105,10 @@ else
   end
 
   function EmitFlame(posx,posy,posz, dirx,diry,dirz, speedx,speedy,speedz, range, altFlameTexture)
-    local partpos = "x*delay,y*delay,z*delay|x="..speedx..",y="..speedy..",z="..speedz
+    -- Preserve the old expression's number-to-text rounding once per burst.
+    local vx,vy,vz = tostring(speedx),tostring(speedy),tostring(speedz)
+    local partpos = "x*delay,y*delay,z*delay|x="..vx..",y="..vy..",z="..vz
+    local startVelocity = {tonumber(vx),tonumber(vy),tonumber(vz)}
 
     particleList[particleCnt] = {
       class        = 'JitterParticles2',
@@ -118,6 +121,7 @@ else
       --forceExp     = 0.2,
 
       partpos      = partpos,
+      startVelocity = startVelocity,
       pos          = {posx,posy,posz},
 
       emitVector   = {dirx,diry,dirz},
@@ -148,6 +152,7 @@ else
       --forceExp     = 0.2,
 
       partpos      = partpos,
+      startVelocity = startVelocity,
       pos          = {posx,posy,posz},
 
       emitVector   = {dirx,diry,dirz},
@@ -184,6 +189,7 @@ else
       --forceExp     = 0.2,
 
       partpos      = partpos,
+      startVelocity = startVelocity,
       pos          = {posx,posy,posz},
 
       emitVector   = {dirx,diry,dirz},

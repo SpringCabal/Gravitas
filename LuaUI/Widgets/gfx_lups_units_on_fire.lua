@@ -139,7 +139,8 @@ function onFire(burningUnits)
     local r = spGetUnitRadius(unitID)
     if (r and x) then
       flameFX.pos     = {x,y,z}
-      flameFX.partpos = "r*sin(alpha),0,r*cos(alpha) | alpha=rand()*2*pi, r=rand()*0.6*" .. r
+      flameFX.partpos = "0,0,0"
+      flameFX.startRadius = r*0.6
       flameFX.size    = r * 0.35
       particleIDs[#particleIDs+1] = AddParticles('SimpleParticles2',flameFX)
 
@@ -165,7 +166,8 @@ function onFireUnit(unitID, fireSizeMult)
   local r = spGetUnitRadius(unitID)
   if (r and x and sx) then
     flameFX.pos     = {x,y,z}
-    flameFX.partpos = "r*sin(alpha),0,r*cos(alpha) | alpha=rand()*2*pi, r=rand()*0.6*" .. r
+    flameFX.partpos = "0,0,0"
+    flameFX.startRadius = r*0.6
     flameFX.size    = r * 0.1 * fireSizeMult
     flameFX.life    = 30 * fireSizeMult
     flameFX.force   = {sx*0.5,0.4+0.2*random(),sz*0.5}
@@ -173,6 +175,7 @@ function onFireUnit(unitID, fireSizeMult)
 
     smokeFX.pos     = flameFX.pos 
     smokeFX.partpos = flameFX.partpos
+    smokeFX.startRadius = flameFX.startRadius
     smokeFX.size    = flameFX.size * fireSizeMult
     smokeFX.life    = 50 * fireSizeMult
     particleIDs[#particleIDs+1] = AddParticles('SimpleParticles2',smokeFX)

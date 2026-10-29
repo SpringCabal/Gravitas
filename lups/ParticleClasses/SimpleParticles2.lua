@@ -118,45 +118,41 @@ local ParseParamString = ParseParamString
 local Vmul    = Vmul
 local Vlength = Vlength
 
-local nullVector = {0,0,0}
 
 -----------------------------------------------------------------------------------------------------------------
 -----------------------------------------------------------------------------------------------------------------
 
 function SimpleParticles2:CreateParticleAttributes(up, right, forward, partpos,n)
-  local life, delay, pos, speed, sizeStart,sizeEnd, rotStart,rotEnd;
-
-  local az = rand()*twopi;
-  local ay = (self.emitRot + rand() * self.emitRotSpread) * degreeToPI;
-
-  local a,b,c = cos(ay),  cos(az)*sin(ay),  sin(az)*sin(ay)
-
-  speed = {
-    up[1]*a - right[1]*b + forward[1]*c,
-    up[2]*a - right[2]*b + forward[2]*c,
-    up[3]*a - right[3]*b + forward[3]*c}
-
-  life      = self.life + rand() * self.lifeSpread
-  speed     = Vmul( speed,( self.speed + rand() * self.speedSpread) * life)
-  delay     = rand() * self.delaySpread
-
-  sizeStart = self.size + rand() * self.sizeSpread
-  sizeEnd   = sizeStart + self.sizeGrowth * life
-  rotStart  = rand() * self.rotSpread * degreeToPI
-  rotEnd    = (self.rotSpeed + rand() * self.rotSpeedSpread) * life * degreeToPI
-
-  if (partpos) then
-    local part = { speed=speed, velocity=Vlength(speed), life=life, delay=delay, i=n }
-    pos = { ProcessParamCode(partpos, part) }
-  else
-    pos = nullVector
+  local rand = self.random or rand
+  local az = rand()*twopi
+  local ay = (self.emitRot + rand()*self.emitRotSpread)*degreeToPI
+  local sinAy = sin(ay)
+  local a,b,c = cos(ay),cos(az)*sinAy,sin(az)*sinAy
+  local sx = up[1]*a - right[1]*b + forward[1]*c
+  local sy = up[2]*a - right[2]*b + forward[2]*c
+  local sz = up[3]*a - right[3]*b + forward[3]*c
+  local life = self.life + rand()*self.lifeSpread
+  local travel = (self.speed + rand()*self.speedSpread)*life
+  sx,sy,sz = sx*travel,sy*travel,sz*travel
+  local delay = rand()*self.delaySpread
+  local sizeStart = self.size + rand()*self.sizeSpread
+  local sizeEnd = sizeStart + self.sizeGrowth*life
+  local rotStart = rand() * self.rotSpread * degreeToPI
+  local rotEnd = (self.rotSpeed + rand() * self.rotSpeedSpread) * life * degreeToPI
+  local px,py,pz = 0,0,0
+  if self.startRadius then
+    local alpha,radius = rand()*twopi,rand()*self.startRadius
+    px,pz = radius*sin(alpha),radius*cos(alpha)
+  elseif self.startVelocity then
+    local v = self.startVelocity
+    px,py,pz = v[1]*delay,v[2]*delay,v[3]*delay
+  elseif partpos then
+    -- Arbitrary expressions keep their complete mutable environment.
+    local speed = {sx,sy,sz}
+    local part = {speed=speed,velocity=Vlength(speed),life=life,delay=delay,i=n}
+    px,py,pz = ProcessParamCode(partpos,part)
   end
-
-  return life, delay,
-         pos[1],pos[2],pos[3],
-         speed[1],speed[2],speed[3],
-         sizeStart,sizeEnd,
-         rotStart,rotEnd;
+  return life,delay,px,py,pz,sx,sy,sz,sizeStart,sizeEnd,rotStart,rotEnd
 end
 
 -----------------------------------------------------------------------------------------------------------------
@@ -328,7 +324,7 @@ local function InitializeParticles(self)
   local forward = Vcross( up, right );
 
   local partposCode
-  if (self.partpos ~= "0,0,0") then
+  if not self.startRadius and not self.startVelocity and (self.partpos ~= "0,0,0") then
     partposCode = ParseParamString(self.partpos)
   end
 
