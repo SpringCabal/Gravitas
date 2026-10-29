@@ -270,6 +270,8 @@ function Batch.release(fx)
         -- Explicit early removal still needs to hide retained ring slots.
         setVisible(fx.gpuGroup,fx.gpuEntry,false)
     end
+    -- The ring retains numeric allocation data, not the removed effect graph.
+    fx.gpuEntry[FX] = nil
     fx.gpuEntry,fx.gpuGroup = nil,nil
 end
 
