@@ -239,6 +239,7 @@ checksum = "0fda2ff0d084019ba4d7c6f371c95d8fd75ce3524c3cb8fb653a3023f6323e64"
 [[package]]
 name = "spring-addons"
 version = "0.1.0"
+source = "git+https://github.com/gajop/spring-rust?rev=0f0ee80fa0ee620bc2988c64559feb3cbd163e10#0f0ee80fa0ee620bc2988c64559feb3cbd163e10"
 dependencies = [
  "spring-sdk",
 ]
@@ -246,6 +247,7 @@ dependencies = [
 [[package]]
 name = "spring-native-sys"
 version = "0.1.0"
+source = "git+https://github.com/gajop/spring-rust?rev=0f0ee80fa0ee620bc2988c64559feb3cbd163e10#0f0ee80fa0ee620bc2988c64559feb3cbd163e10"
 dependencies = [
  "bindgen",
  "libc",
@@ -254,6 +256,7 @@ dependencies = [
 [[package]]
 name = "spring-sdk"
 version = "0.1.0"
+source = "git+https://github.com/gajop/spring-rust?rev=0f0ee80fa0ee620bc2988c64559feb3cbd163e10#0f0ee80fa0ee620bc2988c64559feb3cbd163e10"
 dependencies = [
  "spring-native-sys",
  "spring-sdk-internal",
@@ -262,6 +265,7 @@ dependencies = [
 [[package]]
 name = "spring-sdk-internal"
 version = "0.1.0"
+source = "git+https://github.com/gajop/spring-rust?rev=0f0ee80fa0ee620bc2988c64559feb3cbd163e10#0f0ee80fa0ee620bc2988c64559feb3cbd163e10"
 dependencies = [
  "libm",
 ]

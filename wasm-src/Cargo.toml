@@ -10,8 +10,8 @@ all = { level = "deny", priority = -1 }
 too_many_arguments = "allow"
 
 [workspace.dependencies]
-spring = { package = "spring-sdk", git = "https://github.com/gajop/spring-rust", branch = "rust-wip" }
-spring-addons = { package = "spring-addons", git = "https://github.com/gajop/spring-rust", branch = "rust-wip" }
+spring = { package = "spring-sdk", git = "https://github.com/gajop/spring-rust", rev = "0f0ee80fa0ee620bc2988c64559feb3cbd163e10" }
+spring-addons = { package = "spring-addons", git = "https://github.com/gajop/spring-rust", rev = "0f0ee80fa0ee620bc2988c64559feb3cbd163e10" }
 springcabal = { path = "../../../../springcabal-rs/crates/springcabal" }
 springcabal-control = { path = "../../../../springcabal-rs/crates/springcabal-control" }
 
