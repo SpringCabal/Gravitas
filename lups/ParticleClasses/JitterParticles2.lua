@@ -161,6 +161,8 @@ function JitterParticles2:CreateParticleAttributes(up, right, forward, partpos,n
     local speed = {sx,sy,sz}
     local part = {speed=speed,velocity=Vlength(speed),life=life,delay=delay,i=n}
     px,py,pz = ProcessParamCode(partpos,part)
+    -- Generic expressions may mutate the speed table passed to them.
+    sx,sy,sz = speed[1],speed[2],speed[3]
   end
   return life,delay,px,py,pz,sx,sy,sz,sizeStart,sizeEnd
 end
