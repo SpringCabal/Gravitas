@@ -14,6 +14,6 @@ build: fmt clippy
     cargo build --workspace --target wasm32-unknown-unknown --release
 
 copy: build
-    cp target/wasm32-unknown-unknown/release/gravitas_jobs_wasm.wasm ../LuaUI/wasm/gravitas-jobs.wasm
-    cp target/wasm32-unknown-unknown/release/gravitas_rules_wasm.wasm ../LuaRules/wasm/gravitas-rules.wasm
-    cp target/wasm32-unknown-unknown/release/gravitas_ui_wasm.wasm ../LuaUI/wasm/gravitas-ui.wasm
+    cp "${CARGO_TARGET_DIR:-target}/wasm32-unknown-unknown/release/gravitas_jobs_wasm.wasm" ../LuaUI/wasm/gravitas-jobs.wasm
+    cp "${CARGO_TARGET_DIR:-target}/wasm32-unknown-unknown/release/gravitas_rules_wasm.wasm" ../LuaRules/wasm/gravitas-rules.wasm
+    cp "${CARGO_TARGET_DIR:-target}/wasm32-unknown-unknown/release/gravitas_ui_wasm.wasm" ../LuaUI/wasm/gravitas-ui.wasm
