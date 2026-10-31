@@ -206,19 +206,27 @@ function Batch:flush(legacyShader)
         for i=1,#self.paletteData do gl.Uniform(self.colors[i], unpack(self.paletteData[i])) end
         self.colorCount = #self.paletteData
     end
+    local serial = self.serial
+    local DEAD,VISIBLE,SEEN,START,COUNT = DEAD,VISIBLE,SEEN,START,COUNT
     for _,group in ipairs(self.queued) do
         local ranges = {}
         local start,finish
-        for i=group.first,#group.entries do
-            local entry = group.entries[i]
-            setVisible(group, entry, not entry[DEAD] and entry[SEEN] == self.serial)
-            if not entry[DEAD] then
-                if finish and entry[START] < finish then
+        local entries = group.entries
+        for i=group.first,#entries do
+            local entry = entries[i]
+            local dead = entry[DEAD]
+            local visible = not dead and entry[SEEN] == serial
+            -- Most retained entries keep their visibility. Avoid a Lua call
+            -- on that path; changes still use the original upload helper.
+            if entry[VISIBLE] ~= visible then setVisible(group, entry, visible) end
+            if not dead then
+                local offset = entry[START]
+                if finish and offset < finish then
                     ranges[#ranges+1],ranges[#ranges+2] = start,finish
                     start = nil
                 end
-                start = start or entry[START]
-                finish = entry[START] + entry[COUNT]
+                start = start or offset
+                finish = offset + entry[COUNT]
             end
         end
         if start then ranges[#ranges+1],ranges[#ranges+2] = start,finish end
